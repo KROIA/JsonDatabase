@@ -38,15 +38,19 @@ typedef std::chrono::system_clock::time_point TimePoint;
 
 #ifdef JD_PROFILING
 #include "easy/profiler.h"
+#include <easy/arbitrary_value.h> // EASY_VALUE, EASY_ARRAY are defined here
+
 
 // Change the base color for the profiler. base color can be found in profiler::colors from profiler_clolors.h
 #define JD_PROFILING_BASE_COLOR Cyan
+#define JDFILE_IO_PROFILING_BASE_COLOR Blue
 
-#define BUILD_WITH_EASY_PROFILER
+//#define BUILD_WITH_EASY_PROFILER
 // Special expantion tecniques are required to combine the color name
 #define CONCAT_SYMBOLS_IMPL(x, y) x##y
 #define CONCAT_SYMBOLS(x, y) CONCAT_SYMBOLS_IMPL(x, y)
 #define JD_PROFILING_COLOR(stage) profiler::colors:: CONCAT_SYMBOLS(JD_PROFILING_BASE_COLOR , stage)
+#define JDFILE_IO_PROFILING_COLOR(stage) profiler::colors:: CONCAT_SYMBOLS(JDFILE_IO_PROFILING_BASE_COLOR , stage)
 
 // Different color stages
 #define COLOR_STAGE_1 50
@@ -69,10 +73,27 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #define JD_PROFILING_BLOCK(text, colorStage) JD_PROFILING_BLOCK_C(text, JD_PROFILING_COLOR(colorStage))
 #define JD_PROFILING_FUNCTION(colorStage) JD_PROFILING_FUNCTION_C(JD_PROFILING_COLOR(colorStage))
 
+#define JD_PROFILING_VALUE(name, value) EASY_VALUE(name, value)
+
+#define JDFILE_IO_PROFILING_BLOCK_C(text, colorStage) EASY_BLOCK(text, colorStage)
+#define JDFILE_IO_PROFILING_FUNCTION_C(colorStage) EASY_FUNCTION(colorStage)
+#define JDFILE_IO_PROFILING_BLOCK(text, colorStage) JDFILE_IO_PROFILING_BLOCK_C(text, JDFILE_IO_PROFILING_COLOR(colorStage))
+#define JDFILE_IO_PROFILING_FUNCTION(colorStage) JDFILE_IO_PROFILING_FUNCTION_C(JDFILE_IO_PROFILING_COLOR(colorStage))
+
+#define JDFILE_IO_PROFILING_VALUE(name, value) EASY_VALUE(name, value)
 
 #else
 #define JD_PROFILING_BLOCK_C(text, colorStage)
 #define JD_PROFILING_FUNCTION_C(colorStage)
 #define JD_PROFILING_BLOCK(text, color)
 #define JD_PROFILING_FUNCTION(color)
+
+#define JD_PROFILING_VALUE(name, value)
+
+#define JDFILE_IO_PROFILING_BLOCK_C(text, colorStage) 
+#define JDFILE_IO_PROFILING_FUNCTION_C(colorStage)
+#define JDFILE_IO_PROFILING_BLOCK(text, colorStage) 
+#define JDFILE_IO_PROFILING_FUNCTION(colorStage) 
+
+#define JDFILE_IO_PROFILING_VALUE(name, value)
 #endif

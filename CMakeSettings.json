@@ -29,7 +29,7 @@
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
-      "cmakeCommandArgs": "-DLOGGER_PROFILING=1",
+      "cmakeCommandArgs": "-DJD_PROFILING=1",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ]
     },
@@ -39,7 +39,7 @@
       "configurationType": "Debug",
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
-      "cmakeCommandArgs": "-DLOGGER_PROFILING=1",
+      "cmakeCommandArgs": "-DJD_PROFILING=1",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],

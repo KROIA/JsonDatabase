@@ -80,22 +80,22 @@ if(WIN32)
             --dir "${CMAKE_INSTALL_PREFIX}/bin"
             --pdb
             "$<TARGET_FILE:${PROJECT_NAME}>"
-		COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${CMAKE_INSTALL_PREFIX}/bin"
+	 	COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${CMAKE_INSTALL_PREFIX}/bin"
     )
 
-    get_target_property(TARGET_PATH ${PROJECT_NAME} RUNTIME_OUTPUT_DIRECTORY)
-
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${QT_PATH}/bin/windeployqt.exe"
-            --no-compiler-runtime
-            --no-translations
-            --no-system-d3d-compiler
-            --no-opengl-sw
-            --no-angle
-            --no-webkit2
-            --dir "${TARGET_PATH}/$<CONFIG>"
-            --pdb
-            "$<TARGET_FILE:${PROJECT_NAME}>"
-		COMMENT "Running windeployqt... ${QT_PATH}/bin/windeployqt.exe ${TARGET_PATH}/$<CONFIG>"
-    )
+    #get_target_property(TARGET_PATH ${PROJECT_NAME} RUNTIME_OUTPUT_DIRECTORY)
+    #
+    #add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    #    COMMAND "${QT_PATH}/bin/windeployqt.exe"
+    #        --no-compiler-runtime
+    #        --no-translations
+    #        --no-system-d3d-compiler
+    #        --no-opengl-sw
+    #        --no-angle
+    #        --no-webkit2
+    #        --dir "${TARGET_PATH}/$<CONFIG>"
+    #        --pdb
+    #        "$<TARGET_FILE:${PROJECT_NAME}>"
+	#	COMMENT "Running windeployqt... ${QT_PATH}/bin/windeployqt.exe ${TARGET_PATH}/$<CONFIG>"
+    #)
 endif()

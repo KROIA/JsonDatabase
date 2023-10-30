@@ -6,4 +6,5 @@ namespace JsonDatabase
     class JDObjectInterface;
     class JDManager;
     class JDSerializable;
+    class FileLock;
 }

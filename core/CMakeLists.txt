@@ -65,6 +65,7 @@ set_target_properties(easy_profiler PROPERTIES CMAKE_RUNTIME_OUTPUT_DIRECTORY "$
 set_target_properties(easy_profiler PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
 set_target_properties(easy_profiler PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
 set_target_properties(easy_profiler PROPERTIES DEBUG_POSTFIX "-d")
+target_compile_definitions(easy_profiler PRIVATE  EASY_PROFILER_STATIC)
 
 # End external dependencies
 
@@ -95,15 +96,15 @@ message("Create library with files:")
 set(JsonDatabase_dependencies 
    Qt5::Core)
 
-add_library(JsonDatabase_shared SHARED ${SOURCES})
-add_library(JsonDatabase_static STATIC ${SOURCES})
+add_library(JsonDatabase_shared SHARED ${SOURCES} )
+add_library(JsonDatabase_static STATIC ${SOURCES} )
 add_library(JsonDatabase_static_profile STATIC ${SOURCES})
  
 target_compile_definitions(JsonDatabase_shared PRIVATE  JSONDATABASE_LIB)
 target_compile_definitions(JsonDatabase_static PRIVATE  BUILD_STATIC JSONDATABASE_LIB)
 target_compile_definitions(JsonDatabase_static_profile PRIVATE  BUILD_STATIC JD_PROFILING JSONDATABASE_LIB)
 
-set_target_properties(easy_profiler PROPERTIES DEBUG_POSTFIX "-d")
+
 set_target_properties(JsonDatabase_shared PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${JsonDatabase_filename}" DEBUG_POSTFIX "-d")
 set_target_properties(JsonDatabase_static PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${JsonDatabase_filename}-s" DEBUG_POSTFIX "-d")
 set_target_properties(JsonDatabase_static_profile PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${JsonDatabase_filename}-s-p" DEBUG_POSTFIX "-d")
@@ -137,3 +138,5 @@ install(TARGETS JsonDatabase_shared DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELAT
 install(TARGETS JsonDatabase_static DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
 install(TARGETS JsonDatabase_static_profile DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
 install(TARGETS easy_profiler DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
+
+

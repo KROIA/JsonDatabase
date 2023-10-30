@@ -1,6 +1,7 @@
 #pragma once
 
 #include "JDObjectInterface.h"
+#include "FileLock.h"
 #include "ThreadWorker.h"
 #include <string>
 #include <map>
@@ -100,9 +101,12 @@ class JSONDATABASE_EXPORT JDManager
         template<typename T>
         std::vector<T*> getObjects() const;
         std::vector<JDObjectInterface*> getObjects() const;
+
+
+        static void saveProfilerFile();
     protected:
 
-        virtual void onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects);
+        //virtual void onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects);
 
     private:
         std::string getDatabaseFilePath() const;
@@ -113,9 +117,10 @@ class JSONDATABASE_EXPORT JDManager
 
         bool deserializeJson(const QJsonObject& json, JDObjectInterface*& objOut) const;
 
+        void getJsonFileContent(const std::vector<QJsonObject>& jsons, std::string& fileContentOut) const;
         bool writeJsonFile(const std::vector<QJsonObject>& jsons, const std::string &outputFile) const;
         bool readJsonFile(const std::string& inputFile, std::vector<QJsonObject>& jsonsOut) const;
-       // bool deserializeJson(std::string)
+        // bool deserializeJson(std::string)
 
         // relativePath without fileEnding
         bool writeJsonFile(const QJsonObject &obj, const std::string &relativePath) const;
@@ -124,7 +129,7 @@ class JSONDATABASE_EXPORT JDManager
         bool readJsonFile(QJsonObject &obj, const std::string &relativePath) const;
         bool readJsonFile(QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const;
 
-        bool lockFile(const std::string &relativePath) const;
+        bool lockFile(const std::string &relativePath, unsigned int timeoutMillis = 1000) const;
         bool unlockFile(const std::string &relativePath) const;
 
 
@@ -136,34 +141,34 @@ class JSONDATABASE_EXPORT JDManager
         //void saveObjects_threaded(const std::vector<ObjectSaverData*>& saverData, bool& success) const;
         static void QTUpdateEvents();
 
-        std::string getRelativeFilePath(const std::string &objID) const;
-        void getObjectFileList(QDir dir, const std::string &relativePath, std::vector<std::string> &list) const;
-        void getObjectFileList_internal(const QDir &dirFilter,const QDir &fileFilter, const std::string &relativePath, std::vector<std::string> &list) const;
-        void findJsonFilesRecursive(const std::filesystem::path& start_dir, std::vector<std::string>& results) const;
-        void findJsonFilesRecursive(const std::string& start_dir, std::vector<std::string>& results) const;
-        static void getDirsRecursive_internal(const std::string& dir, const std::string& relativeRoot, std::vector<std::string>& subDirs);
-        static void getDirectories(const std::string& path, std::vector<std::string>& dirNames);
-        static void getFileList(const std::string& path, const std::string& relativeRoot, const std::string& fileEndingFilter, std::vector<std::string>& fullFilePathList); // fileEndingFilter: ".json" not "json"
+        //std::string getRelativeFilePath(const std::string &objID) const;
+        //void getObjectFileList(QDir dir, const std::string &relativePath, std::vector<std::string> &list) const;
+        //void getObjectFileList_internal(const QDir &dirFilter,const QDir &fileFilter, const std::string &relativePath, std::vector<std::string> &list) const;
+        //void findJsonFilesRecursive(const std::filesystem::path& start_dir, std::vector<std::string>& results) const;
+        //void findJsonFilesRecursive(const std::string& start_dir, std::vector<std::string>& results) const;
+        //static void getDirsRecursive_internal(const std::string& dir, const std::string& relativeRoot, std::vector<std::string>& subDirs);
+        //static void getDirectories(const std::string& path, std::vector<std::string>& dirNames);
+        //static void getFileList(const std::string& path, const std::string& relativeRoot, const std::string& fileEndingFilter, std::vector<std::string>& fullFilePathList); // fileEndingFilter: ".json" not "json"
         //static std::string systemExec(const std::string& command);
-        static void splitString(const std::string &str, std::vector<std::string> &container, const std::string& delimiter = "\n");
+        //static void splitString(const std::string &str, std::vector<std::string> &container, const std::string& delimiter = "\n");
 
-        bool saveObject_internal(JDObjectInterface *obj) const;
-        bool saveObject_internal_noLock(JDObjectInterface *obj, const std::string *relativeFilePath = nullptr) const;
+        //bool saveObject_internal(JDObjectInterface *obj) const;
+        //bool saveObject_internal_noLock(JDObjectInterface *obj, const std::string *relativeFilePath = nullptr) const;
 
         // if objOut != nullptr, the loader try's to override the existing values with the loaded ones
-        bool loadObject_internal(JDObjectInterface *&objOut, std::string relativePath);
-        bool loadObject_internal_noLock(JDObjectInterface *&objOut, std::string relativePath, const std::string &uniqueID);
+       // bool loadObject_internal(JDObjectInterface *&objOut, std::string relativePath);
+        //bool loadObject_internal_noLock(JDObjectInterface *&objOut, std::string relativePath, const std::string &uniqueID);
 
-        bool removeObject_internal(JDObjectInterface* obj);
+        //bool removeObject_internal(JDObjectInterface* obj);
 
         // Filesystem
         bool makeDatabaseDirs() const;
-        bool deleteJsonFile(JDObjectInterface *obj) const;
+        //bool deleteJsonFile(JDObjectInterface *obj) const;
         bool deleteDir(const std::string &dir) const;
 
-        std::string getFolderName(JDObjectInterface *obj) const;
-        std::string getFileName(JDObjectInterface *obj) const;
-        std::string getRelativeFilePath(JDObjectInterface *obj) const;
+        //std::string getFolderName(JDObjectInterface *obj) const;
+        //std::string getFileName(JDObjectInterface *obj) const;
+        //std::string getRelativeFilePath(JDObjectInterface *obj) const;
 
         bool getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key) const;
         bool getJsonValue(const QJsonObject &obj, QTime &value, const QString &key) const;
@@ -185,6 +190,8 @@ class JSONDATABASE_EXPORT JDManager
         std::string m_sessionID;
         std::string m_user;
 
+        mutable FileLock* m_fileLock;
+
         // All objects contained in the database
         std::map<std::string, JDObjectInterface*> m_objs;
 
@@ -201,6 +208,8 @@ class JSONDATABASE_EXPORT JDManager
         static const QString m_tag_user;
         static const QString m_tag_date;
         static const QString m_tag_time;
+
+        static size_t s_instanceCounter;
 
 #ifdef JSON_DATABSE_USE_THREADS
         enum ThreadWorkType

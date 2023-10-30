@@ -33,7 +33,11 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
         return false;
     QJsonObject data;
     bool success = getJsonValue(obj, data,  "Data");
-    success &= load(data);
+    
+    {
+        JD_PROFILING_BLOCK("UserLoad", COLOR_STAGE_2);
+        success &= load(data);
+    }
     setObjectID(obj[m_tag_objID].toString().toStdString());
     m_version = obj[m_tag_objVersion].toInt(0);
 
@@ -51,7 +55,12 @@ bool JDObjectInterface::saveInternal(QJsonObject &obj)
     obj[m_tag_objVersion] = QJsonValue(m_version);
     obj[m_tag_className] = className().c_str();
     QJsonObject data;
-    bool ret = save(data);
+    bool ret;
+    {
+        JD_PROFILING_BLOCK("UserSave", COLOR_STAGE_2);
+        ret = save(data);
+    }
+     
     obj["Data"] = data;
     return ret;
 }

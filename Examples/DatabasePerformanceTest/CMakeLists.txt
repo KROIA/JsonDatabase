@@ -1,6 +1,9 @@
 
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR FILENAME PROJECT_NAME)   
 string(REPLACE " " "_" ProjectId ${PROJECT_NAME})
+if(JD_PROFILING)
+    set(PROJECT_NAME ${PROJECT_NAME}_profile)
+endif()
 project(${PROJECT_NAME})
 
 
@@ -39,7 +42,6 @@ endif()
 
 # end QT settings
 
-
 include_directories(inc)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
@@ -55,8 +57,12 @@ set(Files
 add_executable(${PROJECT_NAME} ${Files})
 
 
-target_link_libraries(${PROJECT_NAME} JsonDatabase_static)
-target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC)
+if(JD_PROFILING)
+    target_link_libraries(${PROJECT_NAME} JsonDatabase_static_profile)
+else()
+    target_link_libraries(${PROJECT_NAME} JsonDatabase_static)
+endif()
+target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC )
 
 
 install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
@@ -75,8 +81,8 @@ if(WIN32)
 		COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${CMAKE_INSTALL_PREFIX}/bin"
     )
 
-    #get_target_property(TARGET_PATH ${PROJECT_NAME} RUNTIME_OUTPUT_DIRECTORY)
-    #
+    get_target_property(TARGET_PATH ${PROJECT_NAME} RUNTIME_OUTPUT_DIRECTORY)
+
     #add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     #    COMMAND "${QT_PATH}/bin/windeployqt.exe"
     #        --no-compiler-runtime
