@@ -9,7 +9,7 @@
 #include <filesystem>
 
 
-#define JSON_DATABSE_USE_THREADS
+//#define JSON_DATABSE_USE_THREADS
 #define JSON_DATABSE_MAX_THREAD_COUNT 5
 
 #define JSON_DATABASE_USE_CMD_FILE_SEARCH
@@ -30,7 +30,7 @@ class JSONDATABASE_EXPORT JDManager
     struct ObjectSaverData
     {
         JDObjectInterface* obj = nullptr;
-        bool fileWriteSuccess = false;
+        std::string serializedData;
     };
     struct Thread_loadChunkData
     {
@@ -46,6 +46,7 @@ class JSONDATABASE_EXPORT JDManager
     };
     public:
         JDManager(const std::string &databasePath,
+                  const std::string &databaseName,
                   const std::string &sessionID,
                   const std::string &user);
         JDManager(const JDManager &other);
@@ -62,7 +63,11 @@ class JSONDATABASE_EXPORT JDManager
         int addObjectDefinition();
         template<typename T>
         bool isInObjectDefinition();
-        bool isInObjectDefinition(const std::string &className);
+        bool isInObjectDefinition(const std::string &className) const;
+
+
+        void setDatabaseName(const std::string& name);
+        const std::string& getDatabaseName() const;
 
         void setDatabasePath(const std::string &path);
         const std::string &getDatabasePath() const;
@@ -100,25 +105,35 @@ class JSONDATABASE_EXPORT JDManager
         virtual void onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects);
 
     private:
+        std::string getDatabaseFilePath() const;
         
+        bool getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut) const;
+        bool serializeObject(JDObjectInterface* obj, std::string& serializedOut) const;
+        bool serializeJson(const QJsonObject& obj, std::string& serializedOut) const;
+
+        bool deserializeJson(const QJsonObject& json, JDObjectInterface*& objOut) const;
+
+        bool writeJsonFile(const std::vector<QJsonObject>& jsons, const std::string &outputFile) const;
+        bool readJsonFile(const std::string& inputFile, std::vector<QJsonObject>& jsonsOut) const;
+       // bool deserializeJson(std::string)
 
         // relativePath without fileEnding
         bool writeJsonFile(const QJsonObject &obj, const std::string &relativePath) const;
         bool writeJsonFile(const QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const;
+        
         bool readJsonFile(QJsonObject &obj, const std::string &relativePath) const;
         bool readJsonFile(QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const;
 
         bool lockFile(const std::string &relativePath) const;
         bool unlockFile(const std::string &relativePath) const;
 
-      
 
-        void loadObjects_chunked(Thread_loadChunkData &data);
-        void loadObjects_threaded(const std::vector<ObjectLoaderData*> & loaderData, bool &success);
+        //void loadObjects_chunked(Thread_loadChunkData &data);
+        //void loadObjects_threaded(const std::vector<ObjectLoaderData*> & loaderData, bool &success);
 
         
-        void saveObjects_chunked(Thread_saveChunkData& data) const;
-        void saveObjects_threaded(const std::vector<ObjectSaverData*>& saverData, bool& success) const;
+        //void saveObjects_chunked(Thread_saveChunkData& data) const;
+        //void saveObjects_threaded(const std::vector<ObjectSaverData*>& saverData, bool& success) const;
         static void QTUpdateEvents();
 
         std::string getRelativeFilePath(const std::string &objID) const;
@@ -157,10 +172,16 @@ class JSONDATABASE_EXPORT JDManager
         bool getJsonValue(const QJsonObject &obj, std::string &value, const QString &key) const;
         bool getJsonValue(const QJsonObject &obj, int &value, const QString &key) const;
 
+        size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID) const;
+
+        JDObjectInterface* getObjectDefinition(const QJsonObject& json) const;
+        JDObjectInterface* getObjectDefinition(const std::string &className) const;
+
         static int executeCommand(const std::string& command);
         static std::string executeCommandPiped(const std::string& command);
 
         std::string m_databasePath;
+        std::string m_databaseName;
         std::string m_sessionID;
         std::string m_user;
 
