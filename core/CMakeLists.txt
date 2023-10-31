@@ -50,8 +50,8 @@ set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/dependencies")
 #  EasyProfiler
 set(EASY_GIT_REPO  https://github.com/yse/easy_profiler.git)
 set(EASY_GIT_TAG   v2.1.0)
-set(BUILD_SHARED_LIBS OFF)
-set(EASY_PROFILER_NO_SAMPLES True)
+
+
 FetchContent_Declare(
  EASY_PROFILER
  GIT_REPOSITORY ${EASY_GIT_REPO}
@@ -59,13 +59,18 @@ FetchContent_Declare(
 )
 message("Download dependency: ${EASY_GIT_REPO}")
 
+set(EASY_PROFILER_NO_SAMPLES True)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build easy_profiler not as shared library.")
 FetchContent_MakeAvailable(EASY_PROFILER)
+
+message(">> BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
+
 #set(EASY_PROFILER_NO_GUI False)
 set_target_properties(easy_profiler PROPERTIES CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
 set_target_properties(easy_profiler PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
 set_target_properties(easy_profiler PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
 set_target_properties(easy_profiler PROPERTIES DEBUG_POSTFIX "-d")
-target_compile_definitions(easy_profiler PRIVATE  EASY_PROFILER_STATIC)
+target_compile_definitions(easy_profiler PUBLIC  EASY_PROFILER_STATIC)
 
 # End external dependencies
 
@@ -132,11 +137,11 @@ target_include_directories(JsonDatabase_static_profile PUBLIC
 )
 # Define the install path
 message("Installation to path: ${CMAKE_INSTALL_PREFIX}/bin")
-message("Installation to path: ${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
+message("Installation to path: ${INSTALL_PATH}")
 install(TARGETS JsonDatabase_shared DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-install(TARGETS JsonDatabase_shared DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
-install(TARGETS JsonDatabase_static DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
-install(TARGETS JsonDatabase_static_profile DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
-install(TARGETS easy_profiler DESTINATION "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
+install(TARGETS JsonDatabase_shared DESTINATION ${INSTALL_PATH})
+install(TARGETS JsonDatabase_static DESTINATION ${INSTALL_PATH})
+install(TARGETS JsonDatabase_static_profile DESTINATION ${INSTALL_PATH})
+install(TARGETS easy_profiler DESTINATION ${INSTALL_PATH})
 
 

@@ -65,23 +65,62 @@ endif()
 target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC )
 
 
-install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+set(COMPILER_OUTPUT_PATH "$<TARGET_FILE:${PROJECT_NAME}>/..")
+#install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+
+
+
+# Copy executable to bin directory
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "$<TARGET_FILE:${PROJECT_NAME}>"
+    "${BINARY_PATH}/${PROJECT_NAME}${CMAKE_EXECUTABLE_SUFFIX}"
+)
+
+# Run windeployqt on the executable in build/<config>
+#add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#    COMMAND ${Qt5_DIR}/../../../bin/windeployqt.exe
+#    "$<TARGET_FILE:${PROJECT_NAME}>"
+#)
+
+message("CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+message("CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
+message("TargetFile $<TARGET_FILE:${PROJECT_NAME}>")
+# Run windeployqt on the executable in bin directory
+#add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#    COMMAND ${Qt5_DIR}/../../../bin/windeployqt.exe
+#    "${CMAKE_INSTALL_PREFIX}/bin/${PROJECT_NAME}${CMAKE_EXECUTABLE_SUFFIX}"
+#)
+
+
 if(WIN32)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${QT_PATH}/bin/windeployqt.exe"
+    
+    set(DEPLOY_COMMAND  "${QT_PATH}/bin/windeployqt.exe"
             --no-compiler-runtime
             --no-translations
             --no-system-d3d-compiler
             --no-opengl-sw
             --no-angle
             --no-webkit2
-            --dir "${CMAKE_INSTALL_PREFIX}/bin"
-            --pdb
+            --pdb)
+
+    # Deploy on the bin path
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${DEPLOY_COMMAND} 
+            --dir "${BINARY_PATH}"
             "$<TARGET_FILE:${PROJECT_NAME}>"
-		COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${CMAKE_INSTALL_PREFIX}/bin"
+		COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${BINARY_PATH}"
     )
 
-    get_target_property(TARGET_PATH ${PROJECT_NAME} RUNTIME_OUTPUT_DIRECTORY)
+    # deploy on the compiler output path
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${DEPLOY_COMMAND}
+            --dir "${COMPILER_OUTPUT_PATH}"
+            "$<TARGET_FILE:${PROJECT_NAME}>"
+		COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${COMPILER_OUTPUT_PATH}"
+    )
+
+    #  get_target_property(TARGET_PATH ${PROJECT_NAME} RUNTIME_OUTPUT_DIRECTORY)
 
     #add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     #    COMMAND "${QT_PATH}/bin/windeployqt.exe"
