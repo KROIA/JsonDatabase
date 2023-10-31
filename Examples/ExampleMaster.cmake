@@ -14,14 +14,14 @@ cmake_minimum_required(VERSION 3.1.0)
 #                                         # Network
 #                                         # Add any other required modules here
 #                                     )
-#         INSTALL_PATH          Specifies the install path. Example: "${CMAKE_INSTALL_PREFIX}/bin"
+#         INSTALL_BIN_PATH      Specifies the install path. Example: "${CMAKE_INSTALL_PREFIX}/bin"
 function(exampleMaster 
 			PARENT_LIBRARY_NAME 
 			PROFILING_NAME 
 			QT_ENABLE 
 			QT_DEPLOY 
 			QT_MODULES
-            INSTALL_PATH)
+            INSTALL_BIN_PATH)
 
 			
 set(PARENT_LIBRARY_STATIC ${PARENT_LIBRARY_NAME}_static)
@@ -98,11 +98,11 @@ else()
 endif()
 target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC)
 
-install(TARGETS ${PROJECT_NAME} DESTINATION "${INSTALL_PATH}")
+install(TARGETS ${PROJECT_NAME} DESTINATION "${INSTALL_BIN_PATH}")
 
 if(QT_ENABLE AND QT_DEPLOY)
     DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-    DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "${INSTALL_PATH}")
+    DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "${INSTALL_BIN_PATH}")
 endif()
 
 endfunction()
