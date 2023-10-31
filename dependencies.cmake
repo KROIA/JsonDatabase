@@ -8,18 +8,18 @@ set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/dependencies")
 set(RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
 set(LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
 set(ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
-set(DEBUG_POSTFIX "-d")
+set(DEBUG_POSTFIX_STR "-d")
 
-function(use_easy_profiler)
+function(use_easy_profiler libsContainer)
 	#  EasyProfiler
 	set(EASY_GIT_REPO  https://github.com/yse/easy_profiler.git)
 	set(EASY_GIT_TAG   v2.1.0)
 
 
 	FetchContent_Declare(
-	 EASY_PROFILER
-	 GIT_REPOSITORY ${EASY_GIT_REPO}
-	 GIT_TAG ${EASY_GIT_TAG}
+		EASY_PROFILER
+		GIT_REPOSITORY	${EASY_GIT_REPO}
+		GIT_TAG			${EASY_GIT_TAG}
 	)
 	message("Download dependency: ${EASY_GIT_REPO}")
 
@@ -32,7 +32,10 @@ function(use_easy_profiler)
 	set_target_properties(easy_profiler PROPERTIES CMAKE_RUNTIME_OUTPUT_DIRECTORY ${RUNTIME_OUTPUT_DIRECTORY})
 	set_target_properties(easy_profiler PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY ${RUNTIME_OUTPUT_DIRECTORY})
 	set_target_properties(easy_profiler PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${RUNTIME_OUTPUT_DIRECTORY})
-	set_target_properties(easy_profiler PROPERTIES DEBUG_POSTFIX ${DEBUG_POSTFIX})
+	set_target_properties(easy_profiler PROPERTIES DEBUG_POSTFIX ${DEBUG_POSTFIX_STR})
 	target_compile_definitions(easy_profiler PUBLIC EASY_PROFILER_STATIC)
+
+	#
+	set(${libsContainer} ${${libsContainer}} "easy_profiler" PARENT_SCOPE)
 endfunction()
 # End external dependencies

@@ -1,12 +1,27 @@
 cmake_minimum_required(VERSION 3.1.0)
 
-
+# This functions creates a default example project using the given library
+# Function name: exampleMaster
+# Params: PARENT_LIBRARY_NAME   Name of the library. Example: JsonDatabase
+#         PROFILING_NAME        Name of the macro that defines that the profiler is enabled. Example: JD_PROFILING
+#         QT_ENABLE             Enables QT modules. ON if QT is used, otherwise OFF
+#         QT_DEPLOY             Deploys the compiled file to the compile output path and the install path. ON / OFF
+#         QT_MODULES            Defines which QT modules are required. 
+#                                     set(QT_MODULES
+#                                         Core
+#                                         # Widgets
+#                                         # Gui
+#                                         # Network
+#                                         # Add any other required modules here
+#                                     )
+#         INSTALL_PATH          Specifies the install path. Example: "${CMAKE_INSTALL_PREFIX}/bin"
 function(exampleMaster 
 			PARENT_LIBRARY_NAME 
 			PROFILING_NAME 
 			QT_ENABLE 
 			QT_DEPLOY 
-			QT_MODULES)
+			QT_MODULES
+            INSTALL_PATH)
 
 			
 set(PARENT_LIBRARY_STATIC ${PARENT_LIBRARY_NAME}_static)
@@ -83,8 +98,11 @@ else()
 endif()
 target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC)
 
+install(TARGETS ${PROJECT_NAME} DESTINATION "${INSTALL_PATH}")
+
 if(QT_ENABLE AND QT_DEPLOY)
     DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "${INSTALL_PATH}")
 endif()
 
 endfunction()
