@@ -32,6 +32,10 @@
 *.out
 *.app
 
+# Licences
+*.APACHE
+*.MIT
+
 # Paths
 build
 lib
