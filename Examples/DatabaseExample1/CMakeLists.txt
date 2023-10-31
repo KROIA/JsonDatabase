@@ -9,4 +9,4 @@ set(QT_MODULES
     # Add any other required modules here
 )
 
-exampleMaster(JsonDatabase JD_PROFILING ON ON ${QT_MODULES} ${BINARY_PATH})
+exampleMaster(JsonDatabase JD_PROFILING ON ON "${QT_MODULES}" ${INSTALL_BIN_PATH})

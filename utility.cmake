@@ -63,5 +63,36 @@ function(DEPLOY_QT QT_PATH targetExePath outputPath)
      )
  endfunction()
 
- # Initialize a list to keep track of all targets
-set(ALL_TARGETS)
+
+function(copyLibraryHeaders headerRootFolder destinationPath destinationFolderName)
+     # Copy the folder
+    #message("COPY ${headerRootFolder} DESTINATION ${CMAKE_BINARY_DIR}")
+    file(COPY ${headerRootFolder}
+         DESTINATION ${CMAKE_BINARY_DIR})
+
+    
+    get_filename_component(FOLDER_NAME ${headerRootFolder} NAME)
+    #message("FOLDER_NAME ${FOLDER_NAME}")
+
+
+    #message("REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${destinationFolderName}")
+    file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/${destinationFolderName}")
+
+
+
+    #message("RENAME ${CMAKE_BINARY_DIR}/${FOLDER_NAME}
+    #            ${CMAKE_BINARY_DIR}/${destinationFolderName}")
+
+    # Rename the copied folder
+    file(RENAME ${CMAKE_BINARY_DIR}/${FOLDER_NAME}
+                ${CMAKE_BINARY_DIR}/${destinationFolderName})
+
+    #message("DIRECTORY ${CMAKE_BINARY_DIR}/${destinationFolderName}
+    #        DESTINATION ${destinationPath}")
+    # Install the modified folder
+    install(DIRECTORY ${CMAKE_BINARY_DIR}/${destinationFolderName}
+            DESTINATION ${destinationPath})
+
+    message("Installing headers from: ${headerRootFolder} to ${destinationPath}/${destinationFolderName}")
+
+endfunction()
