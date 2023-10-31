@@ -1,10 +1,10 @@
-
+#include <QCoreApplication>
 #include <iostream>
 
-int main(void)
+int main(int argc, char* argv[])
 {
-	
+	QCoreApplication a(argc, argv);
 
-	getchar();
-	return 0;
+
+	return a.exec();
 }

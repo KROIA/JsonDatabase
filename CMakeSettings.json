@@ -40,7 +40,6 @@
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
       "cmakeCommandArgs": "-DJD_PROFILING=1",
-      "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "intelliSenseMode": "windows-msvc-x64"

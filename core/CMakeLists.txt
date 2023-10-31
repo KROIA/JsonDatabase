@@ -1,7 +1,24 @@
 cmake_minimum_required(VERSION 3.1.0)
 
-set(JsonDatabase_filename "JsonDatabase")
-set(JsonDatabase_Include "inc")
+set(LIBRARY_NAME JsonDatabase)
+set(LIB_DEFINE JSONDATABASE_LIB)
+set(LIB_PROFILE_DEFINE JD_PROFILING)
+
+set(INCLUDE_PATH "inc")
+
+# Enable/disable QT modules for this example
+set(QT_ENABLE ON)
+# Find the necessary QT modules
+set(QT_MODULES
+    Core
+    # Add any other required modules here
+)
+
+
+set(LIBRARY_NAME_STATIC ${LIBRARY_NAME}_static)
+set(LIBRARY_NAME_SHARED ${LIBRARY_NAME}_shared)
+set(LIBRARY_NAME_STATIC_PROFILE ${LIBRARY_NAME_STATIC}_profile)
+
 
 
 if(CMAKE_VERSION VERSION_LESS "3.7.0")
@@ -10,69 +27,49 @@ endif()
 
 
 
-MACRO(FILE_DIRECTORIES return_list ending)
-    FILE(GLOB_RECURSE new_list ${ending})
-    SET(dir_list "")
-    FOREACH(file_path ${new_list})
-        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
-        SET(dir_list ${dir_list} ${file_path})
-    ENDFOREACH()
-    LIST(REMOVE_DUPLICATES dir_list)
-    SET(${return_list} ${dir_list})
-ENDMACRO()
-
-
-
-
 # QT settings
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-#set(CMAKE_AUTOUIC ON)
+if(QT_ENABLE)
+    include(${QT_LOCATOR_CMAKE})
+    find_package(Qt5Widgets REQUIRED)
 
-include(${QT_LOCATOR_CMAKE})
-message("Search for QT5 finished")
-find_package(Qt5Widgets REQUIRED)
-message("find_package for Qt5Widgets finished")
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
+    #set(CMAKE_AUTOUIC ON)
 
-if (Qt5Widgets_FOUND)
-    message(STATUS "Using Qt v ${Qt5Widgets_VERSION}")
-else()
-    message(STATUS "INFO\n\n\tQt5 not found!\n")
+    find_package(Qt5 REQUIRED COMPONENTS ${QT_MODULES})
 endif()
-
-
 # end QT settings
 
-# External dependencies
-include(FetchContent)
-set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/dependencies")
-
-#  EasyProfiler
-set(EASY_GIT_REPO  https://github.com/yse/easy_profiler.git)
-set(EASY_GIT_TAG   v2.1.0)
-
-
-FetchContent_Declare(
- EASY_PROFILER
- GIT_REPOSITORY ${EASY_GIT_REPO}
- GIT_TAG ${EASY_GIT_TAG}
-)
-message("Download dependency: ${EASY_GIT_REPO}")
-
-set(EASY_PROFILER_NO_SAMPLES True)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build easy_profiler not as shared library.")
-FetchContent_MakeAvailable(EASY_PROFILER)
-
-message(">> BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-
-#set(EASY_PROFILER_NO_GUI False)
-set_target_properties(easy_profiler PROPERTIES CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
-set_target_properties(easy_profiler PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
-set_target_properties(easy_profiler PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
-set_target_properties(easy_profiler PROPERTIES DEBUG_POSTFIX "-d")
-target_compile_definitions(easy_profiler PUBLIC  EASY_PROFILER_STATIC)
-
-# End external dependencies
+#  # External dependencies
+#  include(FetchContent)
+#  set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/dependencies")
+#  
+#  #  EasyProfiler
+#  set(EASY_GIT_REPO  https://github.com/yse/easy_profiler.git)
+#  set(EASY_GIT_TAG   v2.1.0)
+#  
+#  
+#  FetchContent_Declare(
+#   EASY_PROFILER
+#   GIT_REPOSITORY ${EASY_GIT_REPO}
+#   GIT_TAG ${EASY_GIT_TAG}
+#  )
+#  message("Download dependency: ${EASY_GIT_REPO}")
+#  
+#  set(EASY_PROFILER_NO_SAMPLES True)
+#  set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build easy_profiler not as shared library.")
+#  FetchContent_MakeAvailable(EASY_PROFILER)
+#  
+#  
+#  #set(EASY_PROFILER_NO_GUI False)
+#  set_target_properties(easy_profiler PROPERTIES CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
+#  set_target_properties(easy_profiler PROPERTIES CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
+#  set_target_properties(easy_profiler PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}")
+#  set_target_properties(easy_profiler PROPERTIES DEBUG_POSTFIX "-d")
+#  target_compile_definitions(easy_profiler PUBLIC  EASY_PROFILER_STATIC)
+#  
+#  # End external dependencies
+use_easy_profiler()
 
 include_directories(inc)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -80,14 +77,34 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 FILE_DIRECTORIES(H_FILES *.h)
 FILE_DIRECTORIES(CPP_FILES *.cpp)
 
-qt5_wrap_cpp(CPP_MOC_FILES ${H_FILES})
+#qt5_wrap_cpp(CPP_MOC_FILES ${H_FILES})
 
 
 set(SOURCES
     ${CPP_FILES}
-    ${CPP_MOC_FILES}
     ${H_FILES}
 )
+
+if(QT_ENABLE)
+    # Search for QT specific files
+    FILE_DIRECTORIES(UI_FILES *.ui)    
+    FILE_DIRECTORIES(RES_FILES *.qrc)    
+
+    qt5_wrap_cpp(CPP_MOC_FILES ${H_FILES})
+    qt5_wrap_ui(UIS_HDRS ${UI_FILES})
+    qt5_add_resources(RESOURCE_FILES ${RES_FILES})
+
+    set(SOURCES ${SOURCES}
+	    ${CPP_MOC_FILES}
+	    ${UIS_HDRS}
+        ${RESOURCE_FILES})
+
+    # Link the QT modules to your executable
+    foreach(MODULE ${QT_MODULES})
+        set(QT_LIBS ${QT_LIBS} Qt5::${MODULE})
+    endforeach()
+
+endif()
 
 message("CMAKE_CURRENT_BINARY_DIR = " ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -98,50 +115,51 @@ message("Create library with files:")
 
 
 
-set(JsonDatabase_dependencies 
-   Qt5::Core)
+set(LIBRARY_DEPENDENCIES
+   ${QT_LIBS})
 
-add_library(JsonDatabase_shared SHARED ${SOURCES} )
-add_library(JsonDatabase_static STATIC ${SOURCES} )
-add_library(JsonDatabase_static_profile STATIC ${SOURCES})
+add_library(${LIBRARY_NAME_SHARED}          SHARED ${SOURCES} )
+add_library(${LIBRARY_NAME_STATIC}          STATIC ${SOURCES} )
+add_library(${LIBRARY_NAME_STATIC_PROFILE}  STATIC ${SOURCES})
  
-target_compile_definitions(JsonDatabase_shared PRIVATE  JSONDATABASE_LIB)
-target_compile_definitions(JsonDatabase_static PRIVATE  BUILD_STATIC JSONDATABASE_LIB)
-target_compile_definitions(JsonDatabase_static_profile PRIVATE  BUILD_STATIC JD_PROFILING JSONDATABASE_LIB)
+target_compile_definitions(${LIBRARY_NAME_SHARED} PRIVATE  ${LIB_DEFINE})
+target_compile_definitions(${LIBRARY_NAME_STATIC} PRIVATE  BUILD_STATIC ${LIB_DEFINE})
+target_compile_definitions(${LIBRARY_NAME_STATIC_PROFILE} PRIVATE  BUILD_STATIC ${${LIB_PROFILE_DEFINE}} ${LIB_DEFINE})
 
 
-set_target_properties(JsonDatabase_shared PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${JsonDatabase_filename}" DEBUG_POSTFIX "-d")
-set_target_properties(JsonDatabase_static PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${JsonDatabase_filename}-s" DEBUG_POSTFIX "-d")
-set_target_properties(JsonDatabase_static_profile PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${JsonDatabase_filename}-s-p" DEBUG_POSTFIX "-d")
+set_target_properties(${LIBRARY_NAME_SHARED} PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${LIBRARY_NAME}" DEBUG_POSTFIX "-d")
+set_target_properties(${LIBRARY_NAME_STATIC} PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${LIBRARY_NAME}-s" DEBUG_POSTFIX "-d")
+set_target_properties(${LIBRARY_NAME_STATIC_PROFILE} PROPERTIES LINKER_LANGUAGE CXX  OUTPUT_NAME "${LIBRARY_NAME}-s-p" DEBUG_POSTFIX "-d")
 
 
-target_link_libraries(JsonDatabase_shared ${JsonDatabase_dependencies})
-target_link_libraries(JsonDatabase_static ${JsonDatabase_dependencies})
-target_link_libraries(JsonDatabase_static_profile ${JsonDatabase_dependencies} easy_profiler)
+target_link_libraries(${LIBRARY_NAME_SHARED} ${LIBRARY_DEPENDENCIES})
+target_link_libraries(${LIBRARY_NAME_STATIC}  ${LIBRARY_DEPENDENCIES})
+target_link_libraries(${LIBRARY_NAME_STATIC_PROFILE} ${LIBRARY_DEPENDENCIES} easy_profiler)
 
 
-target_include_directories(JsonDatabase_shared PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${JsonDatabase_Include}>
+target_include_directories(${LIBRARY_NAME_SHARED} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PATH}>
     ${CMAKE_CURRENT_BINARY_DIR}
 	# $<INSTALL_INTERFACE:inc>  # <prefix>/inc 
 )
-target_include_directories(JsonDatabase_static PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${JsonDatabase_Include}>
+target_include_directories(${LIBRARY_NAME_STATIC}  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PATH}>
     ${CMAKE_CURRENT_BINARY_DIR}
 	# $<INSTALL_INTERFACE:inc>  # <prefix>/inc 
 )
-target_include_directories(JsonDatabase_static_profile PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${JsonDatabase_Include}>
+target_include_directories(${LIBRARY_NAME_STATIC_PROFILE} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PATH}>
     ${CMAKE_CURRENT_BINARY_DIR}
 	# $<INSTALL_INTERFACE:inc>  # <prefix>/inc 
 )
 # Define the install path
 message("Installation to path: ${CMAKE_INSTALL_PREFIX}/bin")
 message("Installation to path: ${INSTALL_PATH}")
-install(TARGETS JsonDatabase_shared DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-install(TARGETS JsonDatabase_shared DESTINATION ${INSTALL_PATH})
-install(TARGETS JsonDatabase_static DESTINATION ${INSTALL_PATH})
-install(TARGETS JsonDatabase_static_profile DESTINATION ${INSTALL_PATH})
-install(TARGETS easy_profiler DESTINATION ${INSTALL_PATH})
 
+
+install(TARGETS ${LIBRARY_NAME_SHARED} ${LIBRARY_NAME_STATIC}  ${LIBRARY_NAME_STATIC_PROFILE} easy_profiler DESTINATION "${BINARY_PATH}")
+install(TARGETS ${LIBRARY_NAME_SHARED} ${LIBRARY_NAME_STATIC}  ${LIBRARY_NAME_STATIC_PROFILE} DESTINATION "${INSTALL_PATH}")
+
+
+#DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:profiler_gui>/$<TARGET_FILE_NAME:profiler_gui>" ${BINARY_PATH})
 

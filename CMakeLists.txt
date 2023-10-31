@@ -23,6 +23,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}
 
 set(INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
 set(BINARY_PATH "${CMAKE_INSTALL_PREFIX}/bin")
+# create bin folder
+file(MAKE_DIRECTORY ${BINARY_PATH})
 
 link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 set(QT_LOCATOR_CMAKE "${CMAKE_CURRENT_SOURCE_DIR}/QtLocator.cmake")
@@ -35,6 +37,9 @@ if(PARALLEL_BUILD)
 	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} /MP)
 endif()
 
+
+include(utility.cmake)
+include(dependencies.cmake)
 
 add_subdirectory(core)
 add_subdirectory(Examples)

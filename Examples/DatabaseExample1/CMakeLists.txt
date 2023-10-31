@@ -4,21 +4,7 @@ string(REPLACE " " "_" ProjectId ${PROJECT_NAME})
 project(${PROJECT_NAME})
 
 
-# Macro to search for files with given file ending.
-# call:
-#   FILE_DIRECTORIES(H_FILES *.h)
-#
-# all *.h files will be saved in the H_FILES variable
-MACRO(FILE_DIRECTORIES return_list ending)
-    FILE(GLOB_RECURSE new_list ${ending})
-    SET(dir_list "")
-    FOREACH(file_path ${new_list})
-        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
-        SET(dir_list ${dir_list} ${file_path})
-    ENDFOREACH()
-    LIST(REMOVE_DUPLICATES dir_list)
-    SET(${return_list} ${dir_list})
-ENDMACRO()
+
 
 # QT settings
 set(CMAKE_AUTOMOC ON)
@@ -66,36 +52,45 @@ endif()
 target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC)
 
 
+#DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
 
-install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-if(WIN32)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${QT_PATH}/bin/windeployqt.exe"
-            --no-compiler-runtime
-            --no-translations
-            --no-system-d3d-compiler
-            --no-opengl-sw
-            --no-angle
-            --no-webkit2
-            --dir "${CMAKE_INSTALL_PREFIX}/bin"
-            --pdb
-            "$<TARGET_FILE:${PROJECT_NAME}>"
-	 	COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${CMAKE_INSTALL_PREFIX}/bin"
-    )
 
-    #get_target_property(TARGET_PATH ${PROJECT_NAME} RUNTIME_OUTPUT_DIRECTORY)
-    #
-    #add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    #    COMMAND "${QT_PATH}/bin/windeployqt.exe"
-    #        --no-compiler-runtime
-    #        --no-translations
-    #        --no-system-d3d-compiler
-    #        --no-opengl-sw
-    #        --no-angle
-    #        --no-webkit2
-    #        --dir "${TARGET_PATH}/$<CONFIG>"
-    #        --pdb
-    #        "$<TARGET_FILE:${PROJECT_NAME}>"
-	#	COMMENT "Running windeployqt... ${QT_PATH}/bin/windeployqt.exe ${TARGET_PATH}/$<CONFIG>"
-    #)
-endif()
+# set(COMPILER_OUTPUT_PATH "$<TARGET_FILE:${PROJECT_NAME}>/..")
+
+
+
+# Copy executable to bin directory
+# add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy
+#     "$<TARGET_FILE:${PROJECT_NAME}>"
+#     "${BINARY_PATH}/${PROJECT_NAME}${CMAKE_EXECUTABLE_SUFFIX}"
+# )
+# 
+# 
+# if(WIN32)
+#     
+#     set(DEPLOY_COMMAND  "${QT_PATH}/bin/windeployqt.exe"
+#             --no-compiler-runtime
+#             --no-translations
+#             --no-system-d3d-compiler
+#             --no-opengl-sw
+#             --no-angle
+#             --no-webkit2
+#             --pdb)
+# 
+#     # Deploy on the bin path
+#     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#         COMMAND ${DEPLOY_COMMAND} 
+#             --dir "${BINARY_PATH}"
+#             "$<TARGET_FILE:${PROJECT_NAME}>"
+# 		COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${BINARY_PATH}"
+#     )
+# 
+#     # deploy on the compiler output path
+#     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#         COMMAND ${DEPLOY_COMMAND}
+#             --dir "${COMPILER_OUTPUT_PATH}"
+#             "$<TARGET_FILE:${PROJECT_NAME}>"
+# 		COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${COMPILER_OUTPUT_PATH}"
+#     )
+# endif()
