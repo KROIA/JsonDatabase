@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JD_global.h"
+#include "JD_base.h"
 #include <thread>
 #include <functional>
 #include <condition_variable>

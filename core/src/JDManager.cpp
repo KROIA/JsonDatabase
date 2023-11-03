@@ -1,5 +1,7 @@
 #include "JDManager.h"
 #include "JDObjectInterface.h"
+#include "JDUniqueMutexLock.h"
+
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QFile>
@@ -21,6 +23,7 @@
 #include <execution>
 
 
+#include <QtZlib/zlib.h>
 
 #include <windows.h>
 #include <time.h>
@@ -28,43 +31,59 @@
 #include <Wincon.h>
 #include <winuser.h>
 
+
+
+#ifdef USE_MUTEX_LOCK
+#define JDM_UNIQUE_LOCK JDUniqueMutexLock uniqueLock(m_mutex);
+#else
+#define JDM_UNIQUE_LOCK
+#endif
+
 namespace JsonDatabase
 {
 
-const std::string JDManager::m_jsonFileEnding = ".json";
-const std::string JDManager::m_lockFileEnding = ".lck";
+    const std::string JDManager::m_jsonFileEnding = ".json";
+    const std::string JDManager::m_lockFileEnding = ".lck";
 
-const QString JDManager::m_timeFormat    = "hh:mm:ss.zzz";
-const QString JDManager::m_dateFormat    = "dd.MM.yyyy";
+    const QString JDManager::m_timeFormat = "hh:mm:ss.zzz";
+    const QString JDManager::m_dateFormat = "dd.MM.yyyy";
 
-const QString JDManager::m_tag_sessionID = "sessionID";
-const QString JDManager::m_tag_user      = "user";
-const QString JDManager::m_tag_date      = "date";
-const QString JDManager::m_tag_time      = "time";
+    const QString JDManager::m_tag_sessionID = "sessionID";
+    const QString JDManager::m_tag_user = "user";
+    const QString JDManager::m_tag_date = "date";
+    const QString JDManager::m_tag_time = "time";
 
-size_t JDManager::s_instanceCounter = 0;
+    void JDManager::startProfiler()
+    {
+#ifdef JD_PROFILING
+        EASY_PROFILER_ENABLE;
+#endif
+    }
+    void JDManager::stopProfiler(const std::string profileFilePath)
+    {
+#ifdef JD_PROFILING
+        profiler::dumpBlocksToFile("JDProfile.prof");
+#endif
+    }
 
-JDManager::JDManager(const std::string &databasePath,
-                     const std::string& databaseName,
-                     const std::string &sessionID,
-                     const std::string &user)
-    :   m_databasePath(databasePath)
-    ,   m_databaseName(databaseName)
-    ,   m_sessionID(sessionID)
-    ,   m_user(user)
-    ,   m_fileLock(nullptr)
+    JDManager::JDManager(const std::string& databasePath,
+        const std::string& databaseName,
+        const std::string& sessionID,
+        const std::string& user)
+        : m_databasePath(databasePath)
+        , m_databaseName(databaseName)
+        , m_sessionID(sessionID)
+        , m_user(user)
+        , m_lockTable(this)
+        , m_fileLock(nullptr)
+        , m_useZipFormat(false)
 #ifdef JSON_DATABSE_USE_THREADS
-    ,   m_threadWorker("JDManager File IO")
-    ,   m_threadWorker_fileFinder("JDManager File finder")
+        , m_threadWorker("JDManager File IO")
+        , m_threadWorker_fileFinder("JDManager File finder")
 #endif
 {
-    ++s_instanceCounter;
-#ifdef JD_PROFILING
-    if (s_instanceCounter == 1)
-    {
-        EASY_PROFILER_ENABLE;
-    }
-#endif
+
+
 #ifdef JSON_DATABSE_USE_THREADS
     setupThreadWorker();
 #endif
@@ -76,26 +95,23 @@ JDManager::JDManager(const JDManager &other)
     ,   m_databaseName(other.m_databaseName)
     ,   m_sessionID(other.m_sessionID)
     ,   m_user(other.m_user)
+    ,   m_lockTable(this)
     ,   m_fileLock(nullptr)
+    ,   m_useZipFormat(other.m_useZipFormat)
     ,   m_objDefinitions(other.m_objDefinitions)
 #ifdef JSON_DATABSE_USE_THREADS
     ,  m_threadWorker("JDManager File IO")
     ,  m_threadWorker_fileFinder("JDManager File finder")
 #endif
 {
-    ++s_instanceCounter;
-#ifdef JD_PROFILING
-    if (s_instanceCounter == 1)
-    {
-        EASY_PROFILER_ENABLE;
-    }
-#endif
+
 #ifdef JSON_DATABSE_USE_THREADS
     setupThreadWorker();
 #endif
 }
 JDManager::~JDManager()
 {
+    m_lockTable.unlockAll();
 #ifdef JSON_DATABSE_USE_THREADS
     m_threadWorker.stop();
     for (size_t i = 0; i < m_threadJobs.size(); ++i)
@@ -133,12 +149,14 @@ void JDManager::setupThreadWorker()
 #endif
 bool JDManager::isInObjectDefinition(const std::string &className) const
 {
+    JDM_UNIQUE_LOCK;
     if(m_objDefinitions.find(className) != m_objDefinitions.end())
         return true;
     return false;
 }
 void JDManager::setDatabaseName(const std::string& name)
 {
+    JDM_UNIQUE_LOCK;
     m_databaseName = name;
 }
 const std::string& JDManager::getDatabaseName() const
@@ -147,17 +165,29 @@ const std::string& JDManager::getDatabaseName() const
 }
 void JDManager::setDatabasePath(const std::string &path)
 {
+    JDM_UNIQUE_LOCK;
+    if (path == m_databasePath)
+        return;
+    m_lockTable.onDatabasePathChange(m_databasePath, path);
     m_databasePath = path;
 }
 const std::string &JDManager::getDatabasePath() const
 {
     return m_databasePath;
 }
+void JDManager::enableZipFormat(bool enable)
+{
+    m_useZipFormat = enable;
+}
+bool JDManager::isZipFormatEnabled() const
+{
+    return m_useZipFormat;
+}
 
 bool JDManager::saveObject(JDObjectInterface* obj) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1);
-
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
     if (!obj)
         return false;
     bool success = true;
@@ -170,7 +200,7 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
 
     if (!lockFile(m_databaseName))
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database");
+        JD_CONSOLE_FUNCTION(" Can't lock database\n");
         return false;
     }
 
@@ -193,7 +223,8 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
 }
 bool JDManager::saveObjects() const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
     bool success = true;
     std::vector<JDObjectInterface*> objs(m_objs.size(), nullptr);
     size_t i = 0;
@@ -202,14 +233,20 @@ bool JDManager::saveObjects() const
         objs[i++] = p.second;
     }
 
-    success &= saveObjects(objs);   
+    success &= saveObjects_internal(objs);
     return success;
 }
 bool JDManager::saveObjects(const std::vector<JDObjectInterface*> &objList) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+    return saveObjects_internal(objList);
+}
+bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objList) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 
-    if(!makeDatabaseDirs())
+    if (!makeDatabaseDirs())
     {
         return false;
     }
@@ -220,7 +257,7 @@ bool JDManager::saveObjects(const std::vector<JDObjectInterface*> &objList) cons
 
     if (!lockFile(m_databaseName))
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database");
+        JD_CONSOLE_FUNCTION(" Can't lock database\n");
         return false;
     }
 
@@ -233,16 +270,17 @@ bool JDManager::saveObjects(const std::vector<JDObjectInterface*> &objList) cons
 
 bool JDManager::loadObject(JDObjectInterface* obj)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-        if (!exists(obj))
-            return false;
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+    if (!exists_internal(obj))
+        return false;
 
     bool success = true;
     std::string ID = obj->getObjectID();
 
     if (!lockFile(m_databaseName))
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database");
+        JD_CONSOLE_FUNCTION("Can't lock database\n");
         return false;
     }
 
@@ -266,12 +304,13 @@ bool JDManager::loadObject(JDObjectInterface* obj)
 }
 bool JDManager::loadObjects()
 {
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
     bool success = true;
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1);
 
     if (!lockFile(m_databaseName))
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database");
+        JD_CONSOLE_FUNCTION("Can't lock database\n");
         return false;
     }
 
@@ -287,31 +326,37 @@ bool JDManager::loadObjects()
     };
 
     std::vector< Pair> pairs;
-    for(size_t i=0; i<jsons.size(); ++i)
     {
-        std::string ID;
-        if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
+        JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
+        for (size_t i = 0; i < jsons.size(); ++i)
         {
-            JD_CONSOLE_FUNCTION("Object with no ID found: "<<QJsonValue(jsons[i]).toString().toStdString());
-            success = false;
+            std::string ID;
+            if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
+            {
+                JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
+                success = false;
+            }
+            Pair p;
+            p.obj = getObject_internal(ID);
+            p.json = jsons[i];
+            pairs.push_back(p);
         }
-        Pair p;
-        p.obj = getObject(ID);
-        p.json = jsons[i];
-        pairs.push_back(p);
     }
     if (!success)
         return false;
 
-    for (auto &pair : pairs)
     {
-        bool newObj = !pair.obj;
-        success &= deserializeJson(pair.json, pair.obj);
-
-        // Add the new generated object to the database
-        if (newObj)
+        JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
+        for (auto& pair : pairs)
         {
-            addObject(pair.obj);
+            bool newObj = !pair.obj;
+            success &= deserializeJson(pair.json, pair.obj);
+
+            // Add the new generated object to the database
+            if (newObj)
+            {
+                addObject_internal(pair.obj);
+            }
         }
     }
 
@@ -320,99 +365,163 @@ bool JDManager::loadObjects()
 
 void JDManager::QTUpdateEvents()
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | 
                                     QEventLoop::ExcludeSocketNotifiers |
                                     QEventLoop::X11ExcludeTimers);
 }
 void JDManager::clearObjects()
 {
+    JDM_UNIQUE_LOCK;
     m_objs.clear();
 }
 bool JDManager::addObject(JDObjectInterface* obj)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-    if(!obj) return false;
-    if(exists(obj)) return false;
-    m_objs.insert(std::pair<std::string, JDObjectInterface*>(obj->getObjectID(), obj));
-    return true;
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+    return addObject_internal(obj);
 }
 bool JDManager::addObject(const std::vector<JDObjectInterface*> &objList)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
     bool success = true;
     for(size_t i=0; i<objList.size(); ++i)
-        success &= addObject(objList[i]);
+        success &= addObject_internal(objList[i]);
     return success;
+}
+bool JDManager::addObject_internal(JDObjectInterface* obj)
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    if (!obj) return false;
+    if (exists_internal(obj)) return false;
+    m_objs.insert(std::pair<std::string, JDObjectInterface*>(obj->getObjectID(), obj));
+    return true;
+
 }
 bool JDManager::removeObject(JDObjectInterface* obj)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-    if(!obj) return false;
-    if(!exists(obj)) return false;
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+    return removeObject_internal(obj);
+}
+bool JDManager::removeObject_internal(JDObjectInterface* obj)
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    if (!obj) return false;
+    if (!exists_internal(obj)) return false;
     m_objs.erase(obj->getObjectID());
     return true;
 }
 /*bool JDManager::removeObject_internal(JDObjectInterface* obj)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_2);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     m_objs.erase(obj->getObjectID());
     return deleteJsonFile(obj);
 }*/
 bool JDManager::removeObjects(const std::vector<JDObjectInterface*> &objList)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
     bool success = true;
     for(size_t i=0; i<objList.size(); ++i)
-        success &= removeObject(objList[i]);
+        success &= removeObject_internal(objList[i]);
     return success;
 }
 std::size_t JDManager::getObjectCount() const
 {
+    JDM_UNIQUE_LOCK;
     return m_objs.size();
 }
 bool JDManager::exists(JDObjectInterface* obj) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-    if(!obj) return false;
-    if(m_objs.find(obj->getObjectID()) == m_objs.end())
-        return false;
-    return true;
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+    return exists_internal(obj);
 }
 bool JDManager::exists(const std::string &id) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-    if(m_objs.find(id) == m_objs.end())
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+    return exists_internal(id);
+}
+bool JDManager::exists_internal(JDObjectInterface* obj) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    if (!obj) return false;
+    if (m_objs.find(obj->getObjectID()) == m_objs.end())
+        return false;
+    return true;
+}
+bool JDManager::exists_internal(const std::string& id) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    if (m_objs.find(id) == m_objs.end())
         return false;
     return true;
 }
 
 JDObjectInterface* JDManager::getObject(const std::string &objID) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-        if (objID.size() == 0)
-            return nullptr;
-    auto it = m_objs.find(objID);
-    if(it != m_objs.end())
-        return m_objs.at(objID.c_str());
-    return nullptr;
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+
+    return getObject_internal(objID);
 }
 std::vector<JDObjectInterface*> JDManager::getObjects() const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK;
+
+    return getObjects_internal();
+}
+
+JDObjectInterface* JDManager::getObject_internal(const std::string& objID) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    if (objID.size() == 0)
+        return nullptr;
+    auto it = m_objs.find(objID);
+    if (it != m_objs.end())
+        return m_objs.at(objID.c_str());
+    return nullptr;
+}
+std::vector<JDObjectInterface*> JDManager::getObjects_internal() const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     std::vector<JDObjectInterface*> list;
     list.reserve(m_objs.size());
-    for(auto &p : m_objs)
+    for (auto& p : m_objs)
         list.push_back(p.second);
     return list;
 }
 
-void JDManager::saveProfilerFile()
+const std::string& JDManager::getUser() const
 {
-#ifdef JD_PROFILING
-    profiler::dumpBlocksToFile("JDProfile.prof");
-#endif
+    return m_user;
 }
+const std::string& JDManager::getSessionID() const
+{
+    return m_sessionID;
+}
+
+bool JDManager::lockObj(JDObjectInterface* obj) const
+{
+    JDM_UNIQUE_LOCK;
+    return m_lockTable.lock(obj);
+}
+bool JDManager::unlockObj(JDObjectInterface* obj) const
+{
+    JDM_UNIQUE_LOCK;
+    return m_lockTable.unlock(obj);
+}
+bool JDManager::isObjLocked(JDObjectInterface* obj) const
+{
+    JDM_UNIQUE_LOCK;
+    return m_lockTable.isLocked(obj);
+}
+
+
 /*void JDManager::onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects)
 {
 
@@ -425,7 +534,7 @@ std::string JDManager::getDatabaseFilePath() const
 
 bool JDManager::getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_2);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     jsonOut.reserve(objs.size());
 
     bool success = true;
@@ -440,7 +549,7 @@ bool JDManager::getJsonArray(const std::vector<JDObjectInterface*>& objs, std::v
 }
 bool JDManager::serializeObject(JDObjectInterface* obj, std::string& serializedOut) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_4);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     if (!obj) return false;
 
     QJsonObject data;
@@ -451,7 +560,7 @@ bool JDManager::serializeObject(JDObjectInterface* obj, std::string& serializedO
 }
 bool JDManager::serializeJson(const QJsonObject& obj, std::string& serializedOut) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_2);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
     QJsonDocument document;
     document.setObject(obj);
     QByteArray bytes = document.toJson(QJsonDocument::Indented);
@@ -462,7 +571,7 @@ bool JDManager::serializeJson(const QJsonObject& obj, std::string& serializedOut
 
 bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& objOut) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_2);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
     if (!objOut)
     {
         JDObjectInterface* clone = getObjectDefinition(json);
@@ -472,7 +581,7 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& obj
             getJsonValue(json, className, JDObjectInterface::m_tag_className);
 
             JD_CONSOLE_FUNCTION("Objecttype: " << className.c_str() << " is not known by this database. "
-                "Call: JDManager::addObjectDefinition<" << className.c_str() << ">(); first");
+                "Call: JDManager::addObjectDefinition<" << className.c_str() << ">(); first\n");
             return false;
         }
 
@@ -483,7 +592,7 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& obj
     }
     else if (!objOut->loadInternal(json))
     {
-        JD_CONSOLE_FUNCTION("Can't load data in object: " << objOut->getObjectID() << " classType: " << objOut->className());
+        JD_CONSOLE_FUNCTION("Can't load data in object: " << objOut->getObjectID() << " classType: " << objOut->className()+"\n");
         return false;
     }
     return true;
@@ -491,7 +600,7 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& obj
 
 void JDManager::getJsonFileContent(const std::vector<QJsonObject>& jsons, std::string& fileContentOut) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_2);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     QJsonArray jsonArray;
 
     // Convert QJsonObject instances to QJsonValue and add them to QJsonArray
@@ -500,53 +609,95 @@ void JDManager::getJsonFileContent(const std::vector<QJsonObject>& jsons, std::s
     }
 
     QJsonDocument jsonDocument(jsonArray);
-
     fileContentOut = jsonDocument.toJson().toStdString();
 }
 bool JDManager::writeJsonFile(const std::vector<QJsonObject>& jsons, const std::string& outputFile) const 
 {
-    JDFILE_IO_PROFILING_FUNCTION(COLOR_STAGE_5);
+    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+    JDFILE_IO_PROFILING_BLOCK("std::vector to QJsonArray", JD_COLOR_STAGE_6);
     QJsonArray jsonArray;
 
     // Convert QJsonObject instances to QJsonValue and add them to QJsonArray
     for (const auto& jsonObject : jsons) {
         jsonArray.append(QJsonValue(jsonObject));
     }
+    JDFILE_IO_PROFILING_END_BLOCK;
 
     QJsonDocument jsonDocument(jsonArray);
 
+    JDFILE_IO_PROFILING_BLOCK("toJson", JD_COLOR_STAGE_6);
     // Convert QJsonDocument to a QByteArray for writing to a file
-    QByteArray data = jsonDocument.toJson();
+    QByteArray data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
+    JDFILE_IO_PROFILING_END_BLOCK;
 
     // Open the file for writing
     QFile file(outputFile.c_str());
     if (file.open(QIODevice::WriteOnly)) {
         // Write the JSON data to the file
-        file.write(data);
+        if (m_useZipFormat)
+        {
+            JDFILE_IO_PROFILING_BLOCK("compressing data", JD_COLOR_STAGE_6);
+            QByteArray compressed;
+            compressString(data, compressed);
+            JDFILE_IO_PROFILING_END_BLOCK;
+            JDFILE_IO_PROFILING_BLOCK("write to file", JD_COLOR_STAGE_6);
+            file.write(compressed);
+            JDFILE_IO_PROFILING_END_BLOCK;
+        }
+        else
+        {
+            JDFILE_IO_PROFILING_BLOCK("write to file", JD_COLOR_STAGE_6);
+            file.write(data);
+            JDFILE_IO_PROFILING_END_BLOCK;
+        }
         file.close();
         //JD_CONSOLE_FUNCTION("JSON objects saved to " << outputFile);
         return true;
     }
     else {
-        JD_CONSOLE_FUNCTION("Error: Could not open file " << outputFile << " for writing.");
+        JD_CONSOLE_FUNCTION("Error: Could not open file " << outputFile << " for writing\n");
     }
     return false;
 }
 bool JDManager::readJsonFile(const std::string& inputFile, std::vector<QJsonObject>& jsonsOut) const
 {
-    JDFILE_IO_PROFILING_FUNCTION(COLOR_STAGE_5);
+    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
     // Open the file for reading
+    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("Open file", JD_COLOR_STAGE_6);
     QFile file(inputFile.c_str());
 
     if (file.open(QIODevice::ReadOnly)) {
+
+        JDFILE_IO_PROFILING_END_BLOCK;
+        JDFILE_IO_PROFILING_BLOCK("read from file", JD_COLOR_STAGE_6);
         // Read all data from the file
         QByteArray data = file.readAll();
-
+        file.close();
+        JDFILE_IO_PROFILING_END_BLOCK;
         // Parse the JSON data
-        QJsonDocument jsonDocument = QJsonDocument::fromJson(data);
+        QJsonDocument jsonDocument;
+        if (m_useZipFormat)
+        {
+            JDFILE_IO_PROFILING_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
+            QString uncompressed;
+            decompressString(data, uncompressed);
+            JDFILE_IO_PROFILING_END_BLOCK;
+            JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
+            jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
+            JDFILE_IO_PROFILING_END_BLOCK;
+        }
+        else
+        {
+            JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
+            jsonDocument = QJsonDocument::fromJson(data);
+            JDFILE_IO_PROFILING_END_BLOCK;
+        }
+        
 
+        
         // Check if the JSON document is an array
         if (jsonDocument.isArray()) {
+            JDFILE_IO_PROFILING_BLOCK("QJsonArray to std::vector", JD_COLOR_STAGE_6);
             QJsonArray jsonArray = jsonDocument.array();
 
             // Iterate through the array and add QJsonObjects to the vector
@@ -555,29 +706,29 @@ bool JDManager::readJsonFile(const std::string& inputFile, std::vector<QJsonObje
                     jsonsOut.push_back(jsonValue.toObject());
                 }
             }
+
+            JDFILE_IO_PROFILING_END_BLOCK;
         }
         else {
-            JD_CONSOLE_FUNCTION("Error: JSON document from file: " << inputFile << " is not an array.");
-            file.close();
+            JD_CONSOLE_FUNCTION("Error: JSON document from file: " << inputFile << " is not an array\n");
             return false;
         }
-
-        file.close();
     }
     else {
-        JD_CONSOLE_FUNCTION("Error: Could not open file" << inputFile << "for reading.");
+        JDFILE_IO_PROFILING_END_BLOCK;
+        JD_CONSOLE_FUNCTION("Error: Could not open file" << inputFile << "for reading\n");
         return false;
     }
     return true;
 }
-
+/*
 bool JDManager::writeJsonFile(const QJsonObject& obj, const std::string& relativePath) const
 {
     return writeJsonFile(obj, relativePath, m_jsonFileEnding);
 }
 bool JDManager::writeJsonFile(const QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const
 {
-    JDFILE_IO_PROFILING_FUNCTION(COLOR_STAGE_5)
+    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5)
     QJsonDocument document;
     document.setObject(obj);
     QByteArray bytes = document.toJson( QJsonDocument::Indented );
@@ -595,7 +746,7 @@ bool JDManager::writeJsonFile(const QJsonObject &obj, const std::string &relativ
         return true;
     }
     return false;
-}
+}*/
 
 bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath) const
 {
@@ -603,7 +754,7 @@ bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath) 
 }
 bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const
 {
-    JDFILE_IO_PROFILING_FUNCTION(COLOR_STAGE_5)
+    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5)
     QFile file((m_databasePath+"\\"+relativePath+fileEnding).c_str());
     if( file.open( QIODevice::ReadOnly ) )
     {
@@ -614,7 +765,7 @@ bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath, 
         QJsonDocument document = QJsonDocument::fromJson( bytes, &jsonError );
         if( jsonError.error != QJsonParseError::NoError )
         {
-            JD_CONSOLE_FUNCTION("Can't read JsonFile: " << jsonError.errorString().toStdString().c_str());
+            JD_CONSOLE_FUNCTION("Can't read JsonFile: " << jsonError.errorString().toStdString().c_str() << "\n");
             return false;
         }
         if( document.isObject() )
@@ -623,16 +774,17 @@ bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath, 
             return true;
         }
     }
-    JD_CONSOLE_FUNCTION("Can't open File: "<<(m_databasePath+"\\"+relativePath+fileEnding).c_str());
+    JD_CONSOLE_FUNCTION("Can't open File: "<<(m_databasePath+"\\"+relativePath+fileEnding).c_str()<<"\n");
     return false;
 }
 bool JDManager::lockFile(const std::string &relativePath, unsigned int timeoutMillis) const
 {
-    JD_PROFILING_FUNCTION_C(profiler::colors::Red);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+   // JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
 
     if (m_fileLock)
     {
-        JD_CONSOLE_FUNCTION("Lock already aquired");
+        JD_CONSOLE_FUNCTION("Lock already aquired\n");
         return false;
     }
     
@@ -644,9 +796,29 @@ bool JDManager::lockFile(const std::string &relativePath, unsigned int timeoutMi
 
     QDateTime currentDateTime = QDateTime::currentDateTime();
     size_t tryCount = 0;
-    while(!m_fileLock->lock())
+
+    // Get the current time
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Calculate the time point when the desired duration will be reached
+    auto end = start + std::chrono::milliseconds(timeoutMillis);
+
+    while (!m_fileLock->lock()) {
+        JD_GENERAL_PROFILING_BLOCK_C("WaitForFreeLock", profiler::colors::Red200);
+        QTUpdateEvents();
+
+        if (std::chrono::high_resolution_clock::now() > end)
+        {
+            JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << abspath<<"\n");
+            return false;
+        }
+        // Sleep for a short while to avoid busy-waiting
+        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Adjust as needed
+    }
+
+   /* while (!m_fileLock->lock())
     {
-        JD_PROFILING_BLOCK_C("WaitForFreeLock", profiler::colors::Red200);
+        JD_GENERAL_PROFILING_BLOCK_C("WaitForFreeLock", profiler::colors::Red200);
         QTUpdateEvents();
 
         QDateTime waitingTime = QDateTime::currentDateTime();
@@ -662,88 +834,27 @@ bool JDManager::lockFile(const std::string &relativePath, unsigned int timeoutMi
 #else
         usleep(1000);
 #endif
-
-        /*QJsonObject data;
-        if(!readJsonFile(data, relativePath, m_lockFileEnding))
-            return false;
-        std::string sessionID;
-        std::string user;
-        QDate date;
-        QTime time;
-        bool success = getJsonValue(data, sessionID, m_tag_sessionID);
-        success &= getJsonValue(data, user, m_tag_user);
-        success &= getJsonValue(data, date, m_tag_date);
-        success &= getJsonValue(data, time, m_tag_time);
-
-        if(!success)
-        {
-            JD_CONSOLE_FUNCTION("Corrupted lock file: "<<abspath.c_str());
-            return false; // can't read Lock file
-        }
-
-        QDateTime dateTime(date, time);
-        if(dateTime.msecsTo(currentDateTime) > timeoutMillis)
-        {
-            // LockTimeOut
-            if(QFile::remove(abspath.c_str()))
-            {
-                JD_CONSOLE_FUNCTION("Lockfile: "<< abspath.c_str()
-                                 << " timed out and gets removed."
-                                 << " Was locked by user: "<<user.c_str()
-                                 << " Session ID: "<<sessionID.c_str());
-            }
-            if(QFile::exists(abspath.c_str()))
-            {
-                JD_CONSOLE_FUNCTION("Can't remove lock file: "<<abspath.c_str());
-                return false;
-            }
-        }
-        else
-        {
-            using namespace std::literals;
-            ++tryCount;
-            if(tryCount > 100)
-            {
-                JD_CONSOLE_FUNCTION("Timeout for waiting until lock gets released: "<<abspath.c_str());
-                return false;
-            }
-            JD_CONSOLE_FUNCTION("["<<tryCount<<"] Waiting for lock release: "<<abspath.c_str());
-            std::this_thread::sleep_for(100ms);
-        }*/
-    }
+    }*/
 
     return true;
 }
 bool JDManager::unlockFile(const std::string &relativePath) const
 {
-    JD_PROFILING_FUNCTION_C(profiler::colors::Red);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2); 
+    //JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
 
     if (!m_fileLock)
         return true;
 
-
-    std::string path = relativePath;
-    std::string abspath = m_databasePath+"\\"+path+m_lockFileEnding;
-
-    m_fileLock->unlock();
     delete m_fileLock;
     m_fileLock = nullptr;
-    if (QFile::exists(abspath.c_str()))
-    {
-        QFile f(abspath.c_str());
-        if (!f.remove())
-        {
-            JD_CONSOLE_FUNCTION("Can't remove filelock for: " << abspath);
-            return false;
-        }
-    }
 
     return true;
 }
 
 bool JDManager::makeDatabaseDirs() const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_2)
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2)
     bool success = true;
 
     std::string path = m_databasePath;
@@ -758,7 +869,7 @@ bool JDManager::makeDatabaseDirs() const
     bool exists = dir.exists();
     if (!exists)
     {
-        JD_CONSOLE_FUNCTION("Can't create database folder: " << path.c_str());
+        JD_CONSOLE_FUNCTION("Can't create database folder: " << path.c_str()<<"\n");
     }
     success &= exists;
     
@@ -767,14 +878,21 @@ bool JDManager::makeDatabaseDirs() const
 
 bool JDManager::deleteDir(const std::string& dir) const
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_2)
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     int ret = executeCommand("rd /s /q \"" + dir+"\"");
     QDir folder(dir.c_str());
     if (folder.exists())
     {
-        JD_CONSOLE_FUNCTION(" Folder could not be deleted: "+dir);
+        JD_CONSOLE_FUNCTION(" Folder could not be deleted: "+dir+ "\n");
         return false;
     }
+    return true;
+}
+bool JDManager::deleteFile(const std::string& file) const
+{
+    QFile f(file.c_str());
+    if (f.exists())
+        return f.remove();
     return true;
 }
 
@@ -867,7 +985,7 @@ JDObjectInterface* JDManager::getObjectDefinition(const std::string& className) 
 
 int JDManager::executeCommand(const std::string& command)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1)
     // Convert the command to wide string
     std::wstring wideCommand(command.begin(), command.end());
    // int execResult = WinExec(("C:\\Windows\\System32\\cmd.exe /c "+command).c_str(), SW_HIDE);
@@ -906,7 +1024,7 @@ int JDManager::executeCommand(const std::string& command)
 }
 std::string JDManager::executeCommandPiped(const std::string& command)
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1);
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     
     //return "";
     //C:\\Windows\\System32\\cmd.exe
@@ -921,7 +1039,7 @@ std::string JDManager::executeCommandPiped(const std::string& command)
     if (!CreatePipe(&pipeRead, &pipeWrite, &pipeAttributes, 0))
     {
         //std::cerr << "Failed to create pipe." << std::endl;
-        JD_CONSOLE_FUNCTION("Failed to create pipe");
+        JD_CONSOLE_FUNCTION("Failed to create pipe\n");
         return "";
     }
 
@@ -929,7 +1047,7 @@ std::string JDManager::executeCommandPiped(const std::string& command)
     if (!SetHandleInformation(pipeRead, HANDLE_FLAG_INHERIT, 0))
     {
         //std::cerr << "Failed to set pipe handle information." << std::endl;
-        JD_CONSOLE_FUNCTION("Failed to set pipe handle information");
+        JD_CONSOLE_FUNCTION("Failed to set pipe handle information\n");
         CloseHandle(pipeRead);
         CloseHandle(pipeWrite);
         return "";
@@ -972,7 +1090,7 @@ std::string JDManager::executeCommandPiped(const std::string& command)
                     break;
                 else
                 {
-                    JD_CONSOLE_FUNCTION("Failed to read from the pipe");
+                    JD_CONSOLE_FUNCTION("Failed to read from the pipe\n");
                     //std::cerr << "Failed to read from the pipe." << std::endl;
                     CloseHandle(pipeRead);
                     CloseHandle(processInfo.hProcess);
@@ -1006,11 +1124,21 @@ std::string JDManager::executeCommandPiped(const std::string& command)
     else
     {
         //std::cerr << "Failed to execute command." << std::endl;
-        JD_CONSOLE_FUNCTION("Failed to execute command");
+        JD_CONSOLE_FUNCTION("Failed to execute command\n");
         CloseHandle(pipeRead);
         CloseHandle(pipeWrite);
         return "";
     }
+}
+
+void JDManager::compressString(const QString& inputString, QByteArray& compressedData) const
+{
+    compressedData = qCompress(inputString.toUtf8(), -1);
+}
+void JDManager::decompressString(const QByteArray& compressedData, QString& outputString) const
+{
+    QByteArray decompressedData = qUncompress(compressedData);
+    outputString = QString::fromUtf8(decompressedData);
 }
 
 #ifdef JSON_DATABSE_USE_THREADS

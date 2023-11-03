@@ -1,5 +1,5 @@
 #pragma once
-#include "JD_global.h"
+#include "JD_base.h"
 
 namespace JsonDatabase
 {
@@ -7,4 +7,5 @@ namespace JsonDatabase
     class JDManager;
     class JDSerializable;
     class FileLock;
+
 }

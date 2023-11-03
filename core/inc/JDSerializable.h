@@ -1,6 +1,9 @@
 #pragma once
-#include <QJsonObject>
+
+#include "JD_base.h"
 #include "JDDeclaration.h"
+
+#include <QJsonObject>
 
 namespace JsonDatabase
 {

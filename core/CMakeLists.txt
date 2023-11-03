@@ -17,6 +17,7 @@ set(QT_DEPLOY ON)
 # Find the necessary QT modules
 set(QT_MODULES
     Core
+    Zlib
     # Add any other required modules here
 )
 

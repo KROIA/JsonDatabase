@@ -1,11 +1,8 @@
 #pragma once
 
-#include "JD_global.h"
+#include "JD_base.h"
 
-#include <fstream>
-#include <mutex>
-#include <chrono>
-#include <thread>
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -25,8 +22,9 @@ namespace JsonDatabase
         {
             none,
             unableToCreateOrOpenLockFile,
+            unableToDeleteLockFile,
             unableToLock,
-            alreadyLocked
+            alreadyLocked,
         };
 
 
@@ -34,11 +32,17 @@ namespace JsonDatabase
 
         ~FileLock();
 
+        const std::string& getFilePath() const;
+
         bool lock();
+        bool lock(unsigned int timeoutMs);
         void unlock();
 
         bool isLocked() const;
-        enum Error getLastError() const;
+
+        Error getLastError() const;
+        const std::string& getLastErrorStr() const;
+
 
     private:
         Error lockFile();

@@ -1,9 +1,11 @@
 #pragma once
 
-#include <QJsonObject>
-#include <string>
+#include "JD_base.h"
 #include "JDDeclaration.h"
 #include "JDSerializable.h"
+
+#include <QJsonObject>
+#include <string>
 
 
 
@@ -41,6 +43,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         static const QString m_tag_objID;
         static const QString m_tag_objVersion;
         static const QString m_tag_className;
+        static const QString m_tag_data;
 };
 /**
  * \macro JD_OBJECT(classNameVal)

@@ -2,7 +2,7 @@
   "configurations": [
     {
       "name": "x64-Debug",
-      "generator": "Ninja",
+      "generator": "Visual Studio 17 2022 Win64",
       "configurationType": "Debug",
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${projectDir}\\build\\${name}",
@@ -14,7 +14,7 @@
     },
     {
       "name": "x64-Release",
-      "generator": "Ninja",
+      "generator": "Visual Studio 17 2022 Win64",
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
@@ -25,21 +25,21 @@
     },
     {
       "name": "x64-Release-Profile",
-      "generator": "Ninja",
+      "generator": "Visual Studio 17 2022 Win64",
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
-      "cmakeCommandArgs": "-DQSFML_PROFILING=1",
+      "cmakeCommandArgs": "-DJD_PROFILING=1",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ]
     },
     {
       "name": "x64-Debug-Profile",
-      "generator": "Ninja",
+      "generator": "Visual Studio 17 2022 Win64",
       "configurationType": "Debug",
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
-      "cmakeCommandArgs": "-DQSFML_PROFILING=1",
+      "cmakeCommandArgs": "-DJD_PROFILING=1",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
