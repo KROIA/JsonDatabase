@@ -35,6 +35,20 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         bool loadInternal(const QJsonObject &obj);
         bool saveInternal(QJsonObject &obj);
 
+protected:
+    class AutoObjectAddToRegistry
+    {
+    public:
+        AutoObjectAddToRegistry(JDObjectInterface* obj)
+        {
+            addToRegistry(obj);
+        }
+
+        int addToRegistry(JDObjectInterface* obj);
+
+    private:
+
+    };
 
     private:
 
@@ -46,19 +60,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         static const QString m_tag_className;
         static const QString m_tag_data;
 
-        class AutoObjectAddToRegistry
-        {
-        public:
-            AutoObjectAddToRegistry(JDObjectInterface* obj)
-            {
-                addToRegistry(obj);
-            }
-
-            int addToRegistry(JDObjectInterface* obj);
-
-        private:
-
-        };
+        
 };
 
 
@@ -86,7 +88,6 @@ std::string className() const override \
     return #classNameVal; \
 } \
 private: \
-
 
 
 
