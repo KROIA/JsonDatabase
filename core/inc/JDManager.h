@@ -73,10 +73,10 @@ class JSONDATABASE_EXPORT JDManager
          *         3 object type does not have the base JDObjectInterface
          */
         template<typename T>
-        int addObjectDefinition();
+        static int addObjectDefinition();
         template<typename T>
-        bool isInObjectDefinition();
-        bool isInObjectDefinition(const std::string &className) const;
+        static bool isInObjectDefinition();
+        static bool isInObjectDefinition(const std::string &className);
 
 
         void setDatabaseName(const std::string& name);
@@ -169,17 +169,17 @@ class JSONDATABASE_EXPORT JDManager
         bool deleteDir(const std::string &dir) const;
         bool deleteFile(const std::string& file) const;
 
-        bool getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key) const;
-        bool getJsonValue(const QJsonObject &obj, QTime &value, const QString &key) const;
-        bool getJsonValue(const QJsonObject &obj, QDate &value, const QString &key) const;
-        bool getJsonValue(const QJsonObject &obj, QString &value, const QString &key) const;
-        bool getJsonValue(const QJsonObject &obj, std::string &value, const QString &key) const;
-        bool getJsonValue(const QJsonObject &obj, int &value, const QString &key) const;
+        static bool getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key);
+        static bool getJsonValue(const QJsonObject &obj, QTime &value, const QString &key);
+        static bool getJsonValue(const QJsonObject &obj, QDate &value, const QString &key);
+        static bool getJsonValue(const QJsonObject &obj, QString &value, const QString &key);
+        static bool getJsonValue(const QJsonObject &obj, std::string &value, const QString &key);
+        static bool getJsonValue(const QJsonObject &obj, int &value, const QString &key);
 
-        size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID) const;
+        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID);
 
-        JDObjectInterface* getObjectDefinition(const QJsonObject& json) const;
-        JDObjectInterface* getObjectDefinition(const std::string &className) const;
+        static JDObjectInterface* getObjectDefinition(const QJsonObject& json);
+        static JDObjectInterface* getObjectDefinition(const std::string &className);
 
         static int executeCommand(const std::string& command);
         static std::string executeCommandPiped(const std::string& command);
@@ -201,7 +201,8 @@ class JSONDATABASE_EXPORT JDManager
         std::map<std::string, JDObjectInterface*> m_objs;
 
         // Instances to clone from
-        std::map<std::string, JDObjectInterface*> m_objDefinitions;
+        static std::map<std::string, JDObjectInterface*> s_objDefinitions;
+        static std::mutex s_mutex;
 
         static const std::string m_jsonFileEnding;
         static const std::string m_lockFileEnding;
@@ -281,7 +282,7 @@ int JDManager::addObjectDefinition()
         className = obj->className();
         if(className.size() == 0)
             error = 1;
-        if(m_objDefinitions.find(className) != m_objDefinitions.end())
+        if(s_objDefinitions.find(className) != s_objDefinitions.end())
             error = 2;
     }
     else
@@ -291,7 +292,7 @@ int JDManager::addObjectDefinition()
         delete obj;
         return error;
     }
-    m_objDefinitions.insert(std::pair<std::string, JDObjectInterface*>(className, obj));
+    s_objDefinitions.insert(std::pair<std::string, JDObjectInterface*>(className, obj));
     return error;
 }
 template<typename T>
@@ -305,7 +306,7 @@ bool JDManager::isInObjectDefinition()
         className = obj->className();
         if(className.size() == 0)
             return false;
-        if(m_objDefinitions.find(className) != m_objDefinitions.end())
+        if(s_objDefinitions.find(className) != s_objDefinitions.end())
             return true;
     }
     return false;
@@ -316,7 +317,7 @@ bool JDManager::removeObjects()
     JD_PROFILING_FUNCTION(COLOR_STAGE_1)
     std::string jsonPath;
     bool folderDeleted = false;
-    for (auto def : m_objDefinitions)
+    for (auto def : s_objDefinitions)
     {
         T* el = dynamic_cast<T*> (def.second);
         if (el)
@@ -346,7 +347,7 @@ bool JDManager::deleteObjects()
     JD_PROFILING_FUNCTION(COLOR_STAGE_1)
     std::string jsonPath;
     bool folderDeleted = false;
-    for (auto def : m_objDefinitions)
+    for (auto def : s_objDefinitions)
     {
         T* el = dynamic_cast<T*> (def.second);
         if (el)

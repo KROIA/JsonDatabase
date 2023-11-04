@@ -1,4 +1,5 @@
 #include "JDObjectInterface.h"
+#include "JDObjectRegistry.h"
 #include <QVariant>
 
 
@@ -9,6 +10,13 @@ const QString JDObjectInterface::m_tag_objID = "i";
 const QString JDObjectInterface::m_tag_objVersion = "o";
 const QString JDObjectInterface::m_tag_className = "c";
 const QString JDObjectInterface::m_tag_data = "D";
+
+
+int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObjectInterface* obj)
+{
+    return JDObjectRegistry::registerType(obj);
+}
+
 
 JDObjectInterface::JDObjectInterface()
 {

@@ -15,6 +15,7 @@ namespace JsonDatabase
 class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 {
         friend JDManager;
+
     public:
         JDObjectInterface();
         JDObjectInterface(const JDObjectInterface &other);
@@ -44,7 +45,23 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         static const QString m_tag_objVersion;
         static const QString m_tag_className;
         static const QString m_tag_data;
+
+        class AutoObjectAddToRegistry
+        {
+        public:
+            AutoObjectAddToRegistry(JDObjectInterface* obj)
+            {
+                addToRegistry(obj);
+            }
+
+            int addToRegistry(JDObjectInterface* obj);
+
+        private:
+
+        };
 };
+
+
 /**
  * \macro JD_OBJECT(classNameVal)
  *        Implements the virtual clone() function of the JDObjectInterface
@@ -68,7 +85,9 @@ std::string className() const override \
 { \
     return #classNameVal; \
 } \
-private:
+private: \
+
+
 
 
 

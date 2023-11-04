@@ -35,8 +35,10 @@
 
 #ifdef USE_MUTEX_LOCK
 #define JDM_UNIQUE_LOCK JDUniqueMutexLock uniqueLock(m_mutex);
+#define JDM_UNIQUE_LOCK_M(mutex) JDUniqueMutexLock uniqueLock(mutex);
 #else
 #define JDM_UNIQUE_LOCK
+#define JDM_UNIQUE_LOCK_M
 #endif
 
 namespace JsonDatabase
@@ -52,6 +54,10 @@ namespace JsonDatabase
     const QString JDManager::m_tag_user = "user";
     const QString JDManager::m_tag_date = "date";
     const QString JDManager::m_tag_time = "time";
+
+
+    std::map<std::string, JDObjectInterface*> JDManager::s_objDefinitions;
+    std::mutex JDManager::s_mutex;
 
     void JDManager::startProfiler()
     {
@@ -98,7 +104,7 @@ JDManager::JDManager(const JDManager &other)
     ,   m_lockTable(this)
     ,   m_fileLock(nullptr)
     ,   m_useZipFormat(other.m_useZipFormat)
-    ,   m_objDefinitions(other.m_objDefinitions)
+    //,   m_objDefinitions(other.m_objDefinitions)
 #ifdef JSON_DATABSE_USE_THREADS
     ,  m_threadWorker("JDManager File IO")
     ,  m_threadWorker_fileFinder("JDManager File finder")
@@ -147,10 +153,10 @@ void JDManager::setupThreadWorker()
         });
 }
 #endif
-bool JDManager::isInObjectDefinition(const std::string &className) const
+bool JDManager::isInObjectDefinition(const std::string &className)
 {
-    JDM_UNIQUE_LOCK;
-    if(m_objDefinitions.find(className) != m_objDefinitions.end())
+    JDM_UNIQUE_LOCK_M(s_mutex);
+    if(s_objDefinitions.find(className) != s_objDefinitions.end())
         return true;
     return false;
 }
@@ -897,7 +903,7 @@ bool JDManager::deleteFile(const std::string& file) const
 }
 
 
-bool JDManager::getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key) const
+bool JDManager::getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key)
 {
     if(obj.contains(key))
     {
@@ -906,7 +912,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, QVariant &value, const QStr
     }
     return false;
 }
-bool JDManager::getJsonValue(const QJsonObject &obj, QTime &value, const QString &key) const
+bool JDManager::getJsonValue(const QJsonObject &obj, QTime &value, const QString &key)
 {
     if(obj.contains(key))
     {
@@ -915,7 +921,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, QTime &value, const QString
     }
     return false;
 }
-bool JDManager::getJsonValue(const QJsonObject &obj, QDate &value, const QString &key) const
+bool JDManager::getJsonValue(const QJsonObject &obj, QDate &value, const QString &key)
 {
     if(obj.contains(key))
     {
@@ -924,7 +930,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, QDate &value, const QString
     }
     return false;
 }
-bool JDManager::getJsonValue(const QJsonObject &obj, QString &value, const QString &key) const
+bool JDManager::getJsonValue(const QJsonObject &obj, QString &value, const QString &key)
 {
     if(obj.contains(key))
     {
@@ -933,7 +939,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, QString &value, const QStri
     }
     return false;
 }
-bool JDManager::getJsonValue(const QJsonObject &obj, std::string &value, const QString &key) const
+bool JDManager::getJsonValue(const QJsonObject &obj, std::string &value, const QString &key)
 {
     if(obj.contains(key))
     {
@@ -942,7 +948,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, std::string &value, const Q
     }
     return false;
 }
-bool JDManager::getJsonValue(const QJsonObject &obj, int &value, const QString &key) const
+bool JDManager::getJsonValue(const QJsonObject &obj, int &value, const QString &key)
 {
     if(obj.contains(key))
     {
@@ -952,7 +958,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, int &value, const QString &
     return false;
 }
 
-size_t JDManager::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID) const
+size_t JDManager::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
@@ -966,7 +972,7 @@ size_t JDManager::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const 
     return std::string::npos;
 }
 
-JDObjectInterface* JDManager::getObjectDefinition(const QJsonObject& json) const
+JDObjectInterface* JDManager::getObjectDefinition(const QJsonObject& json)
 {
     std::string className;
     if (getJsonValue(json, className, JDObjectInterface::m_tag_className))
@@ -975,10 +981,10 @@ JDObjectInterface* JDManager::getObjectDefinition(const QJsonObject& json) const
     }
     return nullptr;
 }
-JDObjectInterface* JDManager::getObjectDefinition(const std::string& className) const
+JDObjectInterface* JDManager::getObjectDefinition(const std::string& className)
 {
-    auto it = m_objDefinitions.find(className);
-    if (it == m_objDefinitions.end())
+    auto it = s_objDefinitions.find(className);
+    if (it == s_objDefinitions.end())
         return nullptr;
     return it->second;
 }
