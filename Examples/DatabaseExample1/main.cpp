@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
 
     JDManager manager("database", "MyData", "sessionID", "USER");
     //JDManager manager("C:\\Users\\alexk\\Documents\\Privat\\Softwareentwicklung\\QT\\Projekte\\JsonDatabase\\example\\bin\\database","sessionID","USER");
-    manager.addObjectDefinition<A>();
-    manager.addObjectDefinition<B>();
-    manager.addObjectDefinition<C>();
+    //manager.addObjectDefinition<A>();
+    //manager.addObjectDefinition<B>();
+    //manager.addObjectDefinition<C>();
     A* a1 = new A("a1");
     A* a2 = new A("a2");
 
@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
     
 
     JDManager manager2("database", "MyData", "sessionID2", "USER");
-    manager2.addObjectDefinition<A>();
-    manager2.addObjectDefinition<B>();
-    manager2.addObjectDefinition<C>();
+    //manager2.addObjectDefinition<A>();
+    //manager2.addObjectDefinition<B>();
+    //manager2.addObjectDefinition<C>();
     manager2.loadObjects();
     qDebug() << "Objects loaded: " << manager2.getObjectCount();
     std::vector<JDObjectInterface*> objs1 = manager.getObjects();

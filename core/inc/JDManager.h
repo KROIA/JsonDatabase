@@ -72,10 +72,10 @@ class JSONDATABASE_EXPORT JDManager
          *         2 object type was already added
          *         3 object type does not have the base JDObjectInterface
          */
-        template<typename T>
-        static int addObjectDefinition();
-        template<typename T>
-        static bool isInObjectDefinition();
+        //template<typename T>
+        //static int addObjectDefinition();
+        //template<typename T>
+        //static bool isInObjectDefinition();
         static bool isInObjectDefinition(const std::string &className);
 
 
@@ -185,7 +185,7 @@ class JSONDATABASE_EXPORT JDManager
         static std::string executeCommandPiped(const std::string& command);
 
         void compressString(const QString& inputString, QByteArray& compressedData) const;
-        void decompressString(const QByteArray& compressedData, QString& outputString) const;
+        bool decompressString(const QByteArray& compressedData, QString& outputString) const;
 
         std::string m_databasePath;
         std::string m_databaseName;
@@ -201,7 +201,7 @@ class JSONDATABASE_EXPORT JDManager
         std::map<std::string, JDObjectInterface*> m_objs;
 
         // Instances to clone from
-        static std::map<std::string, JDObjectInterface*> s_objDefinitions;
+        //static std::map<std::string, JDObjectInterface*> s_objDefinitions;
         static std::mutex s_mutex;
 
         static const std::string m_jsonFileEnding;
@@ -270,7 +270,7 @@ class JSONDATABASE_EXPORT JDManager
 #endif
 
 };
-template<typename T>
+/*template<typename T>
 int JDManager::addObjectDefinition()
 {
     int error = 0;
@@ -310,7 +310,7 @@ bool JDManager::isInObjectDefinition()
             return true;
     }
     return false;
-}
+}*/
 template<typename T>
 bool JDManager::removeObjects()
 {

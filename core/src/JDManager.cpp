@@ -1,6 +1,7 @@
 #include "JDManager.h"
 #include "JDObjectInterface.h"
 #include "JDUniqueMutexLock.h"
+#include "JDObjectRegistry.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -56,7 +57,7 @@ namespace JsonDatabase
     const QString JDManager::m_tag_time = "time";
 
 
-    std::map<std::string, JDObjectInterface*> JDManager::s_objDefinitions;
+    //std::map<std::string, JDObjectInterface*> JDManager::s_objDefinitions;
     std::mutex JDManager::s_mutex;
 
     void JDManager::startProfiler()
@@ -156,7 +157,7 @@ void JDManager::setupThreadWorker()
 bool JDManager::isInObjectDefinition(const std::string &className)
 {
     JDM_UNIQUE_LOCK_M(s_mutex);
-    if(s_objDefinitions.find(className) != s_objDefinitions.end())
+    if(JDObjectRegistry::getRegisteredTypes().find(className) != JDObjectRegistry::getRegisteredTypes().end())
         return true;
     return false;
 }
@@ -686,11 +687,19 @@ bool JDManager::readJsonFile(const std::string& inputFile, std::vector<QJsonObje
         {
             JDFILE_IO_PROFILING_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
             QString uncompressed;
-            decompressString(data, uncompressed);
-            JDFILE_IO_PROFILING_END_BLOCK;
-            JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
-            jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
-            JDFILE_IO_PROFILING_END_BLOCK;
+            if (decompressString(data, uncompressed))
+            {
+                JDFILE_IO_PROFILING_END_BLOCK;
+                JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
+                jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
+                JDFILE_IO_PROFILING_END_BLOCK;
+            }
+            else
+            {
+                JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
+                jsonDocument = QJsonDocument::fromJson(data);
+                JDFILE_IO_PROFILING_END_BLOCK;
+            }
         }
         else
         {
@@ -983,8 +992,8 @@ JDObjectInterface* JDManager::getObjectDefinition(const QJsonObject& json)
 }
 JDObjectInterface* JDManager::getObjectDefinition(const std::string& className)
 {
-    auto it = s_objDefinitions.find(className);
-    if (it == s_objDefinitions.end())
+    auto it = JDObjectRegistry::getRegisteredTypes().find(className);
+    if (it == JDObjectRegistry::getRegisteredTypes().end())
         return nullptr;
     return it->second;
 }
@@ -1141,10 +1150,15 @@ void JDManager::compressString(const QString& inputString, QByteArray& compresse
 {
     compressedData = qCompress(inputString.toUtf8(), -1);
 }
-void JDManager::decompressString(const QByteArray& compressedData, QString& outputString) const
+bool JDManager::decompressString(const QByteArray& compressedData, QString& outputString) const
 {
     QByteArray decompressedData = qUncompress(compressedData);
+    if (decompressedData.size() == 0)
+    {
+        return false; // Corrupt data 
+    }
     outputString = QString::fromUtf8(decompressedData);
+    return true;
 }
 
 #ifdef JSON_DATABSE_USE_THREADS

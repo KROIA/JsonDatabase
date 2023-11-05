@@ -1,12 +1,10 @@
 #include "b.h"
 #include <QDebug>
 
+JD_OBJECT_IMPL(B);
 B::B()
   : JDObjectInterface()
 {}
-B::B(const std::string &id)
-  : JDObjectInterface()
-{ objID = id;}
 B::B(const B &other)
 : JDObjectInterface(other)
 {}
@@ -16,14 +14,6 @@ B::~B()
 }
 
 
-std::string B::getObjectID() const
-{
-    return objID;
-}
-void B::setObjectID(const std::string &id)
-{
-    objID = id;
-}
 
 bool B::load(const QJsonObject &obj)
 {

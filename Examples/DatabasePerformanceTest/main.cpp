@@ -58,24 +58,33 @@ int main(int argc, char* argv[])
 
     manager1 = new JDManager("database", "Persons", "sessionID1", "USER 1");
     manager2 = new JDManager("database", "Persons", "sessionID2", "USER 2");
-    manager3 = new JDManager("database", "Persons", "sessionID3", "USER 2");
-    manager4 = new JDManager("database", "Persons", "sessionID4", "USER 2");
-    manager5 = new JDManager("database", "Persons", "sessionID5", "USER 2");
+    manager3 = new JDManager("database", "Persons", "sessionID3", "USER 3");
+    manager4 = new JDManager("database", "Persons", "sessionID4", "USER 4");
+    manager5 = new JDManager("database", "Persons", "sessionID5", "USER 5");
 
-    manager1->addObjectDefinition<Person>();
-    manager2->addObjectDefinition<Person>();
-    manager3->addObjectDefinition<Person>();
-    manager4->addObjectDefinition<Person>();
-    manager5->addObjectDefinition<Person>();
-
-    manager1->addObject(globalTable);
-    manager1->saveObjects();
+    //manager1->addObjectDefinition<Person>();
+    //manager2->addObjectDefinition<Person>();
+    //manager3->addObjectDefinition<Person>();
+    //manager4->addObjectDefinition<Person>();
+    //manager5->addObjectDefinition<Person>();
 
     manager1->enableZipFormat(USE_ZIP_FORMAT);
     manager2->enableZipFormat(USE_ZIP_FORMAT);
     manager3->enableZipFormat(USE_ZIP_FORMAT);
     manager4->enableZipFormat(USE_ZIP_FORMAT);
     manager5->enableZipFormat(USE_ZIP_FORMAT);
+
+    manager1->addObject(globalTable);
+    manager1->saveObjects();
+
+    manager1->enableZipFormat(false);
+    manager1->setDatabaseName("secondPersons");
+    manager1->saveObjects();
+
+    manager1->enableZipFormat(USE_ZIP_FORMAT);
+    manager1->setDatabaseName("Persons");
+
+    
 
     // Create and start the first thread
     std::thread t1(threadFunction1);
@@ -94,6 +103,9 @@ int main(int argc, char* argv[])
    
     manager2->loadObjects();
     qDebug() << "Tables equal: " << compareTables(globalTable, manager2->getObjects());
+    manager2->enableZipFormat(false);
+    manager2->setDatabaseName("secondPersons");
+    manager2->saveObjects();
     std::cout << "Finish";
 
     JDManager::stopProfiler("Profile.prof");

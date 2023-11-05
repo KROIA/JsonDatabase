@@ -10,10 +10,19 @@ namespace JsonDatabase
     {
         JDObjectRegistry();
     public:
+        enum Error
+        {
+            none,
+            emptyClassName,
+            typeAlreadyRegistered,
+            objIsNullptr
+        };
+
+
         static JDObjectRegistry& getInstance();
 
         
-        static int registerType(JDObjectInterface* obj);
+        static Error registerType(JDObjectInterface* obj);
         static const std::map<std::string, JDObjectInterface*>& getRegisteredTypes();
 
     private:

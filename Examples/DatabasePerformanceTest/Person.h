@@ -44,25 +44,13 @@ public:
 
 
         instanceCounter++;
-        objID = std::to_string(instanceCounter);
+        setObjectID(std::to_string(instanceCounter));
     }
     Person()
         : JDObjectInterface()
     {
         instanceCounter++;
-        objID = std::to_string(instanceCounter);
-    }
-    Person::Person(const std::string& id)
-        : JDObjectInterface()
-    {
-        instanceCounter++;
-        objID = id;
-    }
-    Person::Person(const Person& other)
-        : JDObjectInterface(other)
-    {
-        instanceCounter++;
-        *this = other;
+        setObjectID(std::to_string(instanceCounter));
     }
     Person::~Person()
     {
@@ -92,15 +80,7 @@ public:
     }
 
 private:
-    
-
-
-    std::string getObjectID() const override {
-        return objID;
-    }
-    void setObjectID(const std::string& id) override {
-        objID = id;
-    }
+   
 
     bool load(const QJsonObject& obj) override 
     {
@@ -144,8 +124,17 @@ private:
 
 
     static size_t instanceCounter;
-    std::string objID;
 };
+
+JD_OBJECT_IMPL(Person);
+
+Person::Person(const Person& other)
+    : JDObjectInterface(other)
+{
+    instanceCounter++;
+    *this = other;
+}
+
 
 size_t Person::instanceCounter = 0;
 

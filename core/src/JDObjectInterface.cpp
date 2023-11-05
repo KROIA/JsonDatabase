@@ -12,6 +12,10 @@ const QString JDObjectInterface::m_tag_className = "c";
 const QString JDObjectInterface::m_tag_data = "D";
 
 
+JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObjectInterface* obj)
+{
+    addToRegistry(obj);
+}
 int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObjectInterface* obj)
 {
     return JDObjectRegistry::registerType(obj);
@@ -19,8 +23,16 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObjectInterface*
 
 
 JDObjectInterface::JDObjectInterface()
+    : m_objID("")
+    , m_version(0)
 {
-    m_version = 0;
+
+}
+JDObjectInterface::JDObjectInterface(const std::string& id)
+    : m_objID(id)
+    , m_version(0)
+{
+
 }
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
     : m_version(other.m_version)
@@ -32,6 +44,15 @@ JDObjectInterface::~JDObjectInterface()
 
 }
 
+
+const std::string& JDObjectInterface::getObjectID() const
+{
+    return m_objID;
+}
+void JDObjectInterface::setObjectID(const std::string& id)
+{
+    m_objID = id;
+}
 
 
 bool JDObjectInterface::loadInternal(const QJsonObject &obj)

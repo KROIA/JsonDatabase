@@ -18,6 +18,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
     public:
         JDObjectInterface();
+        JDObjectInterface(const std::string &id);
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
@@ -25,34 +26,27 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
         virtual JDObjectInterface* clone() const = 0;
         virtual JDObjectInterface* clone(const QJsonObject &obj, const std::string &uniqueID) const = 0;
-        virtual std::string className() const = 0;
+        virtual const std::string& className() const = 0;
 
-        virtual std::string getObjectID() const = 0;
+        const std::string& getObjectID() const;
     protected:
-        virtual void setObjectID(const std::string &id) = 0;
+        void setObjectID(const std::string &id);
 
 
         bool loadInternal(const QJsonObject &obj);
         bool saveInternal(QJsonObject &obj);
 
-protected:
+
     class AutoObjectAddToRegistry
     {
     public:
-        AutoObjectAddToRegistry(JDObjectInterface* obj)
-        {
-            addToRegistry(obj);
-        }
-
+        AutoObjectAddToRegistry(JDObjectInterface* obj);
         int addToRegistry(JDObjectInterface* obj);
-
-    private:
-
     };
 
     private:
 
-
+        std::string m_objID;
         int m_version; // ObjectVersion
 
         static const QString m_tag_objID;
@@ -71,24 +65,37 @@ protected:
  */
 #define JD_OBJECT(classNameVal) \
 public: \
-classNameVal* clone() const override \
+classNameVal(const classNameVal &other); \
+classNameVal(const std::string &id); \
+classNameVal* clone() const override; \
+classNameVal* clone(const QJsonObject &reader, const std::string &uniqueID) const override; \
+const std::string &className() const override; \
+private: \
+static AutoObjectAddToRegistry s__autoObjectRegistrator;
+
+
+#define JD_OBJECT_IMPL(classNameVal) \
+classNameVal::classNameVal(const std::string &id) \
+    : JDObjectInterface(id) \
+{} \
+classNameVal* classNameVal::clone() const \
 { \
     classNameVal *c = new classNameVal(*this); \
     c->setObjectID(this->getObjectID()); \
     return c; \
 } \
-classNameVal* clone(const QJsonObject &reader, const std::string &uniqueID) const override\
+classNameVal* classNameVal::clone(const QJsonObject &reader, const std::string &uniqueID) const\
 { \
     classNameVal *obj = new classNameVal(uniqueID); \
     obj->loadInternal(reader); \
     return obj; \
 } \
-std::string className() const override \
+const std::string &classNameVal::className() const \
 { \
-    return #classNameVal; \
+    static std::string name = #classNameVal; \
+    return name; \
 } \
-private: \
-
+classNameVal::AutoObjectAddToRegistry classNameVal::s__autoObjectRegistrator(new classNameVal());
 
 
 
