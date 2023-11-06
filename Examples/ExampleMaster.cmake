@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.20.0)
 
 # This functions creates a default example project using the given library
 # Function name: exampleMaster
@@ -101,8 +101,38 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC)
 install(TARGETS ${PROJECT_NAME} DESTINATION "${INSTALL_BIN_PATH}")
 
 if(QT_ENABLE AND QT_DEPLOY)
-    DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-    DEPLOY_QT(${QT_PATH} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "${INSTALL_BIN_PATH}")
+   DEPLOY_QT(${QT_PATH} ${PROJECT_NAME} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+   DEPLOY_QT(${QT_PATH} ${PROJECT_NAME} "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>" "${INSTALL_BIN_PATH}")
+   
+  #set(outputPath "${INSTALL_BIN_PATH}")
+  #set(targetExePath "$<TARGET_FILE_DIR:${PROJECT_NAME}>/$<TARGET_FILE_NAME:${PROJECT_NAME}>")
+  ##get_target_property(targetExePath TARGET ${PROJECT_NAME} PROPERTY LOCATION)
+  #
+  #message("EXE path = ${targetExePath}")
+  #set(DEPLOY_COMMAND  "${QT_PATH}/bin/windeployqt.exe"
+  #             --no-compiler-runtime
+  #             --no-translations
+  #             --no-system-d3d-compiler
+  #             --no-opengl-sw
+  #             --no-angle
+  #             --no-webkit2
+  #             --pdb)
+  #
+  #
+  #string(RANDOM LENGTH 20 UNIQUE_TARGET_NAME)
+  #message("DummyTargetName: ${UNIQUE_TARGET_NAME}")
+  #
+  #add_custom_target(${UNIQUE_TARGET_NAME} ALL
+  #    DEPENDS "${PROJECT_NAME}"
+  #)
+  # # Deploy easy_profiler gui to bin folder
+  #  add_custom_command(TARGET ${UNIQUE_TARGET_NAME}
+  #      COMMAND ${DEPLOY_COMMAND} 
+  #          --dir "${outputPath}"
+  #         "${targetExePath}"
+ #    COMMENT "Running windeployqt..." "${QT_PATH}/bin/windeployqt.exe" "${outputPath}"
+  #     DEPENDS UNIQUE_TARGET_NAME
+  #  )
 endif()
 
 endfunction()

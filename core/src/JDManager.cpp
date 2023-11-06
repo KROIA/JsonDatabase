@@ -529,10 +529,10 @@ bool JDManager::isObjLocked(JDObjectInterface* obj) const
 }
 
 
-/*void JDManager::onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects)
+void JDManager::onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects)
 {
 
-}*/
+}
 
 std::string JDManager::getDatabaseFilePath() const
 {

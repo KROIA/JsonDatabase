@@ -2,6 +2,7 @@
 
 #include "JD_base.h"
 #include "JDObjectInterface.h"
+#include "JDObjectRegistry.h"
 #include "FileLock.h"
 #include "ThreadWorker.h"
 #include "JDObjectLocker.h"
@@ -126,7 +127,7 @@ class JSONDATABASE_EXPORT JDManager
         
     protected:
 
-        //virtual void onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects);
+        virtual void onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects);
 
     private:
         bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList) const;
@@ -314,10 +315,10 @@ bool JDManager::isInObjectDefinition()
 template<typename T>
 bool JDManager::removeObjects()
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-    std::string jsonPath;
+    JD_GENERAL_PROFILING_FUNCTION(COLOR_STAGE_1)
+    /*std::string jsonPath;
     bool folderDeleted = false;
-    for (auto def : s_objDefinitions)
+    for (auto def : JDObjectRegistry::getRegisteredTypes())
     {
         T* el = dynamic_cast<T*> (def.second);
         if (el)
@@ -326,28 +327,28 @@ bool JDManager::removeObjects()
             folderDeleted = deleteDir(jsonPath);
         }
     }
-
+    */
 
     std::vector<T*> toRemove = getObjects<T>();
-    bool ret = folderDeleted;
+    //bool ret = folderDeleted;
     for(auto obj : toRemove)
     {
         m_objs.erase(obj->getObjectID());
-        if(!folderDeleted)
-            ret &= removeObject_internal(obj);
+        //if(!folderDeleted)
+        //    ret &= removeObject_internal(obj);
     }
 
-    return ret;
+    return true;
 }
 
 
 template<typename T>
 bool JDManager::deleteObjects()
 {
-    JD_PROFILING_FUNCTION(COLOR_STAGE_1)
-    std::string jsonPath;
+    JD_GENERAL_PROFILING_FUNCTION(COLOR_STAGE_1)
+    /*std::string jsonPath;
     bool folderDeleted = false;
-    for (auto def : s_objDefinitions)
+    for (auto def : JDObjectRegistry::getRegisteredTypes())
     {
         T* el = dynamic_cast<T*> (def.second);
         if (el)
@@ -355,19 +356,19 @@ bool JDManager::deleteObjects()
             jsonPath = m_databasePath + "\\" + getFolderName(el);
             folderDeleted = deleteDir(jsonPath);
         }
-    }
+    }*/
 
 
     std::vector<T*> toDelete = getObjects<T>();
-    bool ret = folderDeleted;
+    //bool ret = folderDeleted;
     for (auto obj : toDelete)
     {
         m_objs.erase(obj->getObjectID());
-        if (!folderDeleted)
-            ret &= removeObject_internal(obj);
+        //if (!folderDeleted)
+        //    ret &= removeObject_internal(obj);
         delete obj;
     }
-    return ret;
+    return true;
 }
 
 template<typename T>

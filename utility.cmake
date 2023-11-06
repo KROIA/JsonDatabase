@@ -36,7 +36,7 @@ if (NOT DEFINED TARGET_COUNTER)
     set(TARGET_COUNTER 0 CACHE INTERNAL "Target counter")
 endif()
 
-function(DEPLOY_QT QT_PATH targetExePath outputPath)
+function(DEPLOY_QT QT_PATH target targetExePath outputPath)
     set(DEPLOY_COMMAND  "${QT_PATH}/bin/windeployqt.exe"
                 --no-compiler-runtime
                 --no-translations
@@ -51,7 +51,7 @@ function(DEPLOY_QT QT_PATH targetExePath outputPath)
    message("DummyTargetName: ${UNIQUE_TARGET_NAME}")
 
    add_custom_target(${UNIQUE_TARGET_NAME} ALL
-       DEPENDS "${targetExePath}"
+       DEPENDS "${target}" "${targetExePath}"
    )
     # Deploy easy_profiler gui to bin folder
      add_custom_command(TARGET ${UNIQUE_TARGET_NAME}

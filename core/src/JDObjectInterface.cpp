@@ -6,10 +6,10 @@
 namespace JsonDatabase
 {
 
-const QString JDObjectInterface::m_tag_objID = "i";
-const QString JDObjectInterface::m_tag_objVersion = "o";
-const QString JDObjectInterface::m_tag_className = "c";
-const QString JDObjectInterface::m_tag_data = "D";
+const QString JDObjectInterface::m_tag_objID = "objID";
+const QString JDObjectInterface::m_tag_objVersion = "objVersion";
+const QString JDObjectInterface::m_tag_className = "class";
+const QString JDObjectInterface::m_tag_data = "Data";
 
 
 JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObjectInterface* obj)
