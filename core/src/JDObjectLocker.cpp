@@ -36,7 +36,7 @@ namespace JsonDatabase
 		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
-		FileLock fileLock(getTableFilePath()+".lck");
+		FileLock fileLock(getTableFilePath(), getTableFileName());
 		if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
 		{
 			m_lastError = Error::unableToLock;
@@ -101,7 +101,7 @@ namespace JsonDatabase
 		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
-		FileLock fileLock(getTableFilePath() + ".lck");
+		FileLock fileLock(getTableFilePath(), getTableFileName());
 		if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
 		{
 			m_lastError = Error::unableToLock;
@@ -155,7 +155,7 @@ namespace JsonDatabase
 	{
 		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
-		FileLock fileLock(getTableFilePath() + ".lck");
+		FileLock fileLock(getTableFilePath() , getTableFileName());
 		if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
 		{
 			m_lastError = Error::unableToLock;
@@ -197,7 +197,7 @@ namespace JsonDatabase
 		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
-		FileLock fileLock(getTableFilePath() + ".lck");
+		FileLock fileLock(getTableFilePath() , getTableFileName());
 		if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
 		{
 			m_lastError = Error::unableToLock;
@@ -258,7 +258,7 @@ namespace JsonDatabase
 		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
-		FileLock fileLock1(oldPath + "\\" + m_lockTableFile + ".lck");
+		FileLock fileLock1(oldPath, m_lockTableFile);
 		if (!fileLock1.lock(m_lockTableTryGetLockTimeoutMs))
 		{
 			m_lastError = Error::unableToLock;
@@ -267,7 +267,7 @@ namespace JsonDatabase
 				<< " LockError: " << fileLock1.getLastErrorStr()<< "\n");
 			return;
 		}
-		FileLock fileLock2(newPath + "\\" + m_lockTableFile + ".lck");
+		FileLock fileLock2(newPath, m_lockTableFile);
 		if (!fileLock2.lock(m_lockTableTryGetLockTimeoutMs))
 		{
 			m_lastError = Error::unableToLock;
@@ -292,8 +292,17 @@ namespace JsonDatabase
 		std::vector<size_t> mismatches;
 		getJsonFromSessionID(locks, m_manager->getSessionID(), locksOut, matches, mismatches);
 
+		std::vector<QJsonObject> locksFromOldLocation;
+		for (size_t i = 0; i < mismatches.size(); ++i)
+		{
+			locksFromOldLocation.push_back(locks[mismatches[i]]);
+		}
+		writeLockTable(locksFromOldLocation);
+
+
 		m_specificDatabasePath = newPath;
 		std::vector<QJsonObject> locksFromNewLocation;
+		
 		if (!readLockTable(locksFromNewLocation))
 		{
 			m_useSpecificDatabasePath = false;
@@ -417,13 +426,17 @@ namespace JsonDatabase
 		file.close();
 		return true;
 	}
-	std::string JDObjectLocker::getTableFilePath() const
+	const std::string& JDObjectLocker::getTableFilePath() const
 	{
 		if (m_useSpecificDatabasePath)
 		{
-			return m_specificDatabasePath + "\\" + m_lockTableFile;
+			return m_specificDatabasePath;
 		}
-		return m_manager->getDatabasePath() + "\\" + m_lockTableFile;
+		return m_manager->getDatabasePath();
+	}
+	const std::string& JDObjectLocker::getTableFileName() const
+	{
+		return m_lockTableFile;
 	}
 
 	bool JDObjectLocker::getJsonFromID(const std::vector<QJsonObject>& locks, 

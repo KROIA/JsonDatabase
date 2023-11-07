@@ -48,7 +48,8 @@ namespace JsonDatabase
 		bool readLockTable(std::vector<QJsonObject>& locks) const;
 		bool writeLockTable(const std::vector<QJsonObject>& locks) const;
 
-		std::string getTableFilePath() const;
+		const std::string& getTableFilePath() const;
+		const std::string& getTableFileName() const;
 
 		bool getJsonFromID(const std::vector<QJsonObject>& locks, 
 						   const std::string& targetID,

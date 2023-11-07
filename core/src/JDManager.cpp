@@ -34,19 +34,12 @@
 
 
 
-#ifdef USE_MUTEX_LOCK
-#define JDM_UNIQUE_LOCK JDUniqueMutexLock uniqueLock(m_mutex);
-#define JDM_UNIQUE_LOCK_M(mutex) JDUniqueMutexLock uniqueLock(mutex);
-#else
-#define JDM_UNIQUE_LOCK
-#define JDM_UNIQUE_LOCK_M
-#endif
+
 
 namespace JsonDatabase
 {
 
     const std::string JDManager::m_jsonFileEnding = ".json";
-    const std::string JDManager::m_lockFileEnding = ".lck";
 
     const QString JDManager::m_timeFormat = "hh:mm:ss.zzz";
     const QString JDManager::m_dateFormat = "dd.MM.yyyy";
@@ -205,12 +198,13 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
     success &= obj->saveInternal(data);
 
 
-    if (!lockFile(m_databaseName))
+    if (!lockFile(m_databaseName, FileReadWriteLock::Access::readWrite))
     {
         JD_CONSOLE_FUNCTION(" Can't lock database\n");
         return false;
     }
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
     success &= readJsonFile(getDatabaseFilePath(), jsons);
     size_t index = getJsonIndexByID(jsons, ID);
     
@@ -231,16 +225,18 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
 bool JDManager::saveObjects() const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
     bool success = true;
-    std::vector<JDObjectInterface*> objs(m_objs.size(), nullptr);
-    size_t i = 0;
-    for (auto& p : m_objs)
     {
-        objs[i++] = p.second;
-    }
+        JDM_UNIQUE_LOCK;
+        std::vector<JDObjectInterface*> objs(m_objs.size(), nullptr);
+        size_t i = 0;
+        for (auto& p : m_objs)
+        {
+            objs[i++] = p.second;
+        }
 
-    success &= saveObjects_internal(objs);
+        success &= saveObjects_internal(objs);
+    }
     return success;
 }
 bool JDManager::saveObjects(const std::vector<JDObjectInterface*> &objList) const
@@ -262,7 +258,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     std::vector<QJsonObject> jsonData;
     success &= getJsonArray(objList, jsonData);
 
-    if (!lockFile(m_databaseName))
+    if (!lockFile(m_databaseName, FileReadWriteLock::Access::write))
     {
         JD_CONSOLE_FUNCTION(" Can't lock database\n");
         return false;
@@ -285,7 +281,7 @@ bool JDManager::loadObject(JDObjectInterface* obj)
     bool success = true;
     std::string ID = obj->getObjectID();
 
-    if (!lockFile(m_databaseName))
+    if (!lockFile(m_databaseName, FileReadWriteLock::Access::read))
     {
         JD_CONSOLE_FUNCTION("Can't lock database\n");
         return false;
@@ -312,61 +308,63 @@ bool JDManager::loadObject(JDObjectInterface* obj)
 bool JDManager::loadObjects()
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
     bool success = true;
-
-    if (!lockFile(m_databaseName))
     {
-        JD_CONSOLE_FUNCTION("Can't lock database\n");
-        return false;
-    }
+        JDM_UNIQUE_LOCK;
+        
 
-    std::vector<QJsonObject> jsons;
-    success &= readJsonFile(getDatabaseFilePath(), jsons);
-
-    unlockFile(m_databaseName);
-
-    struct Pair
-    {
-        JDObjectInterface* obj;
-        QJsonObject json;
-    };
-
-    std::vector< Pair> pairs;
-    {
-        JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
-        for (size_t i = 0; i < jsons.size(); ++i)
+        if (!lockFile(m_databaseName, FileReadWriteLock::Access::read))
         {
-            std::string ID;
-            if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
-            {
-                JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
-                success = false;
-            }
-            Pair p;
-            p.obj = getObject_internal(ID);
-            p.json = jsons[i];
-            pairs.push_back(p);
+            JD_CONSOLE_FUNCTION("Can't lock database\n");
+            return false;
         }
-    }
-    if (!success)
-        return false;
 
-    {
-        JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
-        for (auto& pair : pairs)
+        std::vector<QJsonObject> jsons;
+        success &= readJsonFile(getDatabaseFilePath(), jsons);
+
+        unlockFile(m_databaseName);
+
+        struct Pair
         {
-            bool newObj = !pair.obj;
-            success &= deserializeJson(pair.json, pair.obj);
+            JDObjectInterface* obj;
+            QJsonObject json;
+        };
 
-            // Add the new generated object to the database
-            if (newObj)
+        std::vector< Pair> pairs;
+        {
+            JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
+            for (size_t i = 0; i < jsons.size(); ++i)
             {
-                addObject_internal(pair.obj);
+                std::string ID;
+                if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
+                {
+                    JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
+                    success = false;
+                }
+                Pair p;
+                p.obj = getObject_internal(ID);
+                p.json = jsons[i];
+                pairs.push_back(p);
             }
         }
-    }
+        if (!success)
+            return false;
 
+        {
+            JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
+            for (auto& pair : pairs)
+            {
+                bool newObj = !pair.obj;
+                success &= deserializeJson(pair.json, pair.obj);
+
+                // Add the new generated object to the database
+                if (newObj)
+                {
+                    addObject_internal(pair.obj);
+                }
+            }
+        }
+    }
     return success;
 }
 
@@ -792,9 +790,9 @@ bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath, 
     JD_CONSOLE_FUNCTION("Can't open File: "<<(m_databasePath+"\\"+relativePath+fileEnding).c_str()<<"\n");
     return false;
 }
-bool JDManager::lockFile(const std::string &relativePath, unsigned int timeoutMillis) const
+bool JDManager::lockFile(const std::string &relativePath, FileReadWriteLock::Access direction, unsigned int timeoutMillis) const
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+   // JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
    // JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
 
     if (m_fileLock)
@@ -804,31 +802,14 @@ bool JDManager::lockFile(const std::string &relativePath, unsigned int timeoutMi
     }
     
 
-    std::string abspath = m_databasePath+"\\"+ relativePath +m_lockFileEnding;
+    //std::string abspath = m_databasePath+"\\"+ relativePath;
 
-    m_fileLock = new FileLock(abspath);
+    m_fileLock = new FileReadWriteLock(m_databasePath, relativePath);
 
-
-    QDateTime currentDateTime = QDateTime::currentDateTime();
-    size_t tryCount = 0;
-
-    // Get the current time
-    auto start = std::chrono::high_resolution_clock::now();
-
-    // Calculate the time point when the desired duration will be reached
-    auto end = start + std::chrono::milliseconds(timeoutMillis);
-
-    while (!m_fileLock->lock()) {
-        JD_GENERAL_PROFILING_BLOCK_C("WaitForFreeLock", profiler::colors::Red200);
-        QTUpdateEvents();
-
-        if (std::chrono::high_resolution_clock::now() > end)
-        {
-            JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << abspath<<"\n");
-            return false;
-        }
-        // Sleep for a short while to avoid busy-waiting
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Adjust as needed
+    if(!m_fileLock->lock(direction, timeoutMillis))
+    {
+        JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << abspath<<"\n");
+        return false;
     }
 
    /* while (!m_fileLock->lock())
@@ -855,12 +836,13 @@ bool JDManager::lockFile(const std::string &relativePath, unsigned int timeoutMi
 }
 bool JDManager::unlockFile(const std::string &relativePath) const
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2); 
+    //JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2); 
     //JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
 
     if (!m_fileLock)
         return true;
 
+    m_fileLock->unlock();
     delete m_fileLock;
     m_fileLock = nullptr;
 

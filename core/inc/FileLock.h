@@ -3,13 +3,11 @@
 #include "JD_base.h"
 
 #include <string>
+#include <vector>
 
-#ifdef _WIN32
 #include <windows.h>
-#else
-#include <fcntl.h>
-#include <unistd.h>
-#endif
+#include <mutex>
+
 
 
 namespace fs = std::filesystem;
@@ -26,13 +24,15 @@ namespace JsonDatabase
             unableToLock,
             alreadyLocked,
         };
+        
 
 
-        FileLock(const std::string& filePath);
+        FileLock(const std::string& filePath, const std::string &fileName);
 
         ~FileLock();
 
         const std::string& getFilePath() const;
+        const std::string& getFileName() const;
 
         bool lock();
         bool lock(unsigned int timeoutMs);
@@ -44,18 +44,34 @@ namespace JsonDatabase
         const std::string& getLastErrorStr() const;
 
 
+        static std::string replaceForwardSlashesWithBackslashes(const std::string& input);
+        
+        
+
+        static const std::string s_lockFileEnding;
     private:
+        bool lock_internal();
         Error lockFile();
+        //Error lockFile_old();
         void unlockFile();
 
+      
+
+
         std::string m_filePath;
-#ifdef _WIN32
+        std::string m_directory;
+        std::string m_fileName;
+
+        std::string m_lockFilePathName;
+
         HANDLE m_fileHandle;
-#else
-        int m_fileDescriptor;
-#endif
+        
+        
 
         bool m_locked;
         Error m_lastError;
+
+        
+        static std::mutex m_mutex;
     };
 }

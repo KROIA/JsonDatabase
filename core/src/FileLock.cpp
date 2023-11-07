@@ -2,46 +2,39 @@
 #include <thread>
 #include <iostream>
 
+#include "JDUniqueMutexLock.h"
+
 namespace JsonDatabase
 {
-    FileLock::FileLock(const std::string& filePath)
-        : m_filePath(filePath) 
+    const std::string FileLock::s_lockFileEnding = ".clk";
+    std::mutex FileLock::m_mutex;
+
+    FileLock::FileLock(const std::string& filePath, const std::string &fileName)
+        : m_directory(replaceForwardSlashesWithBackslashes(filePath))
+        , m_fileName(fileName)
         , m_locked(false)
         , m_lastError(Error::none)
-#ifdef _WIN32
         , m_fileHandle(nullptr)
-#else
-        , m_m_fileDescriptor(0);
-#endif
     {
-
+        m_filePath = m_directory + "\\" + m_fileName;
+        m_lockFilePathName = m_filePath + s_lockFileEnding;
     }
     FileLock::~FileLock() 
     {
-        unlockFile();
+        unlock();
     }
 
     const std::string& FileLock::getFilePath() const
     {
-        return m_filePath;
+        return m_directory;
+    }
+    const std::string& FileLock::getFileName() const
+    {
+        return m_fileName;
     }
     bool FileLock::lock()
     {
-        m_lastError = Error::none;
-        if (!m_locked)
-        {
-            m_lastError = lockFile();
-#ifdef JD_DEBUG
-            if (m_lastError != Error::none)
-            {
-                JD_CONSOLE_FUNCTION(getLastErrorStr() +"\n");
-            }
-#endif
-        }
-        JDFILE_FILE_LOCK_PROFILING_VALUE("locked", m_locked);
-        if (m_lastError == Error::none)
-            return true;
-        return false;
+        return lock_internal();        
     }
     bool FileLock::lock(unsigned int timeoutMs)
     {
@@ -51,18 +44,59 @@ namespace JsonDatabase
         // Calculate the time point when the desired duration will be reached
         auto end = start + std::chrono::milliseconds(timeoutMs);
 
-        while (std::chrono::high_resolution_clock::now() < end && !lock()) {
-
+        while (std::chrono::high_resolution_clock::now() < end && !lock_internal()) {
+            JDFILE_FILE_LOCK_PROFILING_BLOCK("WaitForFreeLock", JD_COLOR_STAGE_5);
             // Sleep for a short while to avoid busy-waiting
             std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Adjust as needed
         }
-        return isLocked();
+        return m_locked;
+    }
+    bool FileLock::lock_internal()
+    {
+        //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
+        m_lastError = Error::none;
+        if (!m_locked)
+        {
+            m_lastError = lockFile();
+#ifdef JD_DEBUG
+            if (m_lastError != Error::none)
+            {
+                JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
+            }
+#endif
+        }
+#ifdef JD_PROFILING
+        if (m_locked)
+        {
+            JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true");
+        }
+        else
+        {
+            JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "false");
+        }
+#endif
+        if (m_lastError == Error::none)
+        {
+            return true;
+        }
+        return false;
     }
     void FileLock::unlock()
     {
+#ifdef JD_PROFILING
+        //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
+        bool wasLocked = m_locked;
+#endif
         m_lastError = Error::none;
         unlockFile();
-        JDFILE_FILE_LOCK_PROFILING_VALUE("locked", m_locked);
+#ifdef JD_PROFILING
+        if (wasLocked)
+        {
+            JDFILE_FILE_LOCK_PROFILING_END_BLOCK;
+        }
+        //JDFILE_FILE_LOCK_PROFILING_VALUE("locked", m_locked);
+#endif
+        
     }
 
     bool FileLock::isLocked() const
@@ -88,14 +122,18 @@ namespace JsonDatabase
         return unknown;
     }
 
-    FileLock::Error FileLock::lockFile() 
+    FileLock::Error FileLock::lockFile()
     {
-        JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+        JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
         if (m_locked)
             return Error::alreadyLocked;
-#ifdef _WIN32
+
+        //  JDM_UNIQUE_LOCK;
+       
+
+
         m_fileHandle = CreateFile(
-            m_filePath.c_str(),
+            m_lockFilePathName.c_str(),
             GENERIC_WRITE,
             0,
             nullptr,
@@ -118,37 +156,116 @@ namespace JsonDatabase
             return Error::unableToLock;
             //throw std::runtime_error("Unable to lock file.");
         }
-#else
-        m_fileDescriptor = open(m_filePath.c_str(), O_RDWR | O_CREAT, 0666);
 
-        if (m_fileDescriptor == -1) {
+
+
+        m_locked = true;
+        return Error::none;
+    }
+  /*  FileLock::Error FileLock::lockFile_old(Access direction)
+    {
+        JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
+        if (m_locked)
+            return Error::alreadyLocked;
+
+      //  JDM_UNIQUE_LOCK;
+
+
+        m_access = Access::unknown;
+
+        std::vector<std::string> files = getFileNamesInDirectory(m_directory, s_lockFileEnding);
+
+        size_t readerCount = 0;
+        for (const std::string& file : files)
+        {
+            if (file.find(s_lockFileEnding) == std::string::npos)
+                continue;
+
+            // Check the filename to see if it matches the file we want to lock
+            size_t pos = file.find_last_of("_");
+            if (pos == std::string::npos)
+				continue;
+            std::string fileName = file.substr(0, pos);
+
+			if (fileName != m_fileName)
+				continue;
+
+			// Check the access type
+            size_t pos2 = file.find_last_of("-");
+            std::string accessType = file.substr(pos + 1, pos2 - pos - 1);
+            Access access = stringToAccessType(accessType);
+            switch (access)
+            {
+                case Access::readWrite:
+                case Access::write:
+                {
+                    // Already locked for writing by a other process
+                    return Error::alreadyLocked;
+                }
+                case Access::read:
+                {
+					++readerCount;
+					break;
+				}
+                case Access::unknown:
+                {
+                    int a = 0;
+
+                }
+            }
+        }
+
+        if (direction == Access::write && readerCount != 0)
+        {
+            // Some are reading, can't write
+            return Error::alreadyLocked;
+        }
+
+
+        std::string accessType = accessTypeToString(direction);
+        std::string randStr;
+        if(direction == Access::read)
+			randStr = std::to_string(readerCount)+getRandomString(10);
+
+        std::string lockFileName = m_filePath + "_" + accessType +"-"+ randStr + s_lockFileEnding;
+
+        m_fileHandle = CreateFile(
+            lockFileName.c_str(),
+            GENERIC_WRITE,
+            0,
+            nullptr,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr
+        );
+
+        if (m_fileHandle == INVALID_HANDLE_VALUE) {
+            m_locked = false;
             return Error::unableToCreateOrOpenLockFile;
             //throw std::runtime_error("Unable to create or open file.");
         }
 
-        struct flock fl;
-        fl.l_type = F_WRLCK;
-        fl.l_whence = SEEK_SET;
-        fl.l_start = 0;
-        fl.l_len = 0;
-
-        if (fcntl(m_fileDescriptor, F_SETLKW, &fl) == -1) {
+        if (LockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD)) {
+            //std::cout << "File locked successfully." << std::endl;
+        }
+        else {
+            m_locked = false;
             return Error::unableToLock;
             //throw std::runtime_error("Unable to lock file.");
         }
 
-        //std::cout << "File locked successfully." << std::endl;
-#endif
 
         
         m_locked = true;
+        m_access = direction;
+        m_lockFilePathName = lockFileName;
         return Error::none;
-    }
+    }*/
 
     void FileLock::unlockFile() 
     {
-        JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
-#ifdef _WIN32
+        JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
+
         if (!m_fileHandle) return;
 
         UnlockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD);
@@ -156,33 +273,36 @@ namespace JsonDatabase
         m_fileHandle = nullptr;
 
         // Now, delete the file
-        if (!DeleteFile(m_filePath.c_str())) 
+        if (!DeleteFile(m_lockFilePathName.c_str()))
         {
             // Handle error deleting file
             m_lastError = Error::unableToDeleteLockFile;
             JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
         }
-#else
-        if (!m_fileDescriptor) return;
-        struct flock fl;
-        fl.l_type = F_UNLCK;
-        fl.l_whence = SEEK_SET;
-        fl.l_start = 0;
-        fl.l_len = 0;
 
-        fcntl(m_fileDescriptor, F_SETLKW, &fl);
-        close(m_fileDescriptor);
-        m_fileDescriptor = 0;
 
-        // Now, delete the file
-        if (unlink(m_filePath.c_str()) != 0) {
-            // Handle error deleting file
-            m_lastError = Error::unableToDeleteLockFile;
-            JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
-        }
-#endif
         m_locked = false;
 
         //std::cout << "File unlocked successfully." << std::endl;
     }
+
+
+    
+
+    std::string FileLock::replaceForwardSlashesWithBackslashes(const std::string& input)
+    {
+        std::string result = input;
+        size_t pos = 0;
+
+        while ((pos = result.find('/', pos)) != std::string::npos)
+        {
+            result.replace(pos, 1, "\\");
+            pos += 2; // Move past the double backslashes
+        }
+
+        return result;
+    }
+    
+
+    
 }

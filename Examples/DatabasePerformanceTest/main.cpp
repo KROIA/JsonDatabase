@@ -20,7 +20,7 @@ QMutex mutex;
 
 #define USE_LOADS_SAVES
 #define THREAD_END_SECONDS 2
-#define USE_ZIP_FORMAT true
+#define USE_ZIP_FORMAT false
 
 
 void threadFunction1();
@@ -28,6 +28,8 @@ void threadFunction2();
 void threadFunction3();
 void threadFunction4();
 void threadFunction5();
+
+void collisionChecker();
 
 JDManager* manager1 = nullptr;
 JDManager* manager2 = nullptr;
@@ -88,10 +90,13 @@ int main(int argc, char* argv[])
 
     // Create and start the first thread
     std::thread t1(threadFunction1);
-    std::thread t2(threadFunction2);
-    std::thread t3(threadFunction3);
-    std::thread t4(threadFunction4);
-    std::thread t5(threadFunction5);
+   std::thread t2(threadFunction2);
+   std::thread t3(threadFunction3);
+   std::thread t4(threadFunction4);
+   std::thread t5(threadFunction5);
+   
+   std::thread t6(collisionChecker);
+
 
     // Wait for the threads to finish for up to 10 seconds
     t1.join();
@@ -99,6 +104,7 @@ int main(int argc, char* argv[])
     t3.join();
     t4.join();
     t5.join();
+    t6.join();
 
    
     manager2->loadObjects();
@@ -108,7 +114,7 @@ int main(int argc, char* argv[])
     manager2->saveObjects();
     std::cout << "Finish";
 
-    JDManager::stopProfiler("Profile.prof");
+    
 
 
     delete manager5;
@@ -119,7 +125,6 @@ int main(int argc, char* argv[])
 
 #else
     JDManager manager("database", "Persons", "sessionID", "USER");
-    manager.addObjectDefinition<Person>();
 
     manager.addObject(globalTable);
 
@@ -130,9 +135,8 @@ int main(int argc, char* argv[])
     qDebug() << "Objects loaded: " << manager.getObjectCount();
     qDebug() << "Tables equal: " << compareTables(createPersons(), manager.getObjects());
 
-    manager.saveProfilerFile();
 #endif
-    
+    JDManager::stopProfiler("Profile.prof");
     
 
     return a.exec();
@@ -214,6 +218,7 @@ void threadFunction1() {
         std::cout << "Thread 1 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
+        for(int i=0; i<20; ++i)
         manager1->loadObjects();
         std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
         manager1->saveObjects();
@@ -250,6 +255,7 @@ void threadFunction2() {
         std::cout << "Thread 2 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
+        for (int i = 0; i < 20; ++i)
         manager2->loadObjects();
         std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
         manager2->saveObjects();
@@ -294,6 +300,7 @@ void threadFunction3() {
         std::cout << "Thread 3 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
+        for (int i = 0; i < 20; ++i)
         manager3->loadObjects();
         std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
         manager3->saveObjects();
@@ -327,6 +334,7 @@ void threadFunction4() {
         std::cout << "Thread 4 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
+        for (int i = 0; i < 20; ++i)
         manager4->loadObjects();
         std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
         manager4->saveObjects();
@@ -361,6 +369,7 @@ void threadFunction5() {
         std::cout << "Thread 5 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
+        for (int i = 0; i < 20; ++i)
         manager5->loadObjects();
         std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
         manager5->saveObjects();
@@ -387,5 +396,72 @@ void threadFunction5() {
     }
 }
 
+
+
+
+void collisionChecker() {
+    auto start = std::chrono::high_resolution_clock::now();
+    bool hasLocked = false;
+    JDObjectInterface* lockedPerson = nullptr;
+    while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS+1) {
+        
+        std::vector<std::string>  files = FileReadWriteLock::getFileNamesInDirectory("database", ".clk");
+        size_t wCount = 0;
+        size_t rCount = 0;
+        for (const std::string& file : files)
+        {
+            if (file.find(".clk") == std::string::npos)
+                continue;
+
+            // Check the filename to see if it matches the file we want to lock
+            size_t pos = file.find_last_of("_");
+            if (pos == std::string::npos)
+                continue;
+            std::string fileName = file.substr(0, pos);
+
+            if (fileName != "Persons")
+                continue;
+
+            // Check the access type
+            size_t pos2 = file.find_last_of("-");
+            std::string accessType = file.substr(pos + 1, pos2 - pos - 1);
+            FileReadWriteLock::Access access = FileReadWriteLock::stringToAccessType(accessType);
+            switch (access)
+            {
+            case FileReadWriteLock::Access::readWrite:
+            case FileReadWriteLock::Access::write:
+            {
+                // Already locked for writing by a other process
+                ++wCount;
+                break;
+            }
+            case FileReadWriteLock::Access::read:
+            {
+                ++rCount;
+                break;
+            }
+            case FileReadWriteLock::Access::unknown:
+            {
+                int a = 0;
+
+            }
+            }
+        }
+
+        if (wCount > 1)
+        {
+            int a = 0;
+            std::cout << "Collision detected\n";
+        }
+        if (rCount > 0 && wCount > 0)
+        {
+            std::cout << "Collision detected reader and writer\n";
+        }
+
+        
+
+
+    }
+}
 
 #endif

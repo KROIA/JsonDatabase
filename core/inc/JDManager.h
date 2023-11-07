@@ -3,7 +3,7 @@
 #include "JD_base.h"
 #include "JDObjectInterface.h"
 #include "JDObjectRegistry.h"
-#include "FileLock.h"
+#include "FileReadWriteLock.h"
 #include "ThreadWorker.h"
 #include "JDObjectLocker.h"
 
@@ -20,7 +20,7 @@
 
 #define JSON_DATABASE_USE_CMD_FILE_SEARCH
 
-#define USE_MUTEX_LOCK
+
 
 
 
@@ -158,7 +158,7 @@ class JSONDATABASE_EXPORT JDManager
         bool readJsonFile(QJsonObject &obj, const std::string &relativePath) const;
         bool readJsonFile(QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const;
 
-        bool lockFile(const std::string &relativePath, unsigned int timeoutMillis = 1000) const;
+        bool lockFile(const std::string &relativePath, FileReadWriteLock::Access direction, unsigned int timeoutMillis = 1000) const;
         bool unlockFile(const std::string &relativePath) const;
 
 
@@ -194,7 +194,7 @@ class JSONDATABASE_EXPORT JDManager
         std::string m_user;
 
         JDObjectLocker m_lockTable;
-        mutable FileLock* m_fileLock;
+        mutable FileReadWriteLock* m_fileLock;
         mutable std::mutex m_mutex;
         bool m_useZipFormat;
 
@@ -206,7 +206,6 @@ class JSONDATABASE_EXPORT JDManager
         static std::mutex s_mutex;
 
         static const std::string m_jsonFileEnding;
-        static const std::string m_lockFileEnding;
 
         static const QString m_timeFormat;
         static const QString m_dateFormat;
