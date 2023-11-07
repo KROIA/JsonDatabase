@@ -146,20 +146,68 @@ class JSONDATABASE_EXPORT JDManager
 
         bool deserializeJson(const QJsonObject& json, JDObjectInterface*& objOut) const;
 
-        void getJsonFileContent(const std::vector<QJsonObject>& jsons, std::string& fileContentOut) const;
-        bool writeJsonFile(const std::vector<QJsonObject>& jsons, const std::string &outputFile) const;
-        bool readJsonFile(const std::string& inputFile, std::vector<QJsonObject>& jsonsOut) const;
+        //void getJsonFileContent(const std::vector<QJsonObject>& jsons, std::string& fileContentOut) const;
+       
+        
+        //bool writeFile(const QByteArray& fileData, const std::string & outputFilePath, const std::string& outputFileName) const;
+        
+ 
         // bool deserializeJson(std::string)
 
         // relativePath without fileEnding
         //bool writeJsonFile(const QJsonObject &obj, const std::string &relativePath) const;
         //bool writeJsonFile(const QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const;
         
-        bool readJsonFile(QJsonObject &obj, const std::string &relativePath) const;
-        bool readJsonFile(QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const;
 
-        bool lockFile(const std::string &relativePath, FileReadWriteLock::Access direction, unsigned int timeoutMillis = 1000) const;
-        bool unlockFile(const std::string &relativePath) const;
+        bool lockFile(
+            const std::string& directory,
+            const std::string& fileName,
+            FileReadWriteLock::Access direction,
+            unsigned int timeoutMillis = 100) const;
+        bool unlockFile() const;
+
+        bool writeJsonFile(
+            const std::vector<QJsonObject>& jsons,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const;
+        bool writeJsonFile(
+            const QJsonObject& json,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const;
+
+        bool readJsonFile(
+            std::vector<QJsonObject>& jsonsOut,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const;
+        bool readJsonFile(
+            QJsonObject &objOut, 
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const;
+
+        bool readFile(
+            QByteArray& fileDataOut,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool lockedRead) const;
+        bool writeFile(
+            const QByteArray& fileData, 
+            const std::string& directory, 
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool lockedRead) const;
 
 
         static void QTUpdateEvents();
@@ -205,7 +253,7 @@ class JSONDATABASE_EXPORT JDManager
         //static std::map<std::string, JDObjectInterface*> s_objDefinitions;
         static std::mutex s_mutex;
 
-        static const std::string m_jsonFileEnding;
+        static const std::string s_jsonFileEnding;
 
         static const QString m_timeFormat;
         static const QString m_dateFormat;

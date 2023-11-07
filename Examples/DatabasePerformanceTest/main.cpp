@@ -19,7 +19,7 @@ QMutex mutex;
 #include <chrono>
 
 #define USE_LOADS_SAVES
-#define THREAD_END_SECONDS 2
+#define THREAD_END_SECONDS 4
 #define USE_ZIP_FORMAT false
 
 

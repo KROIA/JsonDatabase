@@ -32,14 +32,14 @@
 #include <Wincon.h>
 #include <winuser.h>
 
-
+#include <iostream>
 
 
 
 namespace JsonDatabase
 {
 
-    const std::string JDManager::m_jsonFileEnding = ".json";
+    const std::string JDManager::s_jsonFileEnding = ".json";
 
     const QString JDManager::m_timeFormat = "hh:mm:ss.zzz";
     const QString JDManager::m_dateFormat = "dd.MM.yyyy";
@@ -198,14 +198,14 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
     success &= obj->saveInternal(data);
 
 
-    if (!lockFile(m_databaseName, FileReadWriteLock::Access::readWrite))
+    if (!lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::readWrite))
     {
         JD_CONSOLE_FUNCTION(" Can't lock database\n");
         return false;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    success &= readJsonFile(getDatabaseFilePath(), jsons);
+    
+    success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
     size_t index = getJsonIndexByID(jsons, ID);
     
     if (index == std::string::npos)
@@ -218,8 +218,8 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
     }
 
     // Save the serialized objects
-    success &= writeJsonFile(jsons, getDatabaseFilePath());
-    unlockFile(m_databaseName);
+    success &= writeJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
+    unlockFile();
     return true;
 }
 bool JDManager::saveObjects() const
@@ -258,16 +258,9 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     std::vector<QJsonObject> jsonData;
     success &= getJsonArray(objList, jsonData);
 
-    if (!lockFile(m_databaseName, FileReadWriteLock::Access::write))
-    {
-        JD_CONSOLE_FUNCTION(" Can't lock database\n");
-        return false;
-    }
-
     // Save the serialized objects
-    success &= writeJsonFile(jsonData, getDatabaseFilePath());
+    success &= writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
 
-    unlockFile(m_databaseName);
     return success;
 }
 
@@ -281,17 +274,8 @@ bool JDManager::loadObject(JDObjectInterface* obj)
     bool success = true;
     std::string ID = obj->getObjectID();
 
-    if (!lockFile(m_databaseName, FileReadWriteLock::Access::read))
-    {
-        JD_CONSOLE_FUNCTION("Can't lock database\n");
-        return false;
-    }
-
     std::vector<QJsonObject> jsons;
-    success &= readJsonFile(getDatabaseFilePath(), jsons);
-
-    unlockFile(m_databaseName);
-
+    success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
 
     size_t index = getJsonIndexByID(jsons, ID);
     if (index == std::string::npos)
@@ -311,56 +295,48 @@ bool JDManager::loadObjects()
     bool success = true;
     {
         JDM_UNIQUE_LOCK;
-        
-
-        if (!lockFile(m_databaseName, FileReadWriteLock::Access::read))
         {
-            JD_CONSOLE_FUNCTION("Can't lock database\n");
-            return false;
-        }
+            std::vector<QJsonObject> jsons;
+            success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
 
-        std::vector<QJsonObject> jsons;
-        success &= readJsonFile(getDatabaseFilePath(), jsons);
-
-        unlockFile(m_databaseName);
-
-        struct Pair
-        {
-            JDObjectInterface* obj;
-            QJsonObject json;
-        };
-
-        std::vector< Pair> pairs;
-        {
-            JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
-            for (size_t i = 0; i < jsons.size(); ++i)
+            struct Pair
             {
-                std::string ID;
-                if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
+                JDObjectInterface* obj;
+                QJsonObject json;
+            };
+
+            std::vector< Pair> pairs;
+            {
+                JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
+                for (size_t i = 0; i < jsons.size(); ++i)
                 {
-                    JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
-                    success = false;
+                    std::string ID;
+                    if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
+                    {
+                        JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
+                        success = false;
+                    }
+                    Pair p;
+                    p.obj = getObject_internal(ID);
+                    p.json = jsons[i];
+                    pairs.push_back(p);
                 }
-                Pair p;
-                p.obj = getObject_internal(ID);
-                p.json = jsons[i];
-                pairs.push_back(p);
             }
-        }
-        if (!success)
-            return false;
+            if (!success)
+                return false;
 
-        {
-            JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
-            for (auto& pair : pairs)
             {
-                bool newObj = !pair.obj;
-                success &= deserializeJson(pair.json, pair.obj);
-
-                // Add the new generated object to the database
-                if (newObj)
+                JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
+                for (auto& pair : pairs)
                 {
-                    addObject_internal(pair.obj);
+                    bool newObj = !pair.obj;
+                    success &= deserializeJson(pair.json, pair.obj);
+
+                    // Add the new generated object to the database
+                    if (newObj)
+                    {
+                        addObject_internal(pair.obj);
+                    }
                 }
             }
         }
@@ -418,12 +394,6 @@ bool JDManager::removeObject_internal(JDObjectInterface* obj)
     m_objs.erase(obj->getObjectID());
     return true;
 }
-/*bool JDManager::removeObject_internal(JDObjectInterface* obj)
-{
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    m_objs.erase(obj->getObjectID());
-    return deleteJsonFile(obj);
-}*/
 bool JDManager::removeObjects(const std::vector<JDObjectInterface*> &objList)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
@@ -531,11 +501,11 @@ void JDManager::onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& 
 {
 
 }
-
 std::string JDManager::getDatabaseFilePath() const
 {
-    return  m_databasePath + "//" + m_databaseName + ".json";
+    return  m_databasePath + "//" + m_databaseName + s_jsonFileEnding;
 }
+
 
 bool JDManager::getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut) const
 {
@@ -573,7 +543,6 @@ bool JDManager::serializeJson(const QJsonObject& obj, std::string& serializedOut
     serializedOut = bytes.constData();
     return true;
 }
-
 bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& objOut) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
@@ -603,172 +572,275 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& obj
     return true;
 }
 
-void JDManager::getJsonFileContent(const std::vector<QJsonObject>& jsons, std::string& fileContentOut) const
+bool JDManager::lockFile(
+    const std::string& directory,
+    const std::string& fileName,
+    FileReadWriteLock::Access direction,
+    unsigned int timeoutMillis) const
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    QJsonArray jsonArray;
+    // JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    // JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
 
-    // Convert QJsonObject instances to QJsonValue and add them to QJsonArray
-    for (const auto& jsonObject : jsons) {
-        jsonArray.append(QJsonValue(jsonObject));
-    }
-
-    QJsonDocument jsonDocument(jsonArray);
-    fileContentOut = jsonDocument.toJson().toStdString();
-}
-bool JDManager::writeJsonFile(const std::vector<QJsonObject>& jsons, const std::string& outputFile) const 
-{
-    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
-    JDFILE_IO_PROFILING_BLOCK("std::vector to QJsonArray", JD_COLOR_STAGE_6);
-    QJsonArray jsonArray;
-
-    // Convert QJsonObject instances to QJsonValue and add them to QJsonArray
-    for (const auto& jsonObject : jsons) {
-        jsonArray.append(QJsonValue(jsonObject));
-    }
-    JDFILE_IO_PROFILING_END_BLOCK;
-
-    QJsonDocument jsonDocument(jsonArray);
-
-    JDFILE_IO_PROFILING_BLOCK("toJson", JD_COLOR_STAGE_6);
-    // Convert QJsonDocument to a QByteArray for writing to a file
-    QByteArray data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
-    JDFILE_IO_PROFILING_END_BLOCK;
-
-    // Open the file for writing
-    QFile file(outputFile.c_str());
-    if (file.open(QIODevice::WriteOnly)) {
-        // Write the JSON data to the file
-        if (m_useZipFormat)
-        {
-            JDFILE_IO_PROFILING_BLOCK("compressing data", JD_COLOR_STAGE_6);
-            QByteArray compressed;
-            compressString(data, compressed);
-            JDFILE_IO_PROFILING_END_BLOCK;
-            JDFILE_IO_PROFILING_BLOCK("write to file", JD_COLOR_STAGE_6);
-            file.write(compressed);
-            JDFILE_IO_PROFILING_END_BLOCK;
-        }
-        else
-        {
-            JDFILE_IO_PROFILING_BLOCK("write to file", JD_COLOR_STAGE_6);
-            file.write(data);
-            JDFILE_IO_PROFILING_END_BLOCK;
-        }
-        file.close();
-        //JD_CONSOLE_FUNCTION("JSON objects saved to " << outputFile);
-        return true;
-    }
-    else {
-        JD_CONSOLE_FUNCTION("Error: Could not open file " << outputFile << " for writing\n");
-    }
-    return false;
-}
-bool JDManager::readJsonFile(const std::string& inputFile, std::vector<QJsonObject>& jsonsOut) const
-{
-    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
-    // Open the file for reading
-    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("Open file", JD_COLOR_STAGE_6);
-    QFile file(inputFile.c_str());
-
-    if (file.open(QIODevice::ReadOnly)) {
-
-        JDFILE_IO_PROFILING_END_BLOCK;
-        JDFILE_IO_PROFILING_BLOCK("read from file", JD_COLOR_STAGE_6);
-        // Read all data from the file
-        QByteArray data = file.readAll();
-        file.close();
-        JDFILE_IO_PROFILING_END_BLOCK;
-        // Parse the JSON data
-        QJsonDocument jsonDocument;
-        if (m_useZipFormat)
-        {
-            JDFILE_IO_PROFILING_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
-            QString uncompressed;
-            if (decompressString(data, uncompressed))
-            {
-                JDFILE_IO_PROFILING_END_BLOCK;
-                JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
-                jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
-                JDFILE_IO_PROFILING_END_BLOCK;
-            }
-            else
-            {
-                JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
-                jsonDocument = QJsonDocument::fromJson(data);
-                JDFILE_IO_PROFILING_END_BLOCK;
-            }
-        }
-        else
-        {
-            JDFILE_IO_PROFILING_BLOCK("import json", JD_COLOR_STAGE_6);
-            jsonDocument = QJsonDocument::fromJson(data);
-            JDFILE_IO_PROFILING_END_BLOCK;
-        }
-        
-
-        
-        // Check if the JSON document is an array
-        if (jsonDocument.isArray()) {
-            JDFILE_IO_PROFILING_BLOCK("QJsonArray to std::vector", JD_COLOR_STAGE_6);
-            QJsonArray jsonArray = jsonDocument.array();
-
-            // Iterate through the array and add QJsonObjects to the vector
-            for (const auto& jsonValue : jsonArray) {
-                if (jsonValue.isObject()) {
-                    jsonsOut.push_back(jsonValue.toObject());
-                }
-            }
-
-            JDFILE_IO_PROFILING_END_BLOCK;
-        }
-        else {
-            JD_CONSOLE_FUNCTION("Error: JSON document from file: " << inputFile << " is not an array\n");
-            return false;
-        }
-    }
-    else {
-        JDFILE_IO_PROFILING_END_BLOCK;
-        JD_CONSOLE_FUNCTION("Error: Could not open file" << inputFile << "for reading\n");
+    if (m_fileLock)
+    {
+        JD_CONSOLE_FUNCTION("Lock already aquired\n");
         return false;
     }
+
+
+    //std::string abspath = m_databasePath+"\\"+ relativePath;
+
+    m_fileLock = new FileReadWriteLock(directory, fileName);
+
+    if (!m_fileLock->lock(direction, timeoutMillis))
+    {
+        JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << directory << "\\" << fileName << "\n");
+        delete m_fileLock;
+        m_fileLock = nullptr;
+        return false;
+    }
+    if (m_fileLock->getLastError() != FileLock::Error::none)
+    {
+        std::cout << "Lock already aquired";
+        JD_CONSOLE_FUNCTION("Lock already aquired");
+    }
+
+    /* while (!m_fileLock->lock())
+     {
+         JD_GENERAL_PROFILING_BLOCK_C("WaitForFreeLock", profiler::colors::Red200);
+         QTUpdateEvents();
+
+         QDateTime waitingTime = QDateTime::currentDateTime();
+         if (currentDateTime.msecsTo(waitingTime) > timeoutMillis)
+         {
+             JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << abspath);
+             return false;
+         }
+         //using namespace std::literals;
+         //std::this_thread::sleep_for(1ms);
+ #ifdef _WIN32
+         Sleep(1);
+ #else
+         usleep(1000);
+ #endif
+     }*/
+
     return true;
 }
-/*
-bool JDManager::writeJsonFile(const QJsonObject& obj, const std::string& relativePath) const
+bool JDManager::unlockFile() const
 {
-    return writeJsonFile(obj, relativePath, m_jsonFileEnding);
-}
-bool JDManager::writeJsonFile(const QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const
-{
-    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5)
-    QJsonDocument document;
-    document.setObject(obj);
-    QByteArray bytes = document.toJson( QJsonDocument::Indented );
-    QFile file((m_databasePath+"\\"+relativePath+fileEnding).c_str());
-    if( file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate ))
-    {
-        QTextStream iStream( &file );
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        iStream.setCodec( "utf-8" );
-#else
-        iStream.setEncoding(QStringConverter::Encoding::Utf8);
-#endif
-        iStream << bytes;
-        file.close();
+    //JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2); 
+    //JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
+
+    if (!m_fileLock)
         return true;
+
+    m_fileLock->unlock();
+    delete m_fileLock;
+    m_fileLock = nullptr;
+
+    return true;
+}
+
+bool JDManager::writeJsonFile(
+    const std::vector<QJsonObject>& jsons, 
+    const std::string& directory,
+    const std::string& fileName,
+    const std::string& fileEnding,
+    bool zipFormat,
+    bool lockedRead) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+    JD_GENERAL_PROFILING_NONSCOPED_BLOCK("std::vector to QJsonArray", JD_COLOR_STAGE_6);
+    QJsonArray jsonArray;
+
+    // Convert QJsonObject instances to QJsonValue and add them to QJsonArray
+    for (const auto& jsonObject : jsons) {
+        jsonArray.append(QJsonValue(jsonObject));
+    }
+    JD_GENERAL_PROFILING_END_BLOCK;
+
+    
+    JD_GENERAL_PROFILING_NONSCOPED_BLOCK("toJson", JD_COLOR_STAGE_6);
+    QJsonDocument jsonDocument(jsonArray);
+    // Convert QJsonDocument to a QByteArray for writing to a file
+    QByteArray data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
+    JD_GENERAL_PROFILING_END_BLOCK;
+
+
+    // Write the JSON data to the file
+    if (zipFormat)
+    {
+        JD_GENERAL_PROFILING_NONSCOPED_BLOCK("compressing data", JD_COLOR_STAGE_6);
+        QByteArray fileData;
+        compressString(data, fileData);
+        JD_GENERAL_PROFILING_END_BLOCK;
+        
+        return writeFile(fileData, directory, fileName, s_jsonFileEnding, lockedRead);
+    }
+    else
+    {
+        return writeFile(data, directory, fileName, s_jsonFileEnding, lockedRead);
     }
     return false;
-}*/
-
-bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath) const
-{
-    return readJsonFile(obj, relativePath, m_jsonFileEnding);
 }
-bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const
+bool JDManager::writeJsonFile(
+    const QJsonObject& json,
+    const std::string& directory,
+    const std::string& fileName,
+    const std::string& fileEnding,
+    bool zipFormat,
+    bool lockedRead) const
 {
-    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5)
-    QFile file((m_databasePath+"\\"+relativePath+fileEnding).c_str());
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+
+    JD_GENERAL_PROFILING_NONSCOPED_BLOCK("toJson", JD_COLOR_STAGE_6);
+    QJsonDocument jsonDocument(json);
+    // Convert QJsonDocument to a QByteArray for writing to a file
+    QByteArray data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
+    JD_GENERAL_PROFILING_END_BLOCK;
+
+
+    // Write the JSON data to the file
+    if (zipFormat)
+    {
+        JD_GENERAL_PROFILING_NONSCOPED_BLOCK("compressing data", JD_COLOR_STAGE_6);
+        QByteArray fileData;
+        compressString(data, fileData);
+        JD_GENERAL_PROFILING_END_BLOCK;
+
+        return writeFile(fileData, directory, fileName, s_jsonFileEnding, lockedRead);
+    }
+    else
+    {
+        return writeFile(data, directory, fileName, s_jsonFileEnding, lockedRead);
+    }
+    return false;
+}
+
+bool JDManager::readJsonFile(
+    std::vector<QJsonObject>& jsonsOut,
+    const std::string& directory,
+    const std::string& fileName,
+    const std::string& fileEnding,
+    bool zipFormat,
+    bool lockedRead) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+    QByteArray fileData;
+    if (!readFile(fileData, directory, fileName, fileEnding, lockedRead))
+    {
+        return false;
+    }
+
+    // Parse the JSON data
+    QJsonDocument jsonDocument;
+    if (zipFormat)
+    {
+        JD_GENERAL_PROFILING_NONSCOPED_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
+        QString uncompressed;
+        if (decompressString(fileData, uncompressed))
+        {
+            JD_GENERAL_PROFILING_END_BLOCK;
+            JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+            jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
+            JD_GENERAL_PROFILING_END_BLOCK;
+        }
+        else
+        {
+            JD_GENERAL_PROFILING_END_BLOCK;
+            JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+            jsonDocument = QJsonDocument::fromJson(fileData);
+            JD_GENERAL_PROFILING_END_BLOCK;
+        }
+    }
+    else
+    {
+        JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+        jsonDocument = QJsonDocument::fromJson(fileData);
+        JD_GENERAL_PROFILING_END_BLOCK;
+    }
+
+
+
+    // Check if the JSON document is an array
+    if (jsonDocument.isArray()) {
+        JD_GENERAL_PROFILING_NONSCOPED_BLOCK("QJsonArray to std::vector", JD_COLOR_STAGE_6);
+        QJsonArray jsonArray = jsonDocument.array();
+
+        // Iterate through the array and add QJsonObjects to the vector
+        jsonsOut.reserve(jsonArray.size());
+        for (const auto& jsonValue : jsonArray) {
+            if (jsonValue.isObject()) {
+                jsonsOut.push_back(jsonValue.toObject());
+            }
+        }
+        JD_GENERAL_PROFILING_END_BLOCK;
+        return true;
+    }
+    else {
+        JD_CONSOLE_FUNCTION("Error: JSON document from file: " << inputFile << " is not an array\n");
+        return false;
+    }
+    
+    return false;
+}
+bool JDManager::readJsonFile(
+    QJsonObject& objOut,
+    const std::string& directory,
+    const std::string& fileName,
+    const std::string& fileEnding,
+    bool zipFormat,
+    bool lockedRead) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+    QByteArray fileData;
+    if (!readFile(fileData, directory, fileName, fileEnding, lockedRead))
+    {
+        return false;
+    }
+    QJsonParseError jsonError;
+
+    QJsonDocument document;
+    if (zipFormat)
+    {
+        JD_GENERAL_PROFILING_NONSCOPED_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
+        QString uncompressed;
+        if (decompressString(fileData, uncompressed))
+        {
+            JD_GENERAL_PROFILING_END_BLOCK;
+            JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+            document = QJsonDocument::fromJson(uncompressed.toUtf8());
+            JD_GENERAL_PROFILING_END_BLOCK;
+        }
+        else
+        {
+            JD_GENERAL_PROFILING_END_BLOCK;
+            JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+            document = QJsonDocument::fromJson(fileData);
+            JD_GENERAL_PROFILING_END_BLOCK;
+        }
+    }
+    else
+    {
+        JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+        document = QJsonDocument::fromJson(fileData);
+        JD_GENERAL_PROFILING_END_BLOCK;
+    }
+    if (jsonError.error != QJsonParseError::NoError)
+    {
+        JD_CONSOLE_FUNCTION("Can't read JsonFile: " << jsonError.errorString().toStdString().c_str() << "\n");
+        return false;
+    }
+    if (document.isObject())
+    {
+        objOut = document.object();
+        return true;
+    }
+    
+    return false;
+
+    /*QFile file((m_databasePath + "\\" + relativePath + fileEnding).c_str());
     if( file.open( QIODevice::ReadOnly ) )
     {
         QByteArray bytes = file.readAll();
@@ -788,66 +860,88 @@ bool JDManager::readJsonFile(QJsonObject &obj, const std::string &relativePath, 
         }
     }
     JD_CONSOLE_FUNCTION("Can't open File: "<<(m_databasePath+"\\"+relativePath+fileEnding).c_str()<<"\n");
-    return false;
+    return false;*/
 }
-bool JDManager::lockFile(const std::string &relativePath, FileReadWriteLock::Access direction, unsigned int timeoutMillis) const
+
+bool JDManager::readFile(
+    QByteArray& fileDataOut,
+    const std::string& directory,
+    const std::string& fileName,
+    const std::string& fileEnding,
+    bool lockedRead) const
 {
-   // JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-   // JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
-
-    if (m_fileLock)
+    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+    if (lockedRead)
     {
-        JD_CONSOLE_FUNCTION("Lock already aquired\n");
-        return false;
-    }
-    
-
-    //std::string abspath = m_databasePath+"\\"+ relativePath;
-
-    m_fileLock = new FileReadWriteLock(m_databasePath, relativePath);
-
-    if(!m_fileLock->lock(direction, timeoutMillis))
-    {
-        JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << abspath<<"\n");
-        return false;
-    }
-
-   /* while (!m_fileLock->lock())
-    {
-        JD_GENERAL_PROFILING_BLOCK_C("WaitForFreeLock", profiler::colors::Red200);
-        QTUpdateEvents();
-
-        QDateTime waitingTime = QDateTime::currentDateTime();
-        if (currentDateTime.msecsTo(waitingTime) > timeoutMillis)
+        if (!lockFile(directory, fileName, FileReadWriteLock::Access::read))
         {
-            JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << abspath);
+            JD_CONSOLE_FUNCTION(" Can't lock file\n");
             return false;
         }
-        //using namespace std::literals;
-        //std::this_thread::sleep_for(1ms);
-#ifdef _WIN32
-        Sleep(1);
-#else
-        usleep(1000);
-#endif
-    }*/
-
-    return true;
-}
-bool JDManager::unlockFile(const std::string &relativePath) const
-{
-    //JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2); 
-    //JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
-
-    if (!m_fileLock)
+    }
+    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_6);
+    std::string filePath = directory + "\\" + fileName + fileEnding;
+    QFile file(filePath.c_str());
+    if (file.open(QIODevice::ReadOnly))
+    {
+        JDFILE_IO_PROFILING_END_BLOCK;
+        JDFILE_IO_PROFILING_NONSCOPED_BLOCK("read from file", JD_COLOR_STAGE_6);
+        fileDataOut = file.readAll();
+        file.close();
+        JDFILE_IO_PROFILING_END_BLOCK;
+        if (lockedRead)
+            unlockFile();
         return true;
-
-    m_fileLock->unlock();
-    delete m_fileLock;
-    m_fileLock = nullptr;
-
-    return true;
+    }
+    else
+    {
+        JDFILE_IO_PROFILING_END_BLOCK;
+    }
+    JD_CONSOLE_FUNCTION("Can't open File: " << filePath.c_str() << "\n");
+    if (lockedRead)
+        unlockFile();
+    return false;
 }
+bool JDManager::writeFile(
+    const QByteArray& fileData,
+    const std::string& directory,
+    const std::string& fileName,
+    const std::string& fileEnding,
+    bool lockedRead) const
+{
+    JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+    if (lockedRead)
+    {
+        if (!lockFile(directory, fileName, FileReadWriteLock::Access::write))
+        {
+            JD_CONSOLE_FUNCTION(" Can't lock file\n");
+            return false;
+        }
+    }
+    // Open the file for writing
+    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_6);
+    std::string filePath = directory + "\\" + fileName + fileEnding;
+    QFile file(filePath.c_str());
+    if (file.open(QIODevice::WriteOnly)) {
+        // Write the JSON data to the file
+        JDFILE_IO_PROFILING_END_BLOCK;
+        JDFILE_IO_PROFILING_NONSCOPED_BLOCK("write to file", JD_COLOR_STAGE_6);
+        file.write(fileData);
+        file.close();
+        JDFILE_IO_PROFILING_END_BLOCK;
+        if (lockedRead)
+            unlockFile();
+        return true;
+    }
+    else {
+        JDFILE_IO_PROFILING_END_BLOCK;
+        JD_CONSOLE_FUNCTION("Error: Could not open file " << filePath << " for writing\n");
+    }
+    if (lockedRead)
+        unlockFile();
+    return false;
+}
+
 
 bool JDManager::makeDatabaseDirs() const
 {

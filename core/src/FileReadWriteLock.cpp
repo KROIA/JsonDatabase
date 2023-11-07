@@ -5,6 +5,7 @@ namespace JsonDatabase
 {
     const unsigned int FileReadWriteLock::s_tryLockTimeoutMs = 1000;
 
+
     FileReadWriteLock::FileReadWriteLock(const std::string& filePath, const std::string& fileName)
         : m_directory(FileLock::replaceForwardSlashesWithBackslashes(filePath))
         , m_fileName(fileName)
@@ -29,38 +30,44 @@ namespace JsonDatabase
     }
     bool FileReadWriteLock::lock(Access direction)
     {
-        return false;
-        //return lock_internal(direction);
+        return lock_internal(direction);
     }
     bool FileReadWriteLock::lock(Access direction, unsigned int timeoutMs)
     {
+        m_lastError = FileLock::Error::none;
+        if (m_locked)
+        {
+            m_lastError = FileLock::Error::alreadyLocked;
+            return true;
+        }
+
         // Get the current time
         auto start = std::chrono::high_resolution_clock::now();
 
         // Calculate the time point when the desired duration will be reached
         auto end = start + std::chrono::milliseconds(timeoutMs);
 
-        while (std::chrono::high_resolution_clock::now() < end && !lock_internal(direction)) {
-            JDFILE_FILE_LOCK_PROFILING_BLOCK("WaitForFreeLock", JD_COLOR_STAGE_5);
+
+        while (std::chrono::high_resolution_clock::now() < end && !lock_internal(direction)) 
+        {
+            JDFILE_FILE_LOCK_PROFILING_BLOCK("FileReadWriteLock::WaitForFreeLock", JD_COLOR_STAGE_5);
             // Sleep for a short while to avoid busy-waiting
-            std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Adjust as needed
+            std::this_thread::yield();
+            //std::this_thread::sleep_for(std::chrono::microseconds(1)); // Adjust as needed
         }
         return m_locked;
     }
     bool FileReadWriteLock::lock_internal(Access direction)
     {
         //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
-        m_lastError = FileLock::Error::none;
-        if (!m_locked)
-        {
-            m_lastError = lockFile(direction);
+        m_lastError = lockFile(direction);
 #ifdef JD_DEBUG
-            if (m_lastError != FileLock::Error::none)
-            {
-                JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
-            }
-#endif
+        if (m_lastError != FileLock::Error::none)
+        {
+            JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
         }
+#endif
+        
 #ifdef JD_PROFILING
         if (m_locked)
         {
@@ -193,6 +200,7 @@ namespace JsonDatabase
         m_lastError = FileLock::Error::none;
         if (m_lock)
         {
+            m_locked = false;
             m_lock->unlock();
             delete m_lock;
             m_lock = nullptr;

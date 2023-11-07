@@ -45,9 +45,10 @@ namespace JsonDatabase
         auto end = start + std::chrono::milliseconds(timeoutMs);
 
         while (std::chrono::high_resolution_clock::now() < end && !lock_internal()) {
-            JDFILE_FILE_LOCK_PROFILING_BLOCK("WaitForFreeLock", JD_COLOR_STAGE_5);
+            JDFILE_FILE_LOCK_PROFILING_BLOCK("FileLock::WaitForFreeLock", JD_COLOR_STAGE_5);
             // Sleep for a short while to avoid busy-waiting
-            std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Adjust as needed
+            std::this_thread::yield();
+            //std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Adjust as needed
         }
         return m_locked;
     }
@@ -90,11 +91,10 @@ namespace JsonDatabase
         m_lastError = Error::none;
         unlockFile();
 #ifdef JD_PROFILING
-        if (wasLocked)
+      /*  if (wasLocked)
         {
             JDFILE_FILE_LOCK_PROFILING_END_BLOCK;
-        }
-        //JDFILE_FILE_LOCK_PROFILING_VALUE("locked", m_locked);
+        }*/
 #endif
         
     }
