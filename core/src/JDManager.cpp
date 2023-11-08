@@ -83,6 +83,7 @@ namespace JsonDatabase
         , m_threadWorker_fileFinder("JDManager File finder")
 #endif
 {
+        makeDatabaseDirs();
         restartFileWatcher();
 
 #ifdef JSON_DATABSE_USE_THREADS
@@ -106,6 +107,7 @@ JDManager::JDManager(const JDManager &other)
     ,  m_threadWorker_fileFinder("JDManager File finder")
 #endif
 {
+    makeDatabaseDirs();
     restartFileWatcher();
 #ifdef JSON_DATABSE_USE_THREADS
     setupThreadWorker();
@@ -178,6 +180,7 @@ void JDManager::setDatabasePath(const std::string &path)
         return;
     m_lockTable.onDatabasePathChange(m_databasePath, path);
     m_databasePath = path;
+    makeDatabaseDirs();
     restartFileWatcher();
 }
 const std::string &JDManager::getDatabasePath() const
@@ -263,10 +266,10 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 
-    if (!makeDatabaseDirs())
+    /*if (!makeDatabaseDirs())
     {
         return false;
-    }
+    }*/
     bool success = true;
 
     std::vector<QJsonObject> jsonData;

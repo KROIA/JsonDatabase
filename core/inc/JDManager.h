@@ -68,17 +68,7 @@ class JSONDATABASE_EXPORT JDManager
         JDManager(const JDManager &other);
         virtual ~JDManager();
 
-        /**
-         * \return 0 no error
-         *         1 class name is empty
-         *           -> implement getClassName() of the DatabaseObject T
-         *         2 object type was already added
-         *         3 object type does not have the base JDObjectInterface
-         */
-        //template<typename T>
-        //static int addObjectDefinition();
-        //template<typename T>
-        //static bool isInObjectDefinition();
+        
         static bool isInObjectDefinition(const std::string &className);
 
 
@@ -127,6 +117,8 @@ class JSONDATABASE_EXPORT JDManager
         bool unlockObj(JDObjectInterface* obj) const;
         bool isObjLocked(JDObjectInterface* obj) const;
 
+
+        // Checks for changes in the database file
         void update();
         // Signals 
         void connectDatabaseFileChangedSlot(const Signal<>::SlotFunction& slotFunction);
@@ -159,18 +151,6 @@ class JSONDATABASE_EXPORT JDManager
 
         bool deserializeJson(const QJsonObject& json, JDObjectInterface*& objOut) const;
 
-        //void getJsonFileContent(const std::vector<QJsonObject>& jsons, std::string& fileContentOut) const;
-       
-        
-        //bool writeFile(const QByteArray& fileData, const std::string & outputFilePath, const std::string& outputFileName) const;
-        
- 
-        // bool deserializeJson(std::string)
-
-        // relativePath without fileEnding
-        //bool writeJsonFile(const QJsonObject &obj, const std::string &relativePath) const;
-        //bool writeJsonFile(const QJsonObject &obj, const std::string &relativePath, const std::string &fileEnding) const;
-        
 
         bool lockFile(
             const std::string& directory,
