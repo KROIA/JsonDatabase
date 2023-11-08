@@ -6,6 +6,8 @@
 #include "FileReadWriteLock.h"
 #include "ThreadWorker.h"
 #include "JDObjectLocker.h"
+#include "FileChangeWatcher.h"
+#include "Signal.h"
 
 #include <string>
 #include <map>
@@ -124,12 +126,23 @@ class JSONDATABASE_EXPORT JDManager
         bool lockObj(JDObjectInterface* obj) const;
         bool unlockObj(JDObjectInterface* obj) const;
         bool isObjLocked(JDObjectInterface* obj) const;
-        
+
+        void update();
+        // Signals 
+        void connectDatabaseFileChangedSlot(const Signal<>::SlotFunction& slotFunction);
+        void disconnectDatabaseFileChangedSlot(const Signal<>::SlotFunction& slotFunction);
+        void connectObjectRemovedFromDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction);
+        void disconnectObjectRemovedFromDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction);
+	    void connectObjectAddedToDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction);
+        void disconnectObjectAddedToDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction);
+
     protected:
 
         virtual void onNewObjectsInstantiated(const std::vector<JDObjectInterface*>& newObjects);
 
     private:
+        
+
         bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList) const;
         bool addObject_internal(JDObjectInterface* obj);
         bool removeObject_internal(JDObjectInterface* obj);
@@ -212,6 +225,10 @@ class JSONDATABASE_EXPORT JDManager
 
         static void QTUpdateEvents();
 
+        void restartFileWatcher();
+        // Slots
+        void onDatabaseFileChanged();
+
 
         // Filesystem
         bool makeDatabaseDirs() const;
@@ -246,6 +263,15 @@ class JSONDATABASE_EXPORT JDManager
         mutable std::mutex m_mutex;
         bool m_useZipFormat;
 
+        FileChangeWatcher *m_databaseFileWatcher;
+
+        struct Signals
+        {
+            Signal<> databaseFileChanged;
+            Signal<JDObjectInterface*> objectRemovedFromDatabase;
+            Signal<JDObjectInterface*> objectAddedToDatabase;
+        };
+        Signals m_signals;
         // All objects contained in the database
         std::map<std::string, JDObjectInterface*> m_objs;
 

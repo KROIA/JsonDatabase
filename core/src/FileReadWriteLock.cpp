@@ -76,25 +76,25 @@ namespace JsonDatabase
             case Access::read:
             {
                 //JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true reading");
-                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("locked for reading", JD_COLOR_STAGE_10);
+                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("file locked for reading", JD_COLOR_STAGE_10);
                 break;
             }
             case Access::write:
             {
                 //JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true writing");
-                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("locked for writing", JD_COLOR_STAGE_10);
+                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("file locked for writing", JD_COLOR_STAGE_10);
                 break;
             }
             case Access::readWrite:
             {
                 //JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true read & write");
-                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("locked for read & write", JD_COLOR_STAGE_10);
+                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("file locked for read & write", JD_COLOR_STAGE_10);
                 break;
             }
             default:
             {
                 //JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true unknown direction");
-                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("locked for unknown operations", JD_COLOR_STAGE_10);
+                JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("file locked for unknown operations", JD_COLOR_STAGE_10);
             }
             }
         }

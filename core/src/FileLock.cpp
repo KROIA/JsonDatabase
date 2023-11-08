@@ -34,10 +34,14 @@ namespace JsonDatabase
     }
     bool FileLock::lock()
     {
+        if (m_locked)
+            return true;
         return lock_internal();        
     }
     bool FileLock::lock(unsigned int timeoutMs)
     {
+        if (m_locked)
+            return true;
         // Get the current time
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -69,6 +73,7 @@ namespace JsonDatabase
 #ifdef JD_PROFILING
         if (m_locked)
         {
+           // JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("file locked", JD_COLOR_STAGE_10);
             JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true");
         }
         else
@@ -86,12 +91,12 @@ namespace JsonDatabase
     {
 #ifdef JD_PROFILING
         //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
-        bool wasLocked = m_locked;
+        //bool wasLocked = m_locked;
 #endif
         m_lastError = Error::none;
         unlockFile();
 #ifdef JD_PROFILING
-      /*  if (wasLocked)
+        /*if (wasLocked)
         {
             JDFILE_FILE_LOCK_PROFILING_END_BLOCK;
         }*/

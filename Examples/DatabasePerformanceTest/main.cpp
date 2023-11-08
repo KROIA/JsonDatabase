@@ -29,6 +29,7 @@ void threadFunction3();
 void threadFunction4();
 void threadFunction5();
 
+FileChangeWatcher *watcher = nullptr;
 void collisionChecker();
 
 JDManager* manager1 = nullptr;
@@ -64,6 +65,11 @@ int main(int argc, char* argv[])
     manager4 = new JDManager("database", "Persons", "sessionID4", "USER 4");
     manager5 = new JDManager("database", "Persons", "sessionID5", "USER 5");
 
+#ifdef NDEBUG
+    watcher = new FileChangeWatcher("database\\Persons.json");
+#else
+    watcher = new FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
+#endif
     //manager1->addObjectDefinition<Person>();
     //manager2->addObjectDefinition<Person>();
     //manager3->addObjectDefinition<Person>();
@@ -77,6 +83,7 @@ int main(int argc, char* argv[])
     manager5->enableZipFormat(USE_ZIP_FORMAT);
 
     manager1->addObject(globalTable);
+    manager2->addObject(globalTable);
     manager1->saveObjects();
 
     manager1->enableZipFormat(false);
@@ -214,18 +221,42 @@ void threadFunction1() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
+    manager1->connectDatabaseFileChangedSlot([] {manager1->loadObjects(); });
+    bool doesRemove = true;
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
         std::cout << "Thread 1 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
-        for(int i=0; i<20; ++i)
-        manager1->loadObjects();
-        std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
-        manager1->saveObjects();
-#endif
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+       // for(int i=0; i<20; ++i)
+       // manager1->loadObjects();
+        std::this_thread::sleep_for(std::chrono::milliseconds(200)); // Simulate some work
 
-        if (rand() % 10 == 0)
+        JDObjectInterface* obj = nullptr;
+        if (doesRemove)
+        {
+            obj = manager1->getObjects()[0];
+            std::cout << "Erasing Object ID: " << obj->getObjectID() << "\n";
+        }
+        
+        if(doesRemove)
+            manager1->removeObject(obj);
+        manager1->saveObjects();
+        if(doesRemove)
+        {
+            std::cout << "Adding Object ID: " << obj->getObjectID() << "\n";
+            manager1->addObject(obj);;
+			doesRemove = false;
+        }
+        
+#endif
+        for (size_t i = 0; i < 100; ++i)
+        {
+            manager1->update();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        
+
+        /*if (rand() % 10 == 0)
         {
             if (hasLocked)
             {
@@ -241,8 +272,23 @@ void threadFunction1() {
                 if (hasLocked)
                     std::cout << "Locked: " << lockedPerson->getObjectID();
             }
-        }
+        }*/
     }
+}
+
+
+void callback()
+{
+    manager2->loadObjects();
+   // manager2->disconnectDatabaseFileChangedSlot(callback);
+}
+void onObjectRemoved(JDObjectInterface* obj)
+{
+    std::cout << "Object removed: " << obj->getObjectID() << "\n";
+}
+void onObjectAdded(JDObjectInterface* obj)
+{
+	std::cout << "Object added: " << obj->getObjectID() << "\n";
 }
 
 // Function for the second thread
@@ -251,18 +297,24 @@ void threadFunction2() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
     auto start = std::chrono::high_resolution_clock::now();
+
+    manager2->connectDatabaseFileChangedSlot(callback);
+    manager2->connectObjectAddedToDatabaseSlot(onObjectAdded);
+    manager2->connectObjectRemovedFromDatabaseSlot(onObjectRemoved);
+
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
         std::cout << "Thread 2 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
-        for (int i = 0; i < 20; ++i)
-        manager2->loadObjects();
-        std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
-        manager2->saveObjects();
+        //for (int i = 0; i < 20; ++i)
+        //manager2->loadObjects();
+        //std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
+        //manager2->saveObjects();
+        manager2->update();
 #endif
         //std::this_thread::sleep_for(std::chrono::milliseconds(1));
         //bool wasInLoop = false;
-        if (rand() % 10 == 0)
+        /*if (rand() % 10 == 0)
         {
             //wasInLoop = true;
             //EASY_NONSCOPED_BLOCK("test", profiler::colors::DeepPurple900);
@@ -283,7 +335,7 @@ void threadFunction2() {
 
             
             
-        }
+        }*/
         //std::this_thread::sleep_for(std::chrono::milliseconds(10));
         /*if (wasInLoop)
         {
@@ -296,17 +348,23 @@ void threadFunction3() {
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
+
+    manager3->connectDatabaseFileChangedSlot([] {
+        manager3->loadObjects();
+        });
+
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
         std::cout << "Thread 3 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
-        for (int i = 0; i < 20; ++i)
-        manager3->loadObjects();
-        std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
-        manager3->saveObjects();
+        //for (int i = 0; i < 20; ++i)
+        //manager3->loadObjects();
+        //std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
+        //manager3->saveObjects();
+        manager3->update();
 #endif
        // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        if (rand() % 10 == 0)
+        /*if (rand() % 10 == 0)
         {
             if (hasLocked)
             {
@@ -322,7 +380,7 @@ void threadFunction3() {
                 if (hasLocked)
                     std::cout << "Locked: " << lockedPerson->getObjectID();
             }
-        }
+        }*/
     }
 }
 
@@ -330,18 +388,22 @@ void threadFunction4() {
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
+
+    manager4->connectDatabaseFileChangedSlot([] {manager4->loadObjects(); });
+
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
         std::cout << "Thread 4 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
-        for (int i = 0; i < 20; ++i)
-        manager4->loadObjects();
-        std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
-        manager4->saveObjects();
+       // for (int i = 0; i < 20; ++i)
+       // manager4->loadObjects();
+      //  std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
+       // manager4->saveObjects();
+        manager4->update();
 #endif
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-        if (rand() % 5 == 0)
+       /* if (rand() % 5 == 0)
         {
             if (hasLocked)
             {
@@ -357,7 +419,7 @@ void threadFunction4() {
                 if (hasLocked)
                     std::cout << "Locked: " << lockedPerson->getObjectID() << "\n";
             }
-        }
+        }*/
     }
 }
 
@@ -365,18 +427,22 @@ void threadFunction5() {
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
+
+    manager5->connectDatabaseFileChangedSlot([] {manager5->loadObjects(); });
+
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
         std::cout << "Thread 5 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
-        for (int i = 0; i < 20; ++i)
-        manager5->loadObjects();
-        std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
-        manager5->saveObjects();
+       // for (int i = 0; i < 20; ++i)
+       // manager5->loadObjects();
+        //std::this_thread::sleep_for(std::chrono::milliseconds(4)); // Simulate some work
+        //manager5->saveObjects();
+        manager5->update();
 #endif
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-        if (rand() % 5 == 0)
+       /* if (rand() % 5 == 0)
         {
             if (hasLocked)
             {
@@ -392,7 +458,7 @@ void threadFunction5() {
                 if (hasLocked)
                     std::cout << "Locked: " << lockedPerson->getObjectID() << "\n";
             }
-        }
+        }*/
     }
 }
 
@@ -403,6 +469,8 @@ void collisionChecker() {
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
+
+   // watcher->startWatching();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS+1) {
         
         std::vector<std::string>  files = FileReadWriteLock::getFileNamesInDirectory("database", ".clk");
@@ -458,10 +526,16 @@ void collisionChecker() {
             std::cout << "Collision detected reader and writer\n";
         }
 
-        
+      /*  if (watcher->hasFileChanged())
+        {
+            watcher->clearFileChangedFlag();
+            std::cout << "File Persons.json has changed\n";
+        }*/
 
 
     }
+    std::cout << "Stop collision checker\n";
+    //watcher->stopWatching();
 }
 
 #endif

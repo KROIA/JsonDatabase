@@ -77,12 +77,13 @@ namespace JsonDatabase
         , m_lockTable(this)
         , m_fileLock(nullptr)
         , m_useZipFormat(false)
+        , m_databaseFileWatcher(nullptr)
 #ifdef JSON_DATABSE_USE_THREADS
         , m_threadWorker("JDManager File IO")
         , m_threadWorker_fileFinder("JDManager File finder")
 #endif
 {
-
+        restartFileWatcher();
 
 #ifdef JSON_DATABSE_USE_THREADS
     setupThreadWorker();
@@ -98,19 +99,25 @@ JDManager::JDManager(const JDManager &other)
     ,   m_lockTable(this)
     ,   m_fileLock(nullptr)
     ,   m_useZipFormat(other.m_useZipFormat)
+    ,   m_databaseFileWatcher(nullptr)
     //,   m_objDefinitions(other.m_objDefinitions)
 #ifdef JSON_DATABSE_USE_THREADS
     ,  m_threadWorker("JDManager File IO")
     ,  m_threadWorker_fileFinder("JDManager File finder")
 #endif
 {
-
+    restartFileWatcher();
 #ifdef JSON_DATABSE_USE_THREADS
     setupThreadWorker();
 #endif
 }
 JDManager::~JDManager()
 {
+    if (m_databaseFileWatcher)
+    {
+        m_databaseFileWatcher->stopWatching();
+        delete m_databaseFileWatcher;
+    }
     m_lockTable.unlockAll();
 #ifdef JSON_DATABSE_USE_THREADS
     m_threadWorker.stop();
@@ -158,6 +165,7 @@ void JDManager::setDatabaseName(const std::string& name)
 {
     JDM_UNIQUE_LOCK;
     m_databaseName = name;
+    restartFileWatcher();
 }
 const std::string& JDManager::getDatabaseName() const
 {
@@ -170,6 +178,7 @@ void JDManager::setDatabasePath(const std::string &path)
         return;
     m_lockTable.onDatabasePathChange(m_databasePath, path);
     m_databasePath = path;
+    restartFileWatcher();
 }
 const std::string &JDManager::getDatabasePath() const
 {
@@ -217,8 +226,13 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
         jsons[index] = data;
     }
 
+    if (m_databaseFileWatcher)
+        m_databaseFileWatcher->pause();
     // Save the serialized objects
     success &= writeJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
+    
+    if (m_databaseFileWatcher)
+        m_databaseFileWatcher->unpause();
     unlockFile();
     return true;
 }
@@ -258,9 +272,14 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     std::vector<QJsonObject> jsonData;
     success &= getJsonArray(objList, jsonData);
 
+    if (m_databaseFileWatcher)
+        m_databaseFileWatcher->pause();
+
     // Save the serialized objects
     success &= writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
 
+    if (m_databaseFileWatcher)
+        m_databaseFileWatcher->unpause();
     return success;
 }
 
@@ -325,18 +344,58 @@ bool JDManager::loadObjects()
             if (!success)
                 return false;
 
+            std::vector<JDObjectInterface*> erasedObjs;
             {
-                JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
-                for (auto& pair : pairs)
+                
                 {
-                    bool newObj = !pair.obj;
-                    success &= deserializeJson(pair.json, pair.obj);
+                    JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
 
-                    // Add the new generated object to the database
-                    if (newObj)
+
+                    for (Pair& pair : pairs)
                     {
-                        addObject_internal(pair.obj);
+                        bool newObj = !pair.obj;
+                        success &= deserializeJson(pair.json, pair.obj);
+
+                        //  auto it = std::find(allObjs.begin(), allObjs.end(), pair.obj);
+                        //  if (it == allObjs.end()) {
+                        //      erasedObjs.push_back(*it);
+                        //  }
+
+                          // Add the new generated object to the database
+                        if (newObj)
+                        {
+                            addObject_internal(pair.obj);
+                            m_signals.objectAddedToDatabase.emitSignal(pair.obj);
+                        }
                     }
+                }
+                {
+                    JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
+                    std::vector<JDObjectInterface*> allObjs = getObjects_internal();
+                    erasedObjs.reserve(allObjs.size());
+                    for (size_t i = 0; i < allObjs.size(); ++i)
+                    {
+                        for (const Pair& pair : pairs)
+                        {
+                            if (pair.obj == allObjs[i])
+                                goto nextObj;
+                        }
+
+                        erasedObjs.push_back(allObjs[i]);
+
+                    nextObj:;
+                    }
+                }
+            }
+
+            if(erasedObjs.size() > 0)
+            {
+                JD_GENERAL_PROFILING_BLOCK("Remove deleted objects", JD_COLOR_STAGE_2);
+                for (size_t i = 0; i < erasedObjs.size(); ++i)
+                {
+                    std::cout << "Object erased after load: " << erasedObjs[i]->getObjectID() << "\n";
+                    removeObject_internal(erasedObjs[i]);
+                    m_signals.objectRemovedFromDatabase.emitSignal(erasedObjs[i]);
                 }
             }
         }
@@ -350,6 +409,23 @@ void JDManager::QTUpdateEvents()
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | 
                                     QEventLoop::ExcludeSocketNotifiers |
                                     QEventLoop::X11ExcludeTimers);
+}
+void JDManager::restartFileWatcher()
+{
+    if (m_databaseFileWatcher)
+    {
+        m_databaseFileWatcher->stopWatching();
+        delete m_databaseFileWatcher;
+        m_databaseFileWatcher = nullptr;
+    }
+    m_databaseFileWatcher = new FileChangeWatcher(getDatabaseFilePath());
+    m_databaseFileWatcher->startWatching();
+}
+void JDManager::onDatabaseFileChanged()
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    m_signals.databaseFileChanged.emitSignal();
+    //loadObjects();
 }
 void JDManager::clearObjects()
 {
@@ -494,6 +570,45 @@ bool JDManager::isObjLocked(JDObjectInterface* obj) const
 {
     JDM_UNIQUE_LOCK;
     return m_lockTable.isLocked(obj);
+}
+
+
+void JDManager::update()
+{
+    //JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    if (m_databaseFileWatcher)
+    {
+        if (m_databaseFileWatcher->hasFileChanged())
+        {
+            onDatabaseFileChanged();
+            m_databaseFileWatcher->clearFileChangedFlag();
+        }
+    }
+}
+
+void JDManager::connectDatabaseFileChangedSlot(const Signal<>::SlotFunction& slotFunction)
+{
+    m_signals.databaseFileChanged.connectSlot(slotFunction);
+}
+void JDManager::disconnectDatabaseFileChangedSlot(const Signal<>::SlotFunction& slotFunction)
+{
+    m_signals.databaseFileChanged.disconnectSlot(slotFunction);
+}
+void JDManager::connectObjectRemovedFromDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+{
+    m_signals.objectRemovedFromDatabase.connectSlot(slotFunction);
+}
+void JDManager::disconnectObjectRemovedFromDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+{
+    m_signals.objectRemovedFromDatabase.disconnectSlot(slotFunction);
+}
+void JDManager::connectObjectAddedToDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+{
+    m_signals.objectAddedToDatabase.connectSlot(slotFunction);
+}
+void JDManager::disconnectObjectAddedToDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+{
+    m_signals.objectAddedToDatabase.disconnectSlot(slotFunction);
 }
 
 
@@ -829,7 +944,7 @@ bool JDManager::readJsonFile(
     }
     if (jsonError.error != QJsonParseError::NoError)
     {
-        JD_CONSOLE_FUNCTION("Can't read JsonFile: " << jsonError.errorString().toStdString().c_str() << "\n");
+        JD_CONSOLE_FUNCTION("Can't read Jsonfile: " << jsonError.errorString().toStdString().c_str() << "\n");
         return false;
     }
     if (document.isObject())
@@ -850,7 +965,7 @@ bool JDManager::readJsonFile(
         QJsonDocument document = QJsonDocument::fromJson( bytes, &jsonError );
         if( jsonError.error != QJsonParseError::NoError )
         {
-            JD_CONSOLE_FUNCTION("Can't read JsonFile: " << jsonError.errorString().toStdString().c_str() << "\n");
+            JD_CONSOLE_FUNCTION("Can't read Jsonfile: " << jsonError.errorString().toStdString().c_str() << "\n");
             return false;
         }
         if( document.isObject() )
@@ -859,7 +974,7 @@ bool JDManager::readJsonFile(
             return true;
         }
     }
-    JD_CONSOLE_FUNCTION("Can't open File: "<<(m_databasePath+"\\"+relativePath+fileEnding).c_str()<<"\n");
+    JD_CONSOLE_FUNCTION("Can't open file: "<<(m_databasePath+"\\"+relativePath+fileEnding).c_str()<<"\n");
     return false;*/
 }
 
@@ -879,6 +994,7 @@ bool JDManager::readFile(
             return false;
         }
     }
+    /*
     JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_6);
     std::string filePath = directory + "\\" + fileName + fileEnding;
     QFile file(filePath.c_str());
@@ -897,10 +1013,64 @@ bool JDManager::readFile(
     {
         JDFILE_IO_PROFILING_END_BLOCK;
     }
-    JD_CONSOLE_FUNCTION("Can't open File: " << filePath.c_str() << "\n");
+    JD_CONSOLE_FUNCTION("Can't open file: " << filePath.c_str() << "\n");
     if (lockedRead)
         unlockFile();
-    return false;
+    return false;*/
+
+
+    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_6);
+    std::string filePath = directory + "\\" + fileName + fileEnding;
+    HANDLE fileHandle = CreateFile(
+        filePath.c_str(),
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr
+    );
+
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+        JDFILE_IO_PROFILING_END_BLOCK;
+        JD_CONSOLE_FUNCTION("Can't open file: " << filePath.c_str() << "\n");
+        if (lockedRead)
+            unlockFile();
+        return false;
+    }
+    JDFILE_IO_PROFILING_END_BLOCK;
+    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("read from file", JD_COLOR_STAGE_6);
+    DWORD fileSize = GetFileSize(fileHandle, nullptr);
+    if (fileSize == INVALID_FILE_SIZE) {
+        CloseHandle(fileHandle);
+        JD_CONSOLE_FUNCTION("Can't get filesize of: " << filePath.c_str() << "\n");
+        JDFILE_IO_PROFILING_END_BLOCK;
+        if (lockedRead)
+            unlockFile();
+        return false;
+    }
+
+    std::string content(fileSize, '\0');
+    DWORD bytesRead;
+    BOOL readResult = ReadFile(
+        fileHandle,
+        &content[0],
+        fileSize,
+        &bytesRead,
+        nullptr
+    );
+
+    CloseHandle(fileHandle);
+    JDFILE_IO_PROFILING_END_BLOCK;
+    if (lockedRead)
+        unlockFile();
+
+    if (!readResult) {
+        JD_CONSOLE_FUNCTION("Can't read file: " << filePath.c_str() << "\n");
+    }
+
+    fileDataOut = content.c_str();
+    return true;
 }
 bool JDManager::writeFile(
     const QByteArray& fileData,
@@ -918,6 +1088,8 @@ bool JDManager::writeFile(
             return false;
         }
     }
+    
+    /*
     // Open the file for writing
     JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_6);
     std::string filePath = directory + "\\" + fileName + fileEnding;
@@ -939,7 +1111,56 @@ bool JDManager::writeFile(
     }
     if (lockedRead)
         unlockFile();
-    return false;
+    return false;*/
+
+    // Open the file for writing
+    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_6);
+    std::string filePath = directory + "\\" + fileName + fileEnding;
+    HANDLE fileHandle = CreateFile(
+        filePath.c_str(),
+        GENERIC_WRITE,
+        0,
+        nullptr,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr
+    );
+
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+        JDFILE_IO_PROFILING_END_BLOCK;
+        JD_CONSOLE_FUNCTION("Error: Could not open file " << filePath << " for writing\n");
+        // Error opening file
+        if (lockedRead)
+            unlockFile();
+        return false;
+    }
+    JDFILE_IO_PROFILING_END_BLOCK;
+
+    JDFILE_IO_PROFILING_NONSCOPED_BLOCK("write to file", JD_COLOR_STAGE_6);
+    // Write the content to the file
+    DWORD bytesWritten;
+    BOOL writeResult = WriteFile(
+        fileHandle,
+        fileData.constData(),
+        fileData.size(),
+        &bytesWritten,
+        nullptr
+    );
+    
+
+    // Close the file handle
+    CloseHandle(fileHandle);
+    JDFILE_IO_PROFILING_END_BLOCK;
+    if (lockedRead)
+        unlockFile();
+
+    if (!writeResult) {
+        // Error writing to file
+        JD_CONSOLE_FUNCTION("Error: Could not write to file " << filePath << "\n");
+        return false;
+    }
+
+    return true;
 }
 
 
