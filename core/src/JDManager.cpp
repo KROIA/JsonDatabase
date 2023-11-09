@@ -158,14 +158,14 @@ void JDManager::setupThreadWorker()
 #endif
 bool JDManager::isInObjectDefinition(const std::string &className)
 {
-    JDM_UNIQUE_LOCK_M(s_mutex);
+    JDM_UNIQUE_LOCK_P_M(s_mutex);
     if(JDObjectRegistry::getRegisteredTypes().find(className) != JDObjectRegistry::getRegisteredTypes().end())
         return true;
     return false;
 }
 void JDManager::setDatabaseName(const std::string& name)
 {
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     m_databaseName = name;
     restartFileWatcher();
 }
@@ -175,7 +175,7 @@ const std::string& JDManager::getDatabaseName() const
 }
 void JDManager::setDatabasePath(const std::string &path)
 {
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     if (path == m_databasePath)
         return;
     m_lockTable.onDatabasePathChange(m_databasePath, path);
@@ -199,7 +199,7 @@ bool JDManager::isZipFormatEnabled() const
 bool JDManager::saveObject(JDObjectInterface* obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     if (!obj)
         return false;
     bool success = true;
@@ -244,12 +244,12 @@ bool JDManager::saveObjects() const
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     bool success = true;
     {
-        JDM_UNIQUE_LOCK;
+        JDM_UNIQUE_LOCK_P;
         std::vector<JDObjectInterface*> objs(m_objs.size(), nullptr);
         size_t i = 0;
         for (auto& p : m_objs)
         {
-            objs[i++] = p.second;
+            objs[i++] = p;
         }
 
         success &= saveObjects_internal(objs);
@@ -259,7 +259,7 @@ bool JDManager::saveObjects() const
 bool JDManager::saveObjects(const std::vector<JDObjectInterface*> &objList) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return saveObjects_internal(objList);
 }
 bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objList) const
@@ -289,7 +289,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
 bool JDManager::loadObject(JDObjectInterface* obj)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     if (!exists_internal(obj))
         return false;
 
@@ -305,102 +305,133 @@ bool JDManager::loadObject(JDObjectInterface* obj)
         JD_CONSOLE_FUNCTION("Object with ID: " << ID << " not found");
         return false;
     }
-
     const QJsonObject &objData = jsons[index];
-    success &= deserializeJson(objData, obj);
+    bool hasChanged = false;
+    success &= deserializeOverrideFromJson(objData, obj, hasChanged);
+
 
     return success;
 }
-bool JDManager::loadObjects()
+bool JDManager::loadObjects(int mode)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     bool success = true;
+
+    bool modeNewObjects = (mode & (int)LoadMode::newObjects);
+    bool modeChangedObjects = (mode & (int)LoadMode::changedObjects);
+    bool modeRemovedObjects = (mode & (int)LoadMode::removedObjects);
+
+    bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
+
+    m_signals.clearContainer();
+    
+    JDM_UNIQUE_LOCK_P;
+    
+    std::vector<QJsonObject> jsons;
+    success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
+
+    struct Pair
     {
-        JDM_UNIQUE_LOCK;
+        JDObjectInterface* objOriginal;
+        JDObjectInterface* obj;
+        QJsonObject json;
+    };
+
+    std::vector< Pair> pairs;
+    std::vector< Pair> newObjectPairs;
+    {
+        JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
+        for (size_t i = 0; i < jsons.size(); ++i)
         {
-            std::vector<QJsonObject> jsons;
-            success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
-
-            struct Pair
+            std::string ID;
+            if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
             {
-                JDObjectInterface* obj;
-                QJsonObject json;
-            };
-
-            std::vector< Pair> pairs;
-            {
-                JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
-                for (size_t i = 0; i < jsons.size(); ++i)
-                {
-                    std::string ID;
-                    if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
-                    {
-                        JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
-                        success = false;
-                    }
-                    Pair p;
-                    p.obj = getObject_internal(ID);
-                    p.json = jsons[i];
-                    pairs.push_back(p);
-                }
+                JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
+                success = false;
             }
-            if (!success)
-                return false;
-
-            std::vector<JDObjectInterface*> erasedObjs;
-            {
-                
+            Pair p;
+            p.objOriginal = getObject_internal(ID);
+            p.obj = nullptr;
+            p.json = jsons[i];
+            if (p.objOriginal)
+                pairs.push_back(p);
+            else
+                newObjectPairs.push_back(p);
+        }
+    }
+    if (!success)
+        return false;            
+    
+    if (modeChangedObjects)
+    {
+        if (overrideChanges)
+        {
+            JD_GENERAL_PROFILING_BLOCK("Deserialize objects override mode", JD_COLOR_STAGE_2)
+                // Loads the existing objects and overrides the data in the current object instance
+                for (Pair& pair : pairs)
                 {
-                    JD_GENERAL_PROFILING_BLOCK("Deserialize objects", JD_COLOR_STAGE_2);
+                    bool hasChanged = false;
+                    success &= deserializeOverrideFromJson(pair.json, pair.objOriginal, hasChanged);
 
-
-                    for (Pair& pair : pairs)
+                    if (hasChanged)
                     {
-                        bool newObj = !pair.obj;
-                        success &= deserializeJson(pair.json, pair.obj);
-
-                        //  auto it = std::find(allObjs.begin(), allObjs.end(), pair.obj);
-                        //  if (it == allObjs.end()) {
-                        //      erasedObjs.push_back(*it);
-                        //  }
-
-                          // Add the new generated object to the database
-                        if (newObj)
-                        {
-                            addObject_internal(pair.obj);
-                            m_signals.objectAddedToDatabase.emitSignal(pair.obj);
-                        }
+                        // The loaded object is not equal to the original object
+                        m_signals.objectOverrideChangeFromDatabase.container.addObject(pair.objOriginal);
                     }
                 }
+        }
+        else
+        {
+            JD_GENERAL_PROFILING_BLOCK("Deserialize objects reinstatiation mode", JD_COLOR_STAGE_2)
+                // Loads the existing objects and creates a new object instance if the data has changed
+                for (Pair& pair : pairs)
                 {
-                    JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
-                    std::vector<JDObjectInterface*> allObjs = getObjects_internal();
-                    erasedObjs.reserve(allObjs.size());
-                    for (size_t i = 0; i < allObjs.size(); ++i)
+                    success &= deserializeJson(pair.json, pair.objOriginal, pair.obj);
+
+                    if (pair.objOriginal != pair.obj)
                     {
-                        for (const Pair& pair : pairs)
-                        {
-                            if (pair.obj == allObjs[i])
-                                goto nextObj;
-                        }
-
-                        erasedObjs.push_back(allObjs[i]);
-
-                    nextObj:;
+                        // The loaded object is not equal to the original object
+                        m_signals.objectChangedFromDatabase.container.push_back(JDObjectPair(pair.objOriginal, pair.obj));
+                        replaceObject_internal(pair.obj);
                     }
                 }
+        }
+    }
+
+    if(modeNewObjects)
+    {
+        JD_GENERAL_PROFILING_BLOCK("Deserialize and create new objects", JD_COLOR_STAGE_2);
+        // Loads the new objects and creates a new object instance
+        for (Pair& pair : newObjectPairs)
+        {
+            success &= deserializeJson(pair.json, pair.objOriginal, pair.obj);
+            // Add the new generated object to the database
+            addObject_internal(pair.obj);
+            m_signals.objectAddedToDatabase.container.addObject(pair.obj);
+        }
+    }
+    
+    if(modeRemovedObjects)
+    {
+        JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
+        std::vector<JDObjectInterface*> allObjs = getObjects_internal();
+        m_signals.objectRemovedFromDatabase.container.reserve(allObjs.size());
+        for (size_t i = 0; i < allObjs.size(); ++i)
+        {
+            for (const Pair& pair : pairs)
+            {
+                if (pair.obj == allObjs[i])
+                    goto nextObj;
+            }
+            for (const Pair& pair : newObjectPairs)
+            {
+                if (pair.obj == allObjs[i])
+                    goto nextObj;
             }
 
-            if(erasedObjs.size() > 0)
-            {
-                JD_GENERAL_PROFILING_BLOCK("Remove deleted objects", JD_COLOR_STAGE_2);
-                for (size_t i = 0; i < erasedObjs.size(); ++i)
-                {
-                    std::cout << "Object erased after load: " << erasedObjs[i]->getObjectID() << "\n";
-                    removeObject_internal(erasedObjs[i]);
-                    m_signals.objectRemovedFromDatabase.emitSignal(erasedObjs[i]);
-                }
-            }
+            m_signals.objectRemovedFromDatabase.container.addObject(allObjs[i]);
+            removeObject_internal(allObjs[i]);
+            nextObj:;
         }
     }
     return success;
@@ -424,27 +455,22 @@ void JDManager::restartFileWatcher()
     m_databaseFileWatcher = new FileChangeWatcher(getDatabaseFilePath());
     m_databaseFileWatcher->startWatching();
 }
-void JDManager::onDatabaseFileChanged()
-{
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    m_signals.databaseFileChanged.emitSignal();
-    //loadObjects();
-}
+
 void JDManager::clearObjects()
 {
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     m_objs.clear();
 }
 bool JDManager::addObject(JDObjectInterface* obj)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return addObject_internal(obj);
 }
 bool JDManager::addObject(const std::vector<JDObjectInterface*> &objList)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     bool success = true;
     for(size_t i=0; i<objList.size(); ++i)
         success &= addObject_internal(objList[i]);
@@ -455,14 +481,37 @@ bool JDManager::addObject_internal(JDObjectInterface* obj)
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if (!obj) return false;
     if (exists_internal(obj)) return false;
-    m_objs.insert(std::pair<std::string, JDObjectInterface*>(obj->getObjectID(), obj));
+    m_objs.addObject(obj);
     return true;
 
+}
+JDObjectInterface* JDManager::replaceObject(JDObjectInterface* obj)
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK_P;
+    return replaceObject_internal(obj);
+}
+std::vector<JDObjectInterface*> JDManager::replaceObjects(const std::vector<JDObjectInterface*>& objList)
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK_P;
+    std::vector<JDObjectInterface*> replacedObjs;
+	replacedObjs.reserve(objList.size());
+	for (size_t i = 0; i < objList.size(); ++i)
+	{
+		replacedObjs.push_back(replaceObject_internal(objList[i]));
+	}
+	return replacedObjs;
+}
+JDObjectInterface* JDManager::replaceObject_internal(JDObjectInterface* obj)
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    return m_objs.replaceObject(obj);
 }
 bool JDManager::removeObject(JDObjectInterface* obj)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return removeObject_internal(obj);
 }
 bool JDManager::removeObject_internal(JDObjectInterface* obj)
@@ -470,13 +519,13 @@ bool JDManager::removeObject_internal(JDObjectInterface* obj)
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if (!obj) return false;
     if (!exists_internal(obj)) return false;
-    m_objs.erase(obj->getObjectID());
+    m_objs.removeObject(obj);
     return true;
 }
 bool JDManager::removeObjects(const std::vector<JDObjectInterface*> &objList)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     bool success = true;
     for(size_t i=0; i<objList.size(); ++i)
         success &= removeObject_internal(objList[i]);
@@ -484,70 +533,59 @@ bool JDManager::removeObjects(const std::vector<JDObjectInterface*> &objList)
 }
 std::size_t JDManager::getObjectCount() const
 {
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return m_objs.size();
 }
 bool JDManager::exists(JDObjectInterface* obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return exists_internal(obj);
 }
 bool JDManager::exists(const std::string &id) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return exists_internal(id);
 }
 bool JDManager::exists_internal(JDObjectInterface* obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if (!obj) return false;
-    if (m_objs.find(obj->getObjectID()) == m_objs.end())
-        return false;
-    return true;
+    return m_objs.exists(obj);
 }
 bool JDManager::exists_internal(const std::string& id) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    if (m_objs.find(id) == m_objs.end())
-        return false;
-    return true;
+    return m_objs.exists(id);
 }
 
-JDObjectInterface* JDManager::getObject(const std::string &objID) const
+JDObjectInterface* JDManager::getObject(const std::string &objID)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
 
     return getObject_internal(objID);
 }
-std::vector<JDObjectInterface*> JDManager::getObjects() const
+const std::vector<JDObjectInterface*>& JDManager::getObjects() const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
 
     return getObjects_internal();
 }
 
-JDObjectInterface* JDManager::getObject_internal(const std::string& objID) const
+JDObjectInterface* JDManager::getObject_internal(const std::string& objID) 
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if (objID.size() == 0)
         return nullptr;
-    auto it = m_objs.find(objID);
-    if (it != m_objs.end())
-        return m_objs.at(objID.c_str());
-    return nullptr;
+    return m_objs[objID];
 }
-std::vector<JDObjectInterface*> JDManager::getObjects_internal() const
+const std::vector<JDObjectInterface*> &JDManager::getObjects_internal() const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    std::vector<JDObjectInterface*> list;
-    list.reserve(m_objs.size());
-    for (auto& p : m_objs)
-        list.push_back(p.second);
-    return list;
+    return m_objs.getAllObjects();
 }
 
 const std::string& JDManager::getUser() const
@@ -561,32 +599,39 @@ const std::string& JDManager::getSessionID() const
 
 bool JDManager::lockObj(JDObjectInterface* obj) const
 {
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return m_lockTable.lock(obj);
 }
 bool JDManager::unlockObj(JDObjectInterface* obj) const
 {
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return m_lockTable.unlock(obj);
 }
 bool JDManager::isObjLocked(JDObjectInterface* obj) const
 {
-    JDM_UNIQUE_LOCK;
+    JDM_UNIQUE_LOCK_P;
     return m_lockTable.isLocked(obj);
 }
 
 
 void JDManager::update()
 {
+    JDM_UNIQUE_LOCK_M(m_updateMutex);
+    
     //JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (m_databaseFileWatcher)
     {
         if (m_databaseFileWatcher->hasFileChanged())
         {
-            onDatabaseFileChanged();
+           // JD_GENERAL_PROFILING_BLOCK("Database file changed", JD_COLOR_STAGE_2);
+            m_signals.databaseFileChanged.emitSignal();
             m_databaseFileWatcher->clearFileChangedFlag();
         }
     }
+    m_signals.objectAddedToDatabase.emitSignalIfNotEmpty();
+    m_signals.objectChangedFromDatabase.emitSignalIfNotEmpty();
+    m_signals.objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
+    m_signals.objectRemovedFromDatabase.emitSignalIfNotEmpty();
 }
 
 void JDManager::connectDatabaseFileChangedSlot(const Signal<>::SlotFunction& slotFunction)
@@ -597,21 +642,37 @@ void JDManager::disconnectDatabaseFileChangedSlot(const Signal<>::SlotFunction& 
 {
     m_signals.databaseFileChanged.disconnectSlot(slotFunction);
 }
-void JDManager::connectObjectRemovedFromDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+void JDManager::connectObjectRemovedFromDatabaseSlot(const Signal<const JDObjectContainer&>::SlotFunction& slotFunction)
 {
-    m_signals.objectRemovedFromDatabase.connectSlot(slotFunction);
+    m_signals.objectRemovedFromDatabase.signal.connectSlot(slotFunction);
 }
-void JDManager::disconnectObjectRemovedFromDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+void JDManager::disconnectObjectRemovedFromDatabaseSlot(const Signal<const JDObjectContainer&>::SlotFunction& slotFunction)
 {
-    m_signals.objectRemovedFromDatabase.disconnectSlot(slotFunction);
+    m_signals.objectRemovedFromDatabase.signal.disconnectSlot(slotFunction);
 }
-void JDManager::connectObjectAddedToDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+void JDManager::connectObjectAddedToDatabaseSlot(const Signal<const JDObjectContainer&>::SlotFunction& slotFunction)
 {
-    m_signals.objectAddedToDatabase.connectSlot(slotFunction);
+    m_signals.objectAddedToDatabase.signal.connectSlot(slotFunction);
 }
-void JDManager::disconnectObjectAddedToDatabaseSlot(const Signal<JDObjectInterface*>::SlotFunction& slotFunction)
+void JDManager::disconnectObjectAddedToDatabaseSlot(const Signal<const JDObjectContainer&>::SlotFunction& slotFunction)
 {
-    m_signals.objectAddedToDatabase.disconnectSlot(slotFunction);
+    m_signals.objectAddedToDatabase.signal.disconnectSlot(slotFunction);
+}
+void JDManager::connectObjectChangedFromDatabaseSlot(const Signal<const std::vector<JDObjectPair>&>::SlotFunction& slotFunction)
+{
+    m_signals.objectChangedFromDatabase.signal.connectSlot(slotFunction);
+}
+void JDManager::disconnectObjectChangedFromDatabaseSlot(const Signal<const std::vector<JDObjectPair>&>::SlotFunction& slotFunction)
+{
+    m_signals.objectChangedFromDatabase.signal.disconnectSlot(slotFunction);
+}
+void JDManager::connectObjectOverrideChangeFromDatabaseSlot(const Signal<const JDObjectContainer&>::SlotFunction& slotFunction)
+{
+    m_signals.objectOverrideChangeFromDatabase.signal.connectSlot(slotFunction);
+}
+void JDManager::disconnectObjectOverrideChangeFromDatabaseSlot(const Signal<const JDObjectContainer&>::SlotFunction& slotFunction)
+{
+    m_signals.objectOverrideChangeFromDatabase.signal.disconnectSlot(slotFunction);
 }
 
 
@@ -661,10 +722,24 @@ bool JDManager::serializeJson(const QJsonObject& obj, std::string& serializedOut
     serializedOut = bytes.constData();
     return true;
 }
-bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& objOut) const
+bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
-    if (!objOut)
+    if(objOriginal)
+    {
+        std::string ID;
+        getJsonValue(json, ID, JDObjectInterface::m_tag_objID);
+        if (objOriginal->equalData(json))
+        {
+            objOut = objOriginal;
+            objOriginal->setVersion(json); // Update version value from loaded object
+        }
+        else
+        {
+            objOut = objOriginal->clone(json, ID);
+        }
+    }
+    else
     {
         JDObjectInterface* clone = getObjectDefinition(json);
         if (!clone)
@@ -682,9 +757,15 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface*& obj
 
         objOut = clone->clone(json, ID);
     }
-    else if (!objOut->loadInternal(json))
+    return true;
+}
+bool JDManager::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool& hasChangedOut) const
+{
+    if(!obj->equalData(json))
+        hasChangedOut = true;
+    if (!obj->loadInternal(json))
     {
-        JD_CONSOLE_FUNCTION("Can't load data in object: " << objOut->getObjectID() << " classType: " << objOut->className()+"\n");
+        JD_CONSOLE_FUNCTION("Can't load data in object: " << obj->getObjectID() << " classType: " << obj->className() + "\n");
         return false;
     }
     return true;

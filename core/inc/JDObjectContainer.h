@@ -13,12 +13,24 @@ namespace JsonDatabase
         using iterator = std::vector<JDObjectInterface*>::iterator;
         using const_iterator = std::vector<JDObjectInterface*>::const_iterator;
 
+        JDObjectInterface* operator[](const std::string& id);
+	    JDObjectInterface* operator[](size_t index);
+
+        void reserve(size_t size);
+
         void addObject(JDObjectInterface* obj);
+        JDObjectInterface* replaceObject(JDObjectInterface* replacement); // Returns the old object
         void removeObject(const std::string& id);
         void removeObject(JDObjectInterface *obj);
 
         JDObjectInterface* getObjectByID(const std::string& id);
         const std::vector<JDObjectInterface*>& getAllObjects() const;
+
+        bool exists(const std::string& id) const;
+        bool exists(JDObjectInterface* obj) const;
+
+        size_t size() const;
+        void clear();
 
         iterator begin();
         iterator end();

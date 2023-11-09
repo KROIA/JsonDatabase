@@ -33,7 +33,7 @@ namespace JsonDatabase
 			m_lastError = Error::objIsNullptr;
 			return false;
 		}
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
 		FileLock fileLock(getTableFilePath(), getTableFileName());
@@ -98,7 +98,7 @@ namespace JsonDatabase
 			m_lastError = Error::objIsNullptr;
 			return false;
 		}
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
 		FileLock fileLock(getTableFilePath(), getTableFileName());
@@ -153,7 +153,7 @@ namespace JsonDatabase
 	}
 	bool JDObjectLocker::unlockAll() const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
 		FileLock fileLock(getTableFilePath() , getTableFileName());
 		if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
@@ -194,7 +194,7 @@ namespace JsonDatabase
 			m_lastError = Error::objIsNullptr;
 			return false;
 		}
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
 		FileLock fileLock(getTableFilePath() , getTableFileName());
@@ -255,7 +255,7 @@ namespace JsonDatabase
 
 	void JDObjectLocker::onDatabasePathChange(const std::string& oldPath, const std::string& newPath) const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 		std::unique_lock<std::mutex> lock(m_mutex);
 
 		FileLock fileLock1(oldPath, m_lockTableFile);
@@ -327,7 +327,7 @@ namespace JsonDatabase
 
 	QJsonObject JDObjectLocker::getLockData(JDObjectInterface* obj) const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 		QJsonObject data;
 		data[s_jsonKey_objectID]	= obj->getObjectID().c_str();
 		data[s_jsonKey_owner]		= m_manager->getUser().c_str();
@@ -339,7 +339,7 @@ namespace JsonDatabase
 	}
 	bool JDObjectLocker::isValidJsonLock(const QJsonObject& lock) const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 		if (!lock.contains(s_jsonKey_objectID)) return false;
 		if (!lock.contains(s_jsonKey_owner)) return false;
 		if (!lock.contains(s_jsonKey_sessionID)) return false;
@@ -359,7 +359,7 @@ namespace JsonDatabase
 
 	bool JDObjectLocker::readLockTable(std::vector<QJsonObject>& locks) const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 		QFile file(getTableFilePath().c_str());
 		if (!file.exists())
 		{
@@ -408,7 +408,7 @@ namespace JsonDatabase
 	}
 	bool JDObjectLocker::writeLockTable(const std::vector<QJsonObject>& locks) const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 		QFile file(getTableFilePath() .c_str());
 		if (!file.open(QIODevice::WriteOnly)) {
 			JD_CONSOLE_FUNCTION("Failed to open file for writing: " << getTableFilePath().c_str()<< "\n");
@@ -444,7 +444,7 @@ namespace JsonDatabase
 									   QJsonObject& lockOut,
 									   size_t& index) const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 		for (size_t i=0; i< locks.size(); ++i)
 		{
 			const QJsonObject& lock = locks[i];
@@ -467,7 +467,7 @@ namespace JsonDatabase
 		std::vector<size_t>& matches,
 		std::vector<size_t>& mismatches) const
 	{
-		JDFILE_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+		JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 		for (size_t i = 0; i < locks.size(); ++i)
 		{
 			const QJsonObject& lock = locks[i];

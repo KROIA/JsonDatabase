@@ -54,7 +54,25 @@ void JDObjectInterface::setObjectID(const std::string& id)
     m_objID = id;
 }
 
+void JDObjectInterface::setVersion(int version)
+{
+	m_version = version;
+}
+void JDObjectInterface::setVersion(const QJsonObject& obj)
+{
+	if(obj.contains(m_tag_objVersion))
+		m_version = obj[m_tag_objVersion].toInt(0);
+}
+bool JDObjectInterface::equalData(const QJsonObject& obj) const
+{
+    QJsonObject data1;
+    QJsonObject data2;
+    bool equal = getJsonValue(obj, data1, m_tag_data);
+    equal = save(data2);
+    equal &= data1 == data2;
 
+    return equal;
+}
 bool JDObjectInterface::loadInternal(const QJsonObject &obj)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
@@ -81,8 +99,12 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
 
 bool JDObjectInterface::saveInternal(QJsonObject &obj)
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4)
     ++m_version;
+    return getSaveData(obj);
+}
+bool JDObjectInterface::getSaveData(QJsonObject& obj) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     obj[m_tag_objID] = getObjectID().c_str();
     obj[m_tag_objVersion] = QJsonValue(m_version);
     obj[m_tag_className] = className().c_str();
@@ -92,10 +114,9 @@ bool JDObjectInterface::saveInternal(QJsonObject &obj)
         JD_GENERAL_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
         ret = save(data);
     }
-     
+
     obj[m_tag_data] = data;
     return ret;
 }
-
 
 }

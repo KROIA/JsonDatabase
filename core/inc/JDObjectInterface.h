@@ -11,7 +11,8 @@
 
 namespace JsonDatabase
 {
-
+    // Pair of JDObjectInterface objects which have the same ID
+    typedef std::pair<JDObjectInterface*, JDObjectInterface*> JDObjectPair;
 
 class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 {
@@ -33,9 +34,12 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     protected:
         void setObjectID(const std::string &id);
 
-
+        void setVersion(int version);
+        void setVersion(const QJsonObject& obj);
+        bool equalData(const QJsonObject &obj) const;
         bool loadInternal(const QJsonObject &obj);
         bool saveInternal(QJsonObject &obj);
+        bool getSaveData(QJsonObject &obj) const;
 
 
     class JSONDATABASE_EXPORT AutoObjectAddToRegistry

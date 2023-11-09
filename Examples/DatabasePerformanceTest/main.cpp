@@ -224,12 +224,12 @@ void threadFunction1() {
     manager1->connectDatabaseFileChangedSlot([] {manager1->loadObjects(); });
     bool doesRemove = true;
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
-        std::cout << "Thread 1 is running..." << std::endl;
+    //    std::cout << "Thread 1 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
        // for(int i=0; i<20; ++i)
        // manager1->loadObjects();
-        std::this_thread::sleep_for(std::chrono::milliseconds(200)); // Simulate some work
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Simulate some work
 
         JDObjectInterface* obj = nullptr;
         if (doesRemove)
@@ -249,7 +249,7 @@ void threadFunction1() {
         }
         
 #endif
-        for (size_t i = 0; i < 100; ++i)
+        for (size_t i = 0; i < 10; ++i)
         {
             manager1->update();
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -282,13 +282,25 @@ void callback()
     manager2->loadObjects();
    // manager2->disconnectDatabaseFileChangedSlot(callback);
 }
-void onObjectRemoved(JDObjectInterface* obj)
+void onObjectRemoved(const JDObjectContainer& list)
 {
-    std::cout << "Object removed: " << obj->getObjectID() << "\n";
+    for(JDObjectInterface* obj : list)
+        std::cout << "Object removed: " << obj->getObjectID() << "\n";
 }
-void onObjectAdded(JDObjectInterface* obj)
+void onObjectAdded(const JDObjectContainer& list)
 {
-	std::cout << "Object added: " << obj->getObjectID() << "\n";
+    for (JDObjectInterface* obj : list)
+	    std::cout << "Object added: " << obj->getObjectID() << "\n";
+}
+void onObjectOverrideChange(const JDObjectContainer& list)
+{
+    for (JDObjectInterface* obj : list)
+        std::cout << "Object override change: " << obj->getObjectID() << "\n";
+}
+void onObjectChange(const std::vector<JDObjectPair>& list)
+{
+    for (const JDObjectPair& obj : list)
+        std::cout << "Object changed: " << obj.first->getObjectID() << "\n";
 }
 
 // Function for the second thread
@@ -301,9 +313,11 @@ void threadFunction2() {
     manager2->connectDatabaseFileChangedSlot(callback);
     manager2->connectObjectAddedToDatabaseSlot(onObjectAdded);
     manager2->connectObjectRemovedFromDatabaseSlot(onObjectRemoved);
+    manager2->connectObjectChangedFromDatabaseSlot(onObjectChange);
+    manager2->connectObjectOverrideChangeFromDatabaseSlot(onObjectOverrideChange);
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
-        std::cout << "Thread 2 is running..." << std::endl;
+       // std::cout << "Thread 2 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
         //for (int i = 0; i < 20; ++i)
@@ -354,7 +368,7 @@ void threadFunction3() {
         });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
-        std::cout << "Thread 3 is running..." << std::endl;
+      //  std::cout << "Thread 3 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
         //for (int i = 0; i < 20; ++i)
@@ -389,10 +403,12 @@ void threadFunction4() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
-    manager4->connectDatabaseFileChangedSlot([] {manager4->loadObjects(); });
+    manager4->connectDatabaseFileChangedSlot([] {
+        manager4->loadObjects(); 
+        });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
-        std::cout << "Thread 4 is running..." << std::endl;
+      //  std::cout << "Thread 4 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
        // for (int i = 0; i < 20; ++i)
@@ -428,10 +444,12 @@ void threadFunction5() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
-    manager5->connectDatabaseFileChangedSlot([] {manager5->loadObjects(); });
+    manager5->connectDatabaseFileChangedSlot([] {
+        manager5->loadObjects();
+        });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
-        std::cout << "Thread 5 is running..." << std::endl;
+      //  std::cout << "Thread 5 is running..." << std::endl;
 
 #ifdef USE_LOADS_SAVES
        // for (int i = 0; i < 20; ++i)
