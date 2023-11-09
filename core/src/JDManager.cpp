@@ -366,48 +366,59 @@ bool JDManager::loadObjects(int mode)
     {
         if (overrideChanges)
         {
-            JD_GENERAL_PROFILING_BLOCK("Deserialize objects override mode", JD_COLOR_STAGE_2)
-                // Loads the existing objects and overrides the data in the current object instance
-                for (Pair& pair : pairs)
+            JD_GENERAL_PROFILING_BLOCK("Deserialize objects override mode", JD_COLOR_STAGE_2);
+            bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
+            // Loads the existing objects and overrides the data in the current object instance
+            for (Pair& pair : pairs)
+            {
+                
+                if (hasOverrideChangeFromDatabaseSlots)
                 {
                     bool hasChanged = false;
                     success &= deserializeOverrideFromJson(pair.json, pair.objOriginal, hasChanged);
-
                     if (hasChanged)
                     {
                         // The loaded object is not equal to the original object
                         m_signals.objectOverrideChangeFromDatabase.container.addObject(pair.objOriginal);
                     }
                 }
+                else
+                    success &= deserializeOverrideFromJson(pair.json, pair.objOriginal);
+                pair.obj = pair.objOriginal;
+            }
         }
         else
         {
-            JD_GENERAL_PROFILING_BLOCK("Deserialize objects reinstatiation mode", JD_COLOR_STAGE_2)
-                // Loads the existing objects and creates a new object instance if the data has changed
-                for (Pair& pair : pairs)
-                {
-                    success &= deserializeJson(pair.json, pair.objOriginal, pair.obj);
+            JD_GENERAL_PROFILING_BLOCK("Deserialize objects reinstatiation mode", JD_COLOR_STAGE_2);
+            bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
+            // Loads the existing objects and creates a new object instance if the data has changed
+            for (Pair& pair : pairs)
+            {
+                success &= deserializeJson(pair.json, pair.objOriginal, pair.obj);
 
-                    if (pair.objOriginal != pair.obj)
-                    {
-                        // The loaded object is not equal to the original object
+                if (pair.objOriginal != pair.obj)
+                {
+                    // The loaded object is not equal to the original object
+                    if(hasChangeFromDatabaseSlots)
                         m_signals.objectChangedFromDatabase.container.push_back(JDObjectPair(pair.objOriginal, pair.obj));
-                        replaceObject_internal(pair.obj);
-                    }
+                    replaceObject_internal(pair.obj);
                 }
+            }
         }
     }
 
     if(modeNewObjects)
     {
         JD_GENERAL_PROFILING_BLOCK("Deserialize and create new objects", JD_COLOR_STAGE_2);
+        bool hasObjectAddedToDatabase = m_signals.objectAddedToDatabase.signal.getSlotCount();
         // Loads the new objects and creates a new object instance
         for (Pair& pair : newObjectPairs)
         {
             success &= deserializeJson(pair.json, pair.objOriginal, pair.obj);
             // Add the new generated object to the database
             addObject_internal(pair.obj);
-            m_signals.objectAddedToDatabase.container.addObject(pair.obj);
+            if(hasObjectAddedToDatabase)
+                m_signals.objectAddedToDatabase.container.addObject(pair.obj);
         }
     }
     
@@ -416,6 +427,7 @@ bool JDManager::loadObjects(int mode)
         JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
         std::vector<JDObjectInterface*> allObjs = getObjects_internal();
         m_signals.objectRemovedFromDatabase.container.reserve(allObjs.size());
+        bool hasObjectRemovedFromDatabase = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
         for (size_t i = 0; i < allObjs.size(); ++i)
         {
             for (const Pair& pair : pairs)
@@ -429,7 +441,8 @@ bool JDManager::loadObjects(int mode)
                     goto nextObj;
             }
 
-            m_signals.objectRemovedFromDatabase.container.addObject(allObjs[i]);
+            if(hasObjectRemovedFromDatabase)
+                m_signals.objectRemovedFromDatabase.container.addObject(allObjs[i]);
             removeObject_internal(allObjs[i]);
             nextObj:;
         }
@@ -761,8 +774,19 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface* objO
 }
 bool JDManager::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool& hasChangedOut) const
 {
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
     if(!obj->equalData(json))
         hasChangedOut = true;
+    if (!obj->loadInternal(json))
+    {
+        JD_CONSOLE_FUNCTION("Can't load data in object: " << obj->getObjectID() << " classType: " << obj->className() + "\n");
+        return false;
+    }
+    return true;
+}
+bool JDManager::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj) const
+{
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
     if (!obj->loadInternal(json))
     {
         JD_CONSOLE_FUNCTION("Can't load data in object: " << obj->getObjectID() << " classType: " << obj->className() + "\n");

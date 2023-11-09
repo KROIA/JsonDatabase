@@ -65,6 +65,7 @@ void JDObjectInterface::setVersion(const QJsonObject& obj)
 }
 bool JDObjectInterface::equalData(const QJsonObject& obj) const
 {
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     QJsonObject data1;
     QJsonObject data2;
     bool equal = getJsonValue(obj, data1, m_tag_data);

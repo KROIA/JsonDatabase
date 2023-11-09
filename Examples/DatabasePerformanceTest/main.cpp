@@ -84,6 +84,9 @@ int main(int argc, char* argv[])
 
     manager1->addObject(globalTable);
     manager2->addObject(globalTable);
+    manager3->addObject(globalTable);
+    manager4->addObject(globalTable);
+    manager5->addObject(globalTable);
     manager1->saveObjects();
 
     manager1->enableZipFormat(false);
@@ -279,7 +282,8 @@ void threadFunction1() {
 
 void callback()
 {
-    manager2->loadObjects();
+    manager2->loadObjects(JDManager::LoadMode::allObjects);
+    manager2->loadObjects(JDManager::LoadMode::allObjects + JDManager::LoadMode::overrideChanges);
    // manager2->disconnectDatabaseFileChangedSlot(callback);
 }
 void onObjectRemoved(const JDObjectContainer& list)
@@ -314,7 +318,7 @@ void threadFunction2() {
     manager2->connectObjectAddedToDatabaseSlot(onObjectAdded);
     manager2->connectObjectRemovedFromDatabaseSlot(onObjectRemoved);
     manager2->connectObjectChangedFromDatabaseSlot(onObjectChange);
-    manager2->connectObjectOverrideChangeFromDatabaseSlot(onObjectOverrideChange);
+    //manager2->connectObjectOverrideChangeFromDatabaseSlot(onObjectOverrideChange);
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
        // std::cout << "Thread 2 is running..." << std::endl;
@@ -364,7 +368,7 @@ void threadFunction3() {
     JDObjectInterface* lockedPerson = nullptr;
 
     manager3->connectDatabaseFileChangedSlot([] {
-        manager3->loadObjects();
+        //manager3->loadObjects();
         });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
@@ -404,7 +408,7 @@ void threadFunction4() {
     JDObjectInterface* lockedPerson = nullptr;
 
     manager4->connectDatabaseFileChangedSlot([] {
-        manager4->loadObjects(); 
+        //manager4->loadObjects(); 
         });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
@@ -445,7 +449,7 @@ void threadFunction5() {
     JDObjectInterface* lockedPerson = nullptr;
 
     manager5->connectDatabaseFileChangedSlot([] {
-        manager5->loadObjects();
+        //manager5->loadObjects();
         });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {

@@ -206,6 +206,7 @@ class JSONDATABASE_EXPORT JDManager
 
         bool deserializeJson(const QJsonObject& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut) const;
         bool deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool &hasChangedOut) const;
+        bool deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj) const;
 
 
         bool lockFile(
