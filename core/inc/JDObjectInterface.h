@@ -3,9 +3,9 @@
 #include "JD_base.h"
 #include "JDDeclaration.h"
 #include "JDSerializable.h"
-#include "simdjson.h"
 
-#include <QJsonObject>
+
+//#include <QJsonObject>
 #include <string>
 
 
@@ -28,7 +28,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
 
         virtual JDObjectInterface* clone() const = 0;
-        virtual JDObjectInterface* clone(const QJsonObject &obj, const std::string &uniqueID) const = 0;
+        virtual JDObjectInterface* clone(const simdjson::dom::object &obj, const std::string &uniqueID) const = 0;
         virtual const std::string& className() const = 0;
 
         const std::string& getObjectID() const;
@@ -36,11 +36,11 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         void setObjectID(const std::string &id);
 
         void setVersion(int version);
-        void setVersion(const QJsonObject& obj);
-        bool equalData(const QJsonObject &obj) const;
-        bool loadInternal(const QJsonObject &obj);
-        bool saveInternal(QJsonObject &obj);
-        bool getSaveData(QJsonObject &obj) const;
+        void setVersion(const simdjson::dom::object& obj);
+        bool equalData(const simdjson::dom::object &obj) const;
+        bool loadInternal(const simdjson::dom::object &obj);
+        bool saveInternal(simdjson::dom::object &obj);
+        bool getSaveData(simdjson::dom::object &obj) const;
 
 
     class JSONDATABASE_EXPORT AutoObjectAddToRegistry
@@ -55,10 +55,10 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         std::string m_objID;
         int m_version; // ObjectVersion
 
-        static const QString m_tag_objID;
-        static const QString m_tag_objVersion;
-        static const QString m_tag_className;
-        static const QString m_tag_data;
+        static const std::string m_tag_objID;
+        static const std::string m_tag_objVersion;
+        static const std::string m_tag_className;
+        static const std::string m_tag_data;
 
         
 };
@@ -87,7 +87,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* clone() const override; \
-    classNameVal* clone(const QJsonObject &reader, const std::string &uniqueID) const override; 
+    classNameVal* clone(const simdjson::dom::object &reader, const std::string &uniqueID) const override; 
 
 #define JD_OBJECT_DECL_CLASSNAME(classNameVal) \
     const std::string &className() const override; 
@@ -118,7 +118,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         c->setObjectID(this->getObjectID()); \
         return c; \
     } \
-    classNameVal* classNameVal::clone(const QJsonObject &reader, const std::string &uniqueID) const\
+    classNameVal* classNameVal::clone(const simdjson::dom::object &reader, const std::string &uniqueID) const\
     { \
         classNameVal *obj = new classNameVal(uniqueID); \
         obj->loadInternal(reader); \

@@ -6,10 +6,10 @@
 namespace JsonDatabase
 {
 
-const QString JDObjectInterface::m_tag_objID = "objID";
-const QString JDObjectInterface::m_tag_objVersion = "objVersion";
-const QString JDObjectInterface::m_tag_className = "class";
-const QString JDObjectInterface::m_tag_data = "Data";
+const std::string JDObjectInterface::m_tag_objID = "objID";
+const std::string JDObjectInterface::m_tag_objVersion = "objVersion";
+const std::string JDObjectInterface::m_tag_className = "class";
+const std::string JDObjectInterface::m_tag_data = "Data";
 
 
 JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObjectInterface* obj)
@@ -58,23 +58,22 @@ void JDObjectInterface::setVersion(int version)
 {
 	m_version = version;
 }
-void JDObjectInterface::setVersion(const QJsonObject& obj)
+void JDObjectInterface::setVersion(const simdjson::dom::object& obj)
 {
-	if(obj.contains(m_tag_objVersion))
-		m_version = obj[m_tag_objVersion].toInt(0);
+    JDSerializable::getJsonValue(obj, m_version, m_tag_objVersion);
 }
-bool JDObjectInterface::equalData(const QJsonObject& obj) const
+bool JDObjectInterface::equalData(const simdjson::dom::object& obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    QJsonObject data1;
-    QJsonObject data2;
+    simdjson::dom::object data1;
+    simdjson::dom::object data2;
     bool equal = getJsonValue(obj, data1, m_tag_data);
     equal = save(data2);
     equal &= data1 == data2;
 
     return equal;
 }
-bool JDObjectInterface::loadInternal(const QJsonObject &obj)
+bool JDObjectInterface::loadInternal(const simdjson::dom::object &obj)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     
@@ -82,7 +81,7 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
     if(!obj.contains(m_tag_objID) ||
        !obj.contains(m_tag_objVersion))
         return false;
-    QJsonObject data;
+    simdjson::dom::object data;
     bool success = getJsonValue(obj, data, m_tag_data);
     
     {
@@ -98,18 +97,18 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
 }
 
 
-bool JDObjectInterface::saveInternal(QJsonObject &obj)
+bool JDObjectInterface::saveInternal(simdjson::dom::object &obj)
 {
     ++m_version;
     return getSaveData(obj);
 }
-bool JDObjectInterface::getSaveData(QJsonObject& obj) const
+bool JDObjectInterface::getSaveData(simdjson::dom::object& obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     obj[m_tag_objID] = getObjectID().c_str();
     obj[m_tag_objVersion] = QJsonValue(m_version);
     obj[m_tag_className] = className().c_str();
-    QJsonObject data;
+    simdjson::dom::object data;
     bool ret;
     {
         JD_GENERAL_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
