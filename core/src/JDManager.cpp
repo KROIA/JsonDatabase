@@ -41,13 +41,15 @@ namespace JsonDatabase
 
     const std::string JDManager::s_jsonFileEnding = ".json";
 
-    const QString JDManager::m_timeFormat = "hh:mm:ss.zzz";
-    const QString JDManager::m_dateFormat = "dd.MM.yyyy";
+    const QString JDManager::s_timeFormat = "hh:mm:ss.zzz";
+    const QString JDManager::s_dateFormat = "dd.MM.yyyy";
 
-    const QString JDManager::m_tag_sessionID = "sessionID";
-    const QString JDManager::m_tag_user = "user";
-    const QString JDManager::m_tag_date = "date";
-    const QString JDManager::m_tag_time = "time";
+    const QString JDManager::s_tag_sessionID = "sessionID";
+    const QString JDManager::s_tag_user = "user";
+    const QString JDManager::s_tag_date = "date";
+    const QString JDManager::s_tag_time = "time";
+
+    const unsigned int JDManager::s_fileLockTimeoutMs = 100;
 
 
     //std::map<std::string, JDObjectInterface*> JDManager::s_objDefinitions;
@@ -203,18 +205,17 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
     if (!obj)
         return false;
     bool success = true;
+    if (!lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::readWrite, s_fileLockTimeoutMs))
+    {
+        JD_CONSOLE_FUNCTION(" Can't lock database\n");
+        return false;
+    }
+
     std::string ID = obj->getObjectID();
     std::vector<QJsonObject> jsons;
 
     QJsonObject data;
     success &= obj->saveInternal(data);
-
-
-    if (!lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::readWrite))
-    {
-        JD_CONSOLE_FUNCTION(" Can't lock database\n");
-        return false;
-    }
 
     
     success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
@@ -242,19 +243,8 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
 bool JDManager::saveObjects() const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    bool success = true;
-    {
-        JDM_UNIQUE_LOCK_P;
-        std::vector<JDObjectInterface*> objs(m_objs.size(), nullptr);
-        size_t i = 0;
-        for (auto& p : m_objs)
-        {
-            objs[i++] = p;
-        }
-
-        success &= saveObjects_internal(objs);
-    }
-    return success;
+    JDM_UNIQUE_LOCK_P;
+    return saveObjects_internal(m_objs.getAllObjects());
 }
 bool JDManager::saveObjects(const std::vector<JDObjectInterface*> &objList) const
 {
@@ -265,7 +255,15 @@ bool JDManager::saveObjects(const std::vector<JDObjectInterface*> &objList) cons
 bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objList) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    if (!lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::write))
+    {
+        JD_CONSOLE_FUNCTION(" Can't lock database\n");
+        if (getLastLockError() == FileLock::Error::alreadyLockedForWriting)
+        {
 
+        }
+        return false;
+    }
     /*if (!makeDatabaseDirs())
     {
         return false;
@@ -279,10 +277,11 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
         m_databaseFileWatcher->pause();
 
     // Save the serialized objects
-    success &= writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
+    success &= writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
 
     if (m_databaseFileWatcher)
         m_databaseFileWatcher->unpause();
+    unlockFile();
     return success;
 }
 
@@ -293,11 +292,17 @@ bool JDManager::loadObject(JDObjectInterface* obj)
     if (!exists_internal(obj))
         return false;
 
+    if (!lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::read, s_fileLockTimeoutMs))
+    {
+        JD_CONSOLE_FUNCTION(" Can't lock database\n");
+        return false;
+    }
+
     bool success = true;
     std::string ID = obj->getObjectID();
 
     std::vector<QJsonObject> jsons;
-    success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
+    success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
 
     size_t index = getJsonIndexByID(jsons, ID);
     if (index == std::string::npos)
@@ -308,14 +313,21 @@ bool JDManager::loadObject(JDObjectInterface* obj)
     const QJsonObject &objData = jsons[index];
     bool hasChanged = false;
     success &= deserializeOverrideFromJson(objData, obj, hasChanged);
-
+    unlockFile();
 
     return success;
 }
 bool JDManager::loadObjects(int mode)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    JDM_UNIQUE_LOCK_P;
     bool success = true;
+
+    if (!lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::read, s_fileLockTimeoutMs))
+    {
+        JD_CONSOLE_FUNCTION(" Can't lock database\n");
+        return false;
+    }
 
     bool modeNewObjects = (mode & (int)LoadMode::newObjects);
     bool modeChangedObjects = (mode & (int)LoadMode::changedObjects);
@@ -325,10 +337,10 @@ bool JDManager::loadObjects(int mode)
 
     m_signals.clearContainer();
     
-    JDM_UNIQUE_LOCK_P;
+    
     
     std::vector<QJsonObject> jsons;
-    success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, true);
+    success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
 
     struct Pair
     {
@@ -447,6 +459,8 @@ bool JDManager::loadObjects(int mode)
             nextObj:;
         }
     }
+
+    unlockFile();
     return success;
 }
 
@@ -794,24 +808,43 @@ bool JDManager::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInt
     }
     return true;
 }
-
 bool JDManager::lockFile(
     const std::string& directory,
     const std::string& fileName,
-    FileReadWriteLock::Access direction,
-    unsigned int timeoutMillis) const
+    FileReadWriteLock::Access direction) const
 {
-    // JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    // JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
-
     if (m_fileLock)
     {
         JD_CONSOLE_FUNCTION("Lock already aquired\n");
         return false;
     }
 
+    m_fileLock = new FileReadWriteLock(directory, fileName);
 
-    //std::string abspath = m_databasePath+"\\"+ relativePath;
+    if (!m_fileLock->lock(direction))
+    {
+        JD_CONSOLE_FUNCTION("Can't aquire lock for: " << directory << "\\" << fileName << "\n");
+        delete m_fileLock;
+        m_fileLock = nullptr;
+        return false;
+    }
+    if (m_fileLock->getLastError() != FileLock::Error::none)
+    {
+        JD_CONSOLE_FUNCTION("Lock error: " << m_fileLock->getLastErrorStr() + "\n");
+    }
+    return true;
+}
+bool JDManager::lockFile(
+    const std::string& directory,
+    const std::string& fileName,
+    FileReadWriteLock::Access direction,
+    unsigned int timeoutMillis) const
+{
+    if (m_fileLock)
+    {
+        JD_CONSOLE_FUNCTION("Lock already aquired\n");
+        return false;
+    }
 
     m_fileLock = new FileReadWriteLock(directory, fileName);
 
@@ -824,30 +857,8 @@ bool JDManager::lockFile(
     }
     if (m_fileLock->getLastError() != FileLock::Error::none)
     {
-        std::cout << "Lock already aquired";
-        JD_CONSOLE_FUNCTION("Lock already aquired");
+        JD_CONSOLE_FUNCTION("Lock error: " << m_fileLock->getLastErrorStr() + "\n");
     }
-
-    /* while (!m_fileLock->lock())
-     {
-         JD_GENERAL_PROFILING_BLOCK_C("WaitForFreeLock", profiler::colors::Red200);
-         QTUpdateEvents();
-
-         QDateTime waitingTime = QDateTime::currentDateTime();
-         if (currentDateTime.msecsTo(waitingTime) > timeoutMillis)
-         {
-             JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << abspath);
-             return false;
-         }
-         //using namespace std::literals;
-         //std::this_thread::sleep_for(1ms);
- #ifdef _WIN32
-         Sleep(1);
- #else
-         usleep(1000);
- #endif
-     }*/
-
     return true;
 }
 bool JDManager::unlockFile() const
@@ -863,6 +874,37 @@ bool JDManager::unlockFile() const
     m_fileLock = nullptr;
 
     return true;
+}
+bool JDManager::isFileLockedByOther(
+    const std::string& directory,
+    const std::string& fileName, 
+    FileReadWriteLock::Access accessType) const
+{
+    FileReadWriteLock::Access a = FileReadWriteLock::Access::unknown;
+    if (!m_fileLock)
+    {
+        FileReadWriteLock lock(directory, fileName);
+    }
+    else
+    {
+        m_fileLock->getAccessStatus();
+    }
+    return a == accessType;
+}
+FileLock::Error JDManager::getLastLockError() const
+{
+    if (!m_fileLock)
+        return FileLock::Error::none;
+    return m_fileLock->getLastError();
+}
+const std::string& JDManager::getLastLockErrorStr() const
+{
+    if (!m_fileLock)
+    {
+        static const std::string dummy;
+        return dummy;
+    }
+    return m_fileLock->getLastErrorStr();
 }
 
 bool JDManager::writeJsonFile(
@@ -907,6 +949,7 @@ bool JDManager::writeJsonFile(
     }
     return false;
 }
+
 bool JDManager::writeJsonFile(
     const QJsonObject& json,
     const std::string& directory,
@@ -1330,7 +1373,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, QTime &value, const QString
 {
     if(obj.contains(key))
     {
-        value = QTime::fromString(obj[key].toString(), m_timeFormat);
+        value = QTime::fromString(obj[key].toString(), s_timeFormat);
         return true;
     }
     return false;
@@ -1339,7 +1382,7 @@ bool JDManager::getJsonValue(const QJsonObject &obj, QDate &value, const QString
 {
     if(obj.contains(key))
     {
-        value = QDate::fromString(obj[key].toString(), m_dateFormat);
+        value = QDate::fromString(obj[key].toString(), s_dateFormat);
         return true;
     }
     return false;

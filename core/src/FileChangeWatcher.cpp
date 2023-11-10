@@ -106,9 +106,9 @@ namespace JsonDatabase
                 {
                     std::unique_lock<std::mutex> lock(m_mutex);
 
-                   // JD_GENERAL_PROFILING_BLOCK("File change detected", JD_COLOR_STAGE_5);
+                    // JD_GENERAL_PROFILING_BLOCK("File change detected", JD_COLOR_STAGE_5);
                     m_fileChanged = true;
-                    ResetEvent(m_eventHandle);
+                    
 
 
                     while (m_fileChanged && !m_stopFlag) {
@@ -118,8 +118,9 @@ namespace JsonDatabase
                     if (m_stopFlag) {
                         break;
                     }
+                
                 }
-
+                ResetEvent(m_eventHandle);
                 
 
                 BOOL success = ReadDirectoryChangesW(

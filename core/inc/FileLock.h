@@ -23,6 +23,8 @@ namespace JsonDatabase
             unableToDeleteLockFile,
             unableToLock,
             alreadyLocked,
+            alreadyLockedForReading,
+            alreadyLockedForWriting
         };
         
 

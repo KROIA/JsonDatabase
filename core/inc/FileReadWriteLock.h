@@ -36,6 +36,9 @@ namespace JsonDatabase
 
 		bool isLocked() const;
 
+		Access getAccessStatus() const;
+		Access getAccessStatus(size_t &readerCount) const;
+
 		FileLock::Error getLastError() const;
 		const std::string& getLastErrorStr() const;
 
@@ -44,6 +47,8 @@ namespace JsonDatabase
 		static const std::string& accessTypeToString(Access access);
 		static Access stringToAccessType(const std::string& accessStr);
 		static std::string getRandomString(size_t length);
+
+
 	private:
 		bool lock_internal(Access direction);
 		FileLock::Error lockFile(Access direction);

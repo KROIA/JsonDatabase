@@ -212,9 +212,19 @@ class JSONDATABASE_EXPORT JDManager
         bool lockFile(
             const std::string& directory,
             const std::string& fileName,
+            FileReadWriteLock::Access direction) const;
+        bool lockFile(
+            const std::string& directory,
+            const std::string& fileName,
             FileReadWriteLock::Access direction,
-            unsigned int timeoutMillis = 100) const;
+            unsigned int timeoutMillis) const;
         bool unlockFile() const;
+        bool isFileLockedByOther(const 
+            std::string& directory,
+            const std::string& fileName, 
+            FileReadWriteLock::Access accessType) const;
+        FileLock::Error getLastLockError() const;
+        const std::string &getLastLockErrorStr() const;
 
         bool writeJsonFile(
             const std::vector<QJsonObject>& jsons,
@@ -367,13 +377,15 @@ class JSONDATABASE_EXPORT JDManager
 
         static const std::string s_jsonFileEnding;
 
-        static const QString m_timeFormat;
-        static const QString m_dateFormat;
+        static const QString s_timeFormat;
+        static const QString s_dateFormat;
 
-        static const QString m_tag_sessionID;
-        static const QString m_tag_user;
-        static const QString m_tag_date;
-        static const QString m_tag_time;
+        static const QString s_tag_sessionID;
+        static const QString s_tag_user;
+        static const QString s_tag_date;
+        static const QString s_tag_time;
+
+        static const unsigned int s_fileLockTimeoutMs;
 
 
 #ifdef JSON_DATABSE_USE_THREADS

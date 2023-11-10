@@ -121,6 +121,8 @@ namespace JsonDatabase
         case Error::unableToDeleteLockFile:             { static const std::string msg = "FileLock::Error::unableToDeleteLockFile"; return msg; };
         case Error::unableToLock:                       { static const std::string msg = "FileLock::Error::unableToLock"; return msg; };
         case Error::alreadyLocked:                      { static const std::string msg = "FileLock::Error::alreadyLocked"; return msg; };
+        case Error::alreadyLockedForReading:            { static const std::string msg = "FileLock::Error::alreadyLockedForReading"; return msg; };
+        case Error::alreadyLockedForWriting:            { static const std::string msg = "FileLock::Error::alreadyLockedForWriting"; return msg; };
         }
         static std::string unknown;
         unknown = "Unknown FileLock Error: " + std::to_string(m_lastError);

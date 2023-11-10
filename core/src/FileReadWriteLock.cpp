@@ -120,52 +120,22 @@ namespace JsonDatabase
         
         m_access = Access::unknown;
 
-        std::vector<std::string> files = getFileNamesInDirectory(m_directory, FileLock::s_lockFileEnding);
-
+        
         size_t readerCount = 0;
-        for (const std::string& file : files)
+        switch (getAccessStatus(readerCount))
         {
-            if (file.find(FileLock::s_lockFileEnding) == std::string::npos)
-                continue;
-
-            // Check the filename to see if it matches the file we want to lock
-            size_t pos = file.find_last_of("_");
-            if (pos == std::string::npos)
-                continue;
-            std::string fileName = file.substr(0, pos);
-
-            if (fileName != m_fileName)
-                continue;
-
-            // Check the access type
-            size_t pos2 = file.find_last_of("-");
-            std::string accessType = file.substr(pos + 1, pos2 - pos - 1);
-            Access access = stringToAccessType(accessType);
-            switch (access)
+            case Access::readWrite:
+            case Access::write:
             {
-                case Access::readWrite:
-                case Access::write:
-                {
-                    // Already locked for writing by a other process
-                    return FileLock::Error::alreadyLocked;
-                }
-                case Access::read:
-                {
-                    ++readerCount;
-                    break;
-                }
-                case Access::unknown:
-                {
-                    int a = 0;
-
-                }
-            }
+				// Some are writing, can't read or write
+				return FileLock::Error::alreadyLockedForWriting;
+			}
         }
 
         if (direction == Access::write && readerCount != 0)
         {
             // Some are reading, can't write
-            return FileLock::Error::alreadyLocked;
+            return FileLock::Error::alreadyLockedForReading;
         }
 
 
@@ -218,6 +188,54 @@ namespace JsonDatabase
     bool FileReadWriteLock::isLocked() const
     {
         return m_locked;
+    }
+    FileReadWriteLock::Access FileReadWriteLock::getAccessStatus() const
+    {
+        size_t dummy;
+        return getAccessStatus(dummy);
+    }
+    FileReadWriteLock::Access FileReadWriteLock::getAccessStatus(size_t& readerCount) const
+    {
+        std::vector<std::string> files = getFileNamesInDirectory(m_directory, FileLock::s_lockFileEnding);
+        readerCount = 0;
+        for (const std::string& file : files)
+        {
+            if (file.find(FileLock::s_lockFileEnding) == std::string::npos)
+                continue;
+
+            // Check the filename to see if it matches the file we want to lock
+            size_t pos = file.find_last_of("_");
+            if (pos == std::string::npos)
+                continue;
+            std::string fileName = file.substr(0, pos);
+
+            if (fileName != m_fileName)
+                continue;
+
+            // Check the access type
+            size_t pos2 = file.find_last_of("-");
+            std::string accessType = file.substr(pos + 1, pos2 - pos - 1);
+            Access access = stringToAccessType(accessType);
+            switch (access)
+            {
+            case Access::readWrite:
+            {
+                return Access::readWrite;
+            }
+            case Access::write:
+            {
+                return Access::write;
+            }
+            case Access::read:
+            {
+                ++readerCount;
+                break;
+            }
+            }
+        }
+        if(readerCount > 0)
+            return Access::read;
+        return Access::unknown;
     }
     enum FileLock::Error FileReadWriteLock::getLastError() const
     {
