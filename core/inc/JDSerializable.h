@@ -2,6 +2,7 @@
 
 #include "JD_base.h"
 #include "JDDeclaration.h"
+#include "simdjson.h"
 
 #include <QJsonObject>
 

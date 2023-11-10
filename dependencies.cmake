@@ -38,4 +38,24 @@ function(use_easy_profiler libsContainer)
 	#
 	set(${libsContainer} ${${libsContainer}} "easy_profiler" PARENT_SCOPE)
 endfunction()
+
+
+
+function(use_simdjson libsContainer)
+	#  simdjson
+	set(SIMDJSON_GIT_REPO  https://github.com/simdjson/simdjson.git)
+	set(SIMDJSON_GIT_TAG   v3.6.0)
+
+
+	FetchContent_Declare(
+		simdjson
+		GIT_REPOSITORY	${SIMDJSON_GIT_REPO}
+		GIT_TAG			${SIMDJSON_GIT_TAG}
+		GIT_SHALLOW     TRUE
+	)
+	message("Download dependency: ${SIMDJSON_GIT_REPO}")
+	FetchContent_MakeAvailable(simdjson)
+
+	set(${libsContainer} ${${libsContainer}} "simdjson" PARENT_SCOPE)
+endfunction()
 # End external dependencies

@@ -3,6 +3,7 @@
 #include "JD_base.h"
 #include "JDDeclaration.h"
 #include "JDSerializable.h"
+#include "simdjson.h"
 
 #include <QJsonObject>
 #include <string>

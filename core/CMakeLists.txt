@@ -56,7 +56,8 @@ endif()
 
 # External dependencies from the dependencies.cmake
 use_easy_profiler(EASY_PROFILER_DEPS)
-set(LIBRARY_DEPENDENCIES)
+use_simdjson(LIBRARY_DEPENDENCIES)
+#set(LIBRARY_DEPENDENCIES)
 
 
 include_directories(inc)
