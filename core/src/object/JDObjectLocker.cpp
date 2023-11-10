@@ -1,6 +1,6 @@
-#include "JDObjectLocker.h"
-#include "FileLock.h"
-#include "JDManager.h"
+#include "object/JDObjectLocker.h"
+#include "utilities/filesystem/FileLock.h"
+#include "manager/JDManager.h"
 
 #include <QFile>
 #include <QJsonDocument>

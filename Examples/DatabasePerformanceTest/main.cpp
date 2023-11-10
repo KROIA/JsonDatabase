@@ -82,6 +82,8 @@ int main(int argc, char* argv[])
     manager4->enableZipFormat(USE_ZIP_FORMAT);
     manager5->enableZipFormat(USE_ZIP_FORMAT);
 
+    JDObjectInterface::reinstantiate(globalTable);
+
     manager1->addObject(globalTable);
     manager2->addObject(globalTable);
     manager3->addObject(globalTable);

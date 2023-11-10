@@ -1,7 +1,7 @@
-#include "JDManager.h"
-#include "JDObjectInterface.h"
-#include "JDUniqueMutexLock.h"
-#include "JDObjectRegistry.h"
+#include "manager/JDManager.h"
+#include "object/JDObjectInterface.h"
+#include "object/JDObjectRegistry.h"
+#include "utilities/JDUniqueMutexLock.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -12,13 +12,8 @@
 #include <qcoreapplication.h>
 #include <QDirIterator>
 
-#ifdef _WIN32
+
 #include <windows.h>
-#else
-#include <unistd.h>
-#endif
-
-
 #include <filesystem>
 #include <algorithm>
 #include <execution>
@@ -26,13 +21,10 @@
 
 #include <QtZlib/zlib.h>
 
-#include <windows.h>
 #include <time.h>
 #include <winsock.h>
 #include <Wincon.h>
 #include <winuser.h>
-
-#include <iostream>
 
 
 
@@ -219,7 +211,7 @@ bool JDManager::saveObject(JDObjectInterface* obj) const
 
     
     success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
-    size_t index = getJsonIndexByID(jsons, ID);
+    size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
     
     if (index == std::string::npos)
     {
@@ -264,10 +256,6 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
         }
         return false;
     }
-    /*if (!makeDatabaseDirs())
-    {
-        return false;
-    }*/
     bool success = true;
 
     std::vector<QJsonObject> jsonData;
@@ -304,7 +292,7 @@ bool JDManager::loadObject(JDObjectInterface* obj)
     std::vector<QJsonObject> jsons;
     success &= readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
 
-    size_t index = getJsonIndexByID(jsons, ID);
+    size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
     if (index == std::string::npos)
     {
         JD_CONSOLE_FUNCTION("Object with ID: " << ID << " not found");
@@ -356,7 +344,7 @@ bool JDManager::loadObjects(int mode)
         for (size_t i = 0; i < jsons.size(); ++i)
         {
             std::string ID;
-            if (!getJsonValue(jsons[i], ID, JDObjectInterface::m_tag_objID))
+            if (!JDSerializable::getJsonValue(jsons[i], ID, JDObjectInterface::s_tag_objID))
             {
                 JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
                 success = false;
@@ -755,7 +743,7 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface* objO
     if(objOriginal)
     {
         std::string ID;
-        getJsonValue(json, ID, JDObjectInterface::m_tag_objID);
+        JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
         if (objOriginal->equalData(json))
         {
             objOut = objOriginal;
@@ -768,11 +756,11 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface* objO
     }
     else
     {
-        JDObjectInterface* clone = getObjectDefinition(json);
+        JDObjectInterface* clone = JDObjectRegistry::getObjectDefinition(json);
         if (!clone)
         {
             std::string className;
-            getJsonValue(json, className, JDObjectInterface::m_tag_className);
+            JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className);
 
             JD_CONSOLE_FUNCTION("Objecttype: " << className.c_str() << " is not known by this database. "
                 "Call: JDManager::addObjectDefinition<" << className.c_str() << ">(); first\n");
@@ -780,7 +768,7 @@ bool JDManager::deserializeJson(const QJsonObject& json, JDObjectInterface* objO
         }
 
         std::string ID;
-        getJsonValue(json, ID, JDObjectInterface::m_tag_objID);
+        JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
 
         objOut = clone->clone(json, ID);
     }
@@ -884,6 +872,7 @@ bool JDManager::isFileLockedByOther(
     if (!m_fileLock)
     {
         FileReadWriteLock lock(directory, fileName);
+        a = lock.getAccessStatus();
     }
     else
     {
@@ -1359,7 +1348,7 @@ bool JDManager::deleteFile(const std::string& file) const
     return true;
 }
 
-
+/*
 bool JDManager::getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key)
 {
     if(obj.contains(key))
@@ -1414,37 +1403,10 @@ bool JDManager::getJsonValue(const QJsonObject &obj, int &value, const QString &
     }
     return false;
 }
+*/
 
-size_t JDManager::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID)
-{
-    for (size_t i = 0; i < jsons.size(); ++i)
-    {
-        std::string id;
-        if (getJsonValue(jsons[i], id, JDObjectInterface::m_tag_objID))
-        {
-            if (id == objID)
-                return i;
-        }
-    }
-    return std::string::npos;
-}
 
-JDObjectInterface* JDManager::getObjectDefinition(const QJsonObject& json)
-{
-    std::string className;
-    if (getJsonValue(json, className, JDObjectInterface::m_tag_className))
-    {
-        return getObjectDefinition(className);
-    }
-    return nullptr;
-}
-JDObjectInterface* JDManager::getObjectDefinition(const std::string& className)
-{
-    auto it = JDObjectRegistry::getRegisteredTypes().find(className);
-    if (it == JDObjectRegistry::getRegisteredTypes().end())
-        return nullptr;
-    return it->second;
-}
+
 
 int JDManager::executeCommand(const std::string& command)
 {

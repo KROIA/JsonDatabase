@@ -1,7 +1,7 @@
 #ifndef C_H
 #define C_H
 
-#include "JDObjectInterface.h"
+#include "JsonDatabase.h"
 
 class C : public JsonDatabase::JDObjectInterface
 {

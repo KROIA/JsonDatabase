@@ -1,4 +1,4 @@
-#include "JDObjectContainer.h"
+#include "object/JDObjectContainer.h"
 
 
 
@@ -28,13 +28,22 @@ namespace JsonDatabase
 
     void JDObjectContainer::addObject(JDObjectInterface* obj) 
     {
-        std::string id = obj->getObjectID();
+        const std::string &id = obj->getObjectID();
         m_objectVector.push_back(obj);
         m_objectMap[id] = obj;
     }
+    void JDObjectContainer::addObject(const std::vector<JDObjectInterface*>& obj)
+    {
+        m_objectVector.reserve(m_objectVector.size() + obj.size());
+        m_objectVector.insert(m_objectVector.end(), obj.begin(), obj.end());
+        for (auto it = obj.begin(); it != obj.end(); ++it)
+        {
+			m_objectMap[(*it)->getObjectID()] = *it;
+		}
+    }
     JDObjectInterface* JDObjectContainer::replaceObject(JDObjectInterface* replacement)
     {
-        std::string id = replacement->getObjectID();
+        const std::string &id = replacement->getObjectID();
 		auto it = m_objectMap.find(id);
 		if (it != m_objectMap.end())
 		{
@@ -61,7 +70,7 @@ namespace JsonDatabase
     {
         if(!obj)
 			return;
-        std::string id = obj->getObjectID();
+        const std::string &id = obj->getObjectID();
         auto it = m_objectMap.find(id);
         if (it != m_objectMap.end())
         {

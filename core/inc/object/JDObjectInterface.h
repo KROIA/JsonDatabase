@@ -24,6 +24,9 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
+        // Creates a copy of the original object as a new instance
+        static std::vector<JDObjectInterface*> reinstantiate(const std::vector<JDObjectInterface*> &objList);
+        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID);
 
 
         virtual JDObjectInterface* clone() const = 0;
@@ -54,11 +57,12 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         std::string m_objID;
         int m_version; // ObjectVersion
 
-        static const QString m_tag_objID;
-        static const QString m_tag_objVersion;
-        static const QString m_tag_className;
-        static const QString m_tag_data;
-
+    public:
+        static const QString s_tag_objID;
+        static const QString s_tag_objVersion;
+        static const QString s_tag_className;
+        static const QString s_tag_data;
+    private:
         
 };
 

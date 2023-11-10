@@ -1,8 +1,9 @@
-#include "FileLock.h"
+#include "utilities/filesystem/FileLock.h"
+#include "utilities/JDUniqueMutexLock.h"
+
 #include <thread>
 #include <iostream>
 
-#include "JDUniqueMutexLock.h"
 
 namespace JsonDatabase
 {

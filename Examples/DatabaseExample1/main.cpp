@@ -1,6 +1,5 @@
 #include <QCoreApplication>
-#include "JDManager.h"
-#include "JDObjectInterface.h"
+#include "JsonDatabase.h"
 #include <QDebug>
 #include "a.h"
 #include "b.h"

@@ -19,6 +19,7 @@ namespace JsonDatabase
         void reserve(size_t size);
 
         void addObject(JDObjectInterface* obj);
+        void addObject(const std::vector<JDObjectInterface*>& obj);
         JDObjectInterface* replaceObject(JDObjectInterface* replacement); // Returns the old object
         void removeObject(const std::string& id);
         void removeObject(JDObjectInterface *obj);

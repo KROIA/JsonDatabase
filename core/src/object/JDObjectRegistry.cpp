@@ -1,4 +1,5 @@
-#include "JDObjectRegistry.h"
+#include "object/JDObjectRegistry.h"
+#include "object/JDObjectInterface.h"
 
 namespace JsonDatabase
 {
@@ -39,6 +40,24 @@ namespace JsonDatabase
         else
             error = Error::objIsNullptr;
         return error;
+    }
+
+    JDObjectInterface* JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
+    {
+        std::string className;
+        if (JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
+        {
+            return getObjectDefinition(className);
+        }
+        return nullptr;
+    }
+    JDObjectInterface* JDObjectRegistry::getObjectDefinition(const std::string& className)
+    {
+        const std::map<std::string, JDObjectInterface*>& registry = getRegisteredTypes();
+        auto it = registry.find(className);
+        if (it == registry.end())
+            return nullptr;
+        return it->second;
     }
 
     const std::map<std::string, JDObjectInterface*>& JDObjectRegistry::getRegisteredTypes() 

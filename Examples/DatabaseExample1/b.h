@@ -1,7 +1,7 @@
 #ifndef B_H
 #define B_H
 
-#include "JDObjectInterface.h"
+#include "JsonDatabase.h"
 
 class B : public JsonDatabase::JDObjectInterface
 {

@@ -1,14 +1,16 @@
 #pragma once
 
 #include "JD_base.h"
-#include "JDObjectInterface.h"
-#include "JDObjectRegistry.h"
-#include "FileReadWriteLock.h"
-#include "ThreadWorker.h"
-#include "JDObjectLocker.h"
-#include "FileChangeWatcher.h"
-#include "Signal.h"
-#include "JDObjectContainer.h"
+
+#include "object/JDObjectInterface.h"
+#include "object/JDObjectRegistry.h"
+#include "object/JDObjectLocker.h"
+#include "object/JDObjectContainer.h"
+
+#include "utilities/ThreadWorker.h"
+#include "utilities/Signal.h"
+#include "utilities/filesystem/FileReadWriteLock.h"
+#include "utilities/filesystem/FileChangeWatcher.h"
 
 #include <string>
 #include <map>
@@ -32,7 +34,7 @@ namespace JsonDatabase
 
 class JSONDATABASE_EXPORT JDManager
 {
-    struct ObjectLoaderData
+    /*struct ObjectLoaderData
     {
         JDObjectInterface* obj = nullptr;
         std::string id;
@@ -56,7 +58,7 @@ class JSONDATABASE_EXPORT JDManager
         const std::vector<ObjectSaverData*>* saverData;
         size_t start, end, threadIndex, threadCount;
         bool success, finished;
-    };
+    };*/
     public:
         static void startProfiler();
         static void stopProfiler(const std::string profileFilePath);
@@ -281,17 +283,14 @@ class JSONDATABASE_EXPORT JDManager
         bool deleteDir(const std::string &dir) const;
         bool deleteFile(const std::string& file) const;
 
-        static bool getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key);
-        static bool getJsonValue(const QJsonObject &obj, QTime &value, const QString &key);
-        static bool getJsonValue(const QJsonObject &obj, QDate &value, const QString &key);
-        static bool getJsonValue(const QJsonObject &obj, QString &value, const QString &key);
-        static bool getJsonValue(const QJsonObject &obj, std::string &value, const QString &key);
-        static bool getJsonValue(const QJsonObject &obj, int &value, const QString &key);
+        //static bool getJsonValue(const QJsonObject &obj, QVariant &value, const QString &key);
+        //static bool getJsonValue(const QJsonObject &obj, QTime &value, const QString &key);
+        //static bool getJsonValue(const QJsonObject &obj, QDate &value, const QString &key);
+        //static bool getJsonValue(const QJsonObject &obj, QString &value, const QString &key);
+        //static bool getJsonValue(const QJsonObject &obj, std::string &value, const QString &key);
+        //static bool getJsonValue(const QJsonObject &obj, int &value, const QString &key);
 
-        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID);
-
-        static JDObjectInterface* getObjectDefinition(const QJsonObject& json);
-        static JDObjectInterface* getObjectDefinition(const std::string &className);
+        
 
         static int executeCommand(const std::string& command);
         static std::string executeCommandPiped(const std::string& command);
