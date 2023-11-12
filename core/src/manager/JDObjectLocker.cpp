@@ -274,7 +274,6 @@ namespace JsonDatabase
 		void JDObjectLocker::onDatabasePathChange(const std::string& oldPath, const std::string& newPath) const
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
-			std::unique_lock<std::mutex> lock(m_mutex);
 
 			FileLock fileLock1(oldPath, m_lockTableFile);
 			if (!fileLock1.lock(m_lockTableTryGetLockTimeoutMs))

@@ -31,9 +31,6 @@ namespace JsonDatabase
             void unpause();
             bool isPaused() const;
 
-            //void connectSlot(const Signal::SlotFunction& slotFunction);
-            //void disconnectSlot(const Signal::SlotFunction& slotFunction);
-
         private:
             std::string getFullPath(const std::string& relativePath);
             void monitorFileChanges();
@@ -48,8 +45,6 @@ namespace JsonDatabase
             std::atomic<bool> m_stopFlag;
             std::atomic<bool> m_fileChanged;
             std::atomic<bool> m_paused;
-
-            //Signal m_fileChangedSignal;
         };
     }
 }

@@ -50,7 +50,8 @@ namespace JsonDatabase
         bool JDManagerFileSystem::lockFile(
             const std::string& directory,
             const std::string& fileName,
-            FileReadWriteLock::Access direction) const
+            FileReadWriteLock::Access direction,
+            bool& wasLockedForWritingByOther) const
         {
             if (m_fileLock)
             {
@@ -63,10 +64,12 @@ namespace JsonDatabase
             if (!m_fileLock->lock(direction))
             {
                 JD_CONSOLE_FUNCTION("Can't aquire lock for: " << directory << "\\" << fileName << "\n");
+                wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
                 delete m_fileLock;
                 m_fileLock = nullptr;
                 return false;
             }
+            wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
             if (m_fileLock->getLastError() != FileLock::Error::none)
             {
                 JD_CONSOLE_FUNCTION("Lock error: " << m_fileLock->getLastErrorStr() + "\n");
@@ -77,6 +80,7 @@ namespace JsonDatabase
             const std::string& directory,
             const std::string& fileName,
             FileReadWriteLock::Access direction,
+            bool& wasLockedForWritingByOther,
             unsigned int timeoutMillis) const
         {
             if (m_fileLock)
@@ -90,10 +94,12 @@ namespace JsonDatabase
             if (!m_fileLock->lock(direction, timeoutMillis))
             {
                 JD_CONSOLE_FUNCTION("Timeout while trying to aquire file lock for: " << directory << "\\" << fileName << "\n");
+                wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
                 delete m_fileLock;
                 m_fileLock = nullptr;
                 return false;
             }
+            wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
             if (m_fileLock->getLastError() != FileLock::Error::none)
             {
                 JD_CONSOLE_FUNCTION("Lock error: " << m_fileLock->getLastErrorStr() + "\n");
@@ -379,7 +385,8 @@ namespace JsonDatabase
             JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             if (lockedRead)
             {
-                if (!lockFile(directory, fileName, FileReadWriteLock::Access::read))
+                bool lockedByOther = false;
+                if (!lockFile(directory, fileName, FileReadWriteLock::Access::read, lockedByOther))
                 {
                     JD_CONSOLE_FUNCTION(" Can't lock file\n");
                     return false;
@@ -473,7 +480,8 @@ namespace JsonDatabase
             JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             if (lockedRead)
             {
-                if (!lockFile(directory, fileName, FileReadWriteLock::Access::write))
+                bool lockedByOther = false;
+                if (!lockFile(directory, fileName, FileReadWriteLock::Access::write, lockedByOther))
                 {
                     JD_CONSOLE_FUNCTION(" Can't lock file\n");
                     return false;

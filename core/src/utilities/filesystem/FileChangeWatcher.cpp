@@ -11,24 +11,20 @@ namespace JsonDatabase
             , m_paused(false)
             , m_watchThread(nullptr)
         {
-            //std::wstring wsTmp(filePath.begin(), filePath.end());
-            //m_filePath = wsTmp;
-
             m_filePath = getFullPath(filePath);
-            //std::cout << "Full path: "<<m_filePath << std::endl;
             std::string directory = m_filePath.substr(0, m_filePath.find_last_of("\\") + 1);
             m_eventHandle = FindFirstChangeNotificationA(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
-            if (m_eventHandle == INVALID_HANDLE_VALUE) {
+            if (m_eventHandle == INVALID_HANDLE_VALUE) 
+            {
                 DWORD error = GetLastError();
                 JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << error << "\n");
-
-                //throw std::runtime_error("Error initializing file change monitoring.");
             }
         }
 
         FileChangeWatcher::~FileChangeWatcher()
         {
             FindCloseChangeNotification(m_eventHandle);
+            stopWatching();
         }
 
         void FileChangeWatcher::startWatching()
@@ -44,10 +40,12 @@ namespace JsonDatabase
                 return;
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
-                m_stopFlag = true;
+                m_stopFlag.store(true);
                 m_cv.notify_all();
             }
             m_watchThread->join();
+            delete m_watchThread;
+            m_watchThread = nullptr;
         }
         bool FileChangeWatcher::isWatching() const
         {
@@ -79,12 +77,6 @@ namespace JsonDatabase
         {
             return m_paused.load();
         }
-
-
-        /*void FileChangeWatcher::connectSlot(const Signal::SlotFunction& slotFunction)
-        {
-            m_fileChangedSignal.connect(slotFunction);
-        }*/
 
         std::string FileChangeWatcher::getFullPath(const std::string& relativePath) {
             char fullPath[MAX_PATH];
@@ -120,11 +112,7 @@ namespace JsonDatabase
                     {
                         std::unique_lock<std::mutex> lock(m_mutex);
 
-                        // JD_GENERAL_PROFILING_BLOCK("File change detected", JD_COLOR_STAGE_5);
-                        m_fileChanged = true;
-
-
-
+                        m_fileChanged.store(true);
                         while (m_fileChanged && !m_stopFlag.load()) {
                             m_cv.wait(lock);
                         }
@@ -132,7 +120,6 @@ namespace JsonDatabase
                         if (m_stopFlag.load()) {
                             break;
                         }
-
                     }
                     ResetEvent(m_eventHandle);
 
@@ -149,7 +136,6 @@ namespace JsonDatabase
                     );
 
                     if (!success) {
-                        //throw std::runtime_error("Error monitoring file changes.");
                         DWORD error = GetLastError();
                         JD_CONSOLE_FUNCTION("Error monitoring file changes. GetLastError() =  " << error << "\n");
                     }
@@ -157,7 +143,6 @@ namespace JsonDatabase
                 else {
                     DWORD error = GetLastError();
                     JD_CONSOLE_FUNCTION("Error waiting for file changes. GetLastError() =  " << error << "\n");
-                    //throw std::runtime_error("Error waiting for file changes.");
                 }
             }
         }

@@ -27,11 +27,13 @@ namespace JsonDatabase
             bool lockFile(
                 const std::string& directory,
                 const std::string& fileName,
-                FileReadWriteLock::Access direction) const;
+                FileReadWriteLock::Access direction,
+                bool & wasLockedForWritingByOther) const;
             bool lockFile(
                 const std::string& directory,
                 const std::string& fileName,
                 FileReadWriteLock::Access direction,
+                bool& wasLockedForWritingByOther,
                 unsigned int timeoutMillis) const;
             bool unlockFile() const;
             bool isFileLockedByOther(const

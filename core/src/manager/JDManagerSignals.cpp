@@ -1,4 +1,5 @@
 #include "manager/JDManager.h"
+#include "utilities/JDUniqueMutexLock.h"
 
 namespace JsonDatabase
 {
@@ -14,13 +15,20 @@ namespace JsonDatabase
             ##signalName##.disconnectSlot(slotFunction); \
         }
 
-        JDManagerSignals::JDManagerSignals()
-            : databaseFileChanged("DatabaseFileChanged")
+        JDManagerSignals::JDManagerSignals(JDManager& manager, std::mutex& mtx)
+            : m_manager(manager)
+            , m_mutex(mtx)
+            , databaseFileChanged("DatabaseFileChanged")
             , objectRemovedFromDatabase("RemovedFromDatabase")
             , objectAddedToDatabase("AddedToDatabase")
             , objectOverrideChangeFromDatabase("OverrideChangeFromDatabase")
             , objectChangedFromDatabase("ChangedFromDatabase")
             , databaseOutdated("DatabaseOutdated")
+
+            , loadObject("onLoadObjectDone")
+            , loadObjects("onLoadObjectsDone")
+            , saveObject("onSaveObjectDone")
+            , saveObjects("onSaveObjectsDone")
         { }
 
         /*
@@ -34,7 +42,12 @@ namespace JsonDatabase
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const JDObjectContainer&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectChangedFromDatabase, const std::vector<JDObjectPair>&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const JDObjectContainer&)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseOutdated, )
 
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(loadObject,  bool, JDObjectInterface*)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(loadObjects, bool)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(saveObject,  bool, JDObjectInterface*)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(saveObjects, bool)
 
         /*
           -----------------------------------------------------------------------------------------------
@@ -97,48 +110,166 @@ namespace JsonDatabase
 
         void JDManagerSignals::addToQueue(Signals signal, bool onlyOnce)
         {
+            JDM_UNIQUE_LOCK_P;
             if (onlyOnce)
             {
-				if (std::find(m_signalQueue.begin(), m_signalQueue.end(), signal) != m_signalQueue.end())
-					return;
+                for (size_t i = 0; i < m_signalQueue.size(); ++i)
+                {
+                    if (m_signalQueue[i].signal == signal)
+                        return;
+                }
 			}
-            m_signalQueue.push_back(signal);    
+            QueueSignal sig;
+            sig.data = nullptr;
+            sig.signal = signal;
+            m_signalQueue.push_back(sig);
+        }
+        void JDManagerSignals::addToQueue(Signals signal, bool success, JDObjectInterface* obj, bool onlyOnce)
+        {
+            JDM_UNIQUE_LOCK_P;
+            if (onlyOnce)
+            {
+                for (size_t i = 0; i < m_signalQueue.size(); ++i)
+                {
+                    if (m_signalQueue[i].signal == signal)
+					return;
+                }
+            }
+            switch (signal)
+            {
+                case Signals::signal_loadObject:
+                {
+                    AsyncLoadObjectData *data = new AsyncLoadObjectData();
+                    data->success = success;
+                    data->object = obj;
+                    QueueSignal sig;
+                    sig.data = data;
+                    sig.signal = signal;
+                    m_signalQueue.push_back(sig);
+                    break;
+                }
+                case Signals::signal_saveObject:
+                {
+                    AsyncSaveObjectData* data = new AsyncSaveObjectData();
+                    data->success = success;
+                    data->object = obj;
+                    QueueSignal sig;
+                    sig.data = data;
+                    sig.signal = signal;
+                    m_signalQueue.push_back(sig);
+                    break;
+                }
+            }
+        }
+        void JDManagerSignals::addToQueue(Signals signal, bool success, bool onlyOnce)
+        {
+            JDM_UNIQUE_LOCK_P;
+            if (onlyOnce)
+            {
+                for (size_t i = 0; i < m_signalQueue.size(); ++i)
+                {
+                    if (m_signalQueue[i].signal == signal)
+                        return;
+                }
+            }
+            switch (signal)
+            {
+                case Signals::signal_loadObjects:
+                {
+                    AsyncLoadObjectsData* data = new AsyncLoadObjectsData();
+                    data->success = success;
+                    QueueSignal sig;
+                    sig.data = data;
+                    sig.signal = signal;
+                    m_signalQueue.push_back(sig);
+                    break;
+                }
+                case Signals::signal_saveObjects:
+                {
+                    AsyncSaveObjectsData* data = new AsyncSaveObjectsData();
+                    data->success = success;
+                    QueueSignal sig;
+                    sig.data = data;
+                    sig.signal = signal;
+                    m_signalQueue.push_back(sig);
+                    break;
+                }
+            }
         }
         void JDManagerSignals::emitQueue()
         {
             // Copy the queue
-            std::vector< Signals> signalQueue = m_signalQueue;
-            m_signalQueue.clear();
-            for (auto& signal : signalQueue)
+            std::vector< QueueSignal> signalQueue;
+            bool hasWork = m_signalQueue.size();
+            while (hasWork)
             {
-                switch (signal)
                 {
-				case signal_databaseFileChanged:
-					databaseFileChanged.emitSignal();
-					break;
-				case signal_objectRemovedFromDatabase:
-					objectRemovedFromDatabase.emitSignalIfNotEmpty();
-                    objectRemovedFromDatabase.container.clear();
-					break;
-				case signal_objectAddedToDatabase:
-					objectAddedToDatabase.emitSignalIfNotEmpty();
-                    objectAddedToDatabase.container.clear();
-					break;
-				case signal_objectChangedFromDatabase:
-					objectChangedFromDatabase.emitSignalIfNotEmpty();
-                    objectChangedFromDatabase.container.clear();
-					break;
-				case signal_objectOverrideChangeFromDatabase:
-					objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
-                    objectOverrideChangeFromDatabase.container.clear();
-					break;
-				case signal_databaseOutdated:
-					databaseOutdated.emitSignal();
-					break;
-				default:
-					break;
-				}
-			}
+                    JDM_UNIQUE_LOCK_P;
+                    signalQueue = m_signalQueue;
+                    m_signalQueue.clear();
+                }
+                hasWork = signalQueue.size() > 0;
+                if(!hasWork)
+                    return;
+                for (auto& signal : signalQueue)
+                {
+                    switch (signal.signal)
+                    {
+                    case signal_databaseFileChanged:
+                        databaseFileChanged.emitSignal();
+                        break;
+                    case signal_objectRemovedFromDatabase:
+                        objectRemovedFromDatabase.emitSignalIfNotEmpty();
+                        objectRemovedFromDatabase.container.clear();
+                        break;
+                    case signal_objectAddedToDatabase:
+                        objectAddedToDatabase.emitSignalIfNotEmpty();
+                        objectAddedToDatabase.container.clear();
+                        break;
+                    case signal_objectChangedFromDatabase:
+                        objectChangedFromDatabase.emitSignalIfNotEmpty();
+                        objectChangedFromDatabase.container.clear();
+                        break;
+                    case signal_objectOverrideChangeFromDatabase:
+                        objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
+                        objectOverrideChangeFromDatabase.container.clear();
+                        break;
+                    case signal_databaseOutdated:
+                        databaseOutdated.emitSignal();
+                        break;
+                    case signal_loadObject:
+                    {
+                        AsyncLoadObjectData* data = (AsyncLoadObjectData*)signal.data;
+                        loadObject.emitSignal(data->success, data->object);
+                        delete data;
+                        break;
+                    }
+                    case signal_loadObjects:
+                    {
+                        AsyncLoadObjectsData* data = (AsyncLoadObjectsData*)signal.data;
+                        loadObjects.emitSignal(data->success);
+                        delete data;
+                        break;
+                    }
+                    case signal_saveObject:
+                    {
+                        AsyncSaveObjectData* data = (AsyncSaveObjectData*)signal.data;
+                        saveObject.emitSignal(data->success, data->object);
+                        delete data;
+                        break;
+                    }
+                    case signal_saveObjects:
+                    {
+                        AsyncSaveObjectsData* data = (AsyncSaveObjectsData*)signal.data;
+                        saveObjects.emitSignal(data->success);
+                        delete data;
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                }
+            }
         }
     }
 }

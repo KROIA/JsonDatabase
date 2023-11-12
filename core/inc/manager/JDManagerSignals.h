@@ -6,7 +6,7 @@
 #include "object/JDObjectContainer.h"
 
 #include <vector>
-
+#include <mutex>
 
 #define DECLARE_SIGNAL_CONNECT_DISCONNECT(signalName, ...) \
     void connect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction); \
@@ -21,7 +21,7 @@ namespace JsonDatabase
         class JSONDATABASE_EXPORT JDManagerSignals
         {
             friend class JDManager;
-            JDManagerSignals();
+            JDManagerSignals(JDManager& manager, std::mutex& mtx);
         public:
             /*
                 Signals have all the syntax like the following example:
@@ -69,6 +69,44 @@ namespace JsonDatabase
             */
             DECLARE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const JDObjectContainer&)
 
+            /*
+                The databaseOutdated signal gets emited if the user tries to save the database but the database file
+                has changed since the last load.
+                The user should reload the database before saving.
+            */
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(databaseOutdated, )
+
+
+            // -----------------------------------------------------------------------------------------------
+            //                              JDManager async callbacks
+            // -----------------------------------------------------------------------------------------------
+
+            /*
+                The loadObject signal gets emited if the manager has loaded the given object in async mode.
+                The first parameter is the success state of the load operation.
+                The second parameter is the object that was loaded.
+            */
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(loadObject, bool, JDObjectInterface*)
+
+            /*
+                The loadObjects gets emited if the manager has loaded all objects in async mode.
+                The first parameter is the success state of the load operation.
+            */
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(loadObjects, bool)
+
+            /*
+                The saveObject signal gets emited if the manager has saved the given object in async mode.
+                The first parameter is the success state of the save operation.
+                The second parameter is the object that was saved.
+            */
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(saveObject, bool, JDObjectInterface*)
+
+            /*
+                The saveObjects signal gets emited if the manager has saved all objects in async mode.
+                The first parameter is the success state of the save operation.
+            */
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(saveObjects, bool)
+
         protected:
             
             struct ContainerSignal
@@ -101,6 +139,37 @@ namespace JsonDatabase
             ContainerSignal objectOverrideChangeFromDatabase;
             Signal<> databaseOutdated;
 
+            // JDManager async callbacks
+            struct AsyncLoadObjectData
+            {
+                bool success;
+                JDObjectInterface* object;
+            };
+            struct AsyncLoadObjectsData
+            {
+				bool success;
+			};
+            struct AsyncSaveObjectData
+            {
+				bool success;
+                JDObjectInterface* object;
+			};
+            struct AsyncSaveObjectsData
+			{
+                bool success;
+            };
+            Signal<bool, JDObjectInterface*> onLoadObjectDone;
+            AsyncLoadObjectData onLoadObjectDataDone; // Change names to on --- Done
+
+            Signal<bool> loadObjects;
+            AsyncLoadObjectsData loadObjectsData;
+
+            Signal<bool, JDObjectInterface*> saveObject;
+            AsyncSaveObjectData saveObjectData;
+
+            Signal<bool> saveObjects;
+            AsyncSaveObjectsData saveObjectsData;
+
             enum Signals
             {
                 signal_databaseFileChanged,
@@ -109,6 +178,13 @@ namespace JsonDatabase
                 signal_objectChangedFromDatabase,
                 signal_objectOverrideChangeFromDatabase,
                 signal_databaseOutdated,
+
+                signal_loadObject,
+                signal_loadObjects,
+                signal_saveObject,
+                signal_saveObjects,
+
+                signal_count
             };
 
             
@@ -116,9 +192,20 @@ namespace JsonDatabase
             void emitIfNotEmpty();
             
 
-            void addToQueue(Signals signal, bool onlyOnce = true);
+            void addToQueue(Signals signal, bool onlyOnce);
+            void addToQueue(Signals signal, bool success, JDObjectInterface*obj, bool onlyOnce);
+            void addToQueue(Signals signal, bool success, bool onlyOnce);
             void emitQueue();
-            std::vector< Signals> m_signalQueue;
+
+            struct QueueSignal
+            {
+                void* data;
+                Signals signal;
+            };
+            std::vector< QueueSignal> m_signalQueue;
+
+            JDManager& m_manager;
+            std::mutex& m_mutex;
         };
     }
 }

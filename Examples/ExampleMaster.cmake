@@ -93,6 +93,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 if(${PROFILING_NAME})
     target_link_libraries(${PROJECT_NAME} ${PARENT_LIBRARY_STATIC_PROFILE} ${QT_LIBS})
+    target_compile_definitions(${PROJECT_NAME}   PRIVATE  ${PROFILING_NAME})
 else()
     target_link_libraries(${PROJECT_NAME} ${PARENT_LIBRARY_STATIC} ${QT_LIBS})
 endif()

@@ -10,6 +10,7 @@ namespace JsonDatabase
     FileReadWriteLock::FileReadWriteLock(const std::string& filePath, const std::string& fileName)
         : m_directory(FileLock::replaceForwardSlashesWithBackslashes(filePath))
         , m_fileName(fileName)
+        , m_wasLockedForWritingByOther(false)
         , m_locked(false)
         , m_access(Access::unknown)
         , m_lock(nullptr)
@@ -31,6 +32,7 @@ namespace JsonDatabase
     }
     bool FileReadWriteLock::lock(Access direction)
     {
+        m_wasLockedForWritingByOther = false;
         return lock_internal(direction);
     }
     bool FileReadWriteLock::lock(Access direction, unsigned int timeoutMs)
@@ -47,7 +49,7 @@ namespace JsonDatabase
 
         // Calculate the time point when the desired duration will be reached
         auto end = start + std::chrono::milliseconds(timeoutMs);
-
+        m_wasLockedForWritingByOther = false;
 
         while (std::chrono::high_resolution_clock::now() < end && !lock_internal(direction)) 
         {
@@ -120,7 +122,6 @@ namespace JsonDatabase
             return FileLock::Error::unableToLock;
         
         m_access = Access::unknown;
-
         
         size_t readerCount = 0;
         switch (getAccessStatus(readerCount))
@@ -128,6 +129,7 @@ namespace JsonDatabase
             case Access::readWrite:
             case Access::write:
             {
+                m_wasLockedForWritingByOther = true;
 				// Some are writing, can't read or write
 				return FileLock::Error::alreadyLockedForWriting;
 			}
@@ -189,6 +191,10 @@ namespace JsonDatabase
     bool FileReadWriteLock::isLocked() const
     {
         return m_locked;
+    }
+    bool FileReadWriteLock::wasLockedForWritingByOther() const
+    {
+        return m_wasLockedForWritingByOther;
     }
     FileReadWriteLock::Access FileReadWriteLock::getAccessStatus() const
     {

@@ -35,6 +35,7 @@ namespace JsonDatabase
 		void unlock();
 
 		bool isLocked() const;
+		bool wasLockedForWritingByOther() const;
 
 		Access getAccessStatus() const;
 		Access getAccessStatus(size_t &readerCount) const;
@@ -58,6 +59,7 @@ namespace JsonDatabase
 		std::string m_fileName;
 
 		std::string m_lockFilePathName;
+		bool m_wasLockedForWritingByOther;
 
 
 		FileLock::Error m_lastError;

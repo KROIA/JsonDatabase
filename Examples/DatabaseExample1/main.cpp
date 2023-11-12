@@ -7,6 +7,13 @@
 
 using namespace JsonDatabase;
 
+bool saveDone = false;
+
+void onSaveCallback(bool success)
+{
+	qDebug() << "Save finished: " << success;
+    saveDone = true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -27,6 +34,8 @@ int main(int argc, char *argv[])
     C* c1 = new C("c1");
     C* c2 = new C("c2");
 
+    manager.getSignals().connect_saveObjects_slot(&onSaveCallback);
+
 
     manager.addObject(a1);
     manager.addObject(a2);
@@ -38,7 +47,13 @@ int main(int argc, char *argv[])
     manager.loadObjects();
     //manager.setDatabasePath("C:\\Users\\alexk\\Documents\\Privat\\Softwareentwicklung\\QT\\Projekte\\JsonDatabase\\example\\bin\\database2");
     manager.setDatabasePath("database2");
-    manager.saveObjects();
+    manager.saveObjectsAsync();
+
+    while (!saveDone)
+    {
+        manager.update();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
 
     
 

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "JD_base.h"
+#include "JDDeclaration.h"
 
+#include "async/JDManagerAsyncWorker.h"
+#include "async/work/JDManagerWorkLoadSingleObject.h"
 #include "JDManagerSignals.h"
 #include "JDManagerFileSystem.h"
 #include "JDManagerObjectManager.h"
@@ -30,6 +33,13 @@ class JSONDATABASE_EXPORT JDManager:
     public Internal::JDManagerFileSystem,
     public Internal::JDObjectLocker
 {
+    friend class Internal::JDManagerAsyncWorker;
+
+    friend class Internal::JDManagerAysncWorkLoadAllObjects;
+    friend class Internal::JDManagerAysncWorkLoadSingleObject;
+    friend class Internal::JDManagerAysncWorkSaveSingle;
+    friend class Internal::JDManagerAysncWorkSaveList;
+
     public:
         static void startProfiler();
         static void stopProfiler(const std::string profileFilePath);
@@ -59,14 +69,11 @@ class JSONDATABASE_EXPORT JDManager:
         void enableZipFormat(bool enable);
         bool isZipFormatEnabled() const;
 
-        bool saveObject(JDObjectInterface *obj);
-        bool saveObjects();
-        bool saveObjects(const std::vector<JDObjectInterface*> &objList);
-
         /*
             Overrides the data of the object with the data from the database file.
         */
-        bool loadObject(JDObjectInterface *obj);
+        bool loadObject(JDObjectInterface* obj);
+        void loadObjectAsync(JDObjectInterface* obj);
 
 
         enum LoadMode
@@ -85,6 +92,15 @@ class JSONDATABASE_EXPORT JDManager:
             Objects that are not in the database file anymore are removed from the database. See signal objectRemovedFromDatabase.
         */
         bool loadObjects(int mode = LoadMode::allObjects);
+        void loadObjectsAsync(int mode = LoadMode::allObjects);
+
+        bool saveObject(JDObjectInterface *obj);
+        void saveObjectAsync(JDObjectInterface *obj);
+        bool saveObjects();
+        void saveObjectsAsync();
+        //bool saveObjects(const std::vector<JDObjectInterface*> &objList);
+
+        
 
 
 
@@ -102,8 +118,13 @@ class JSONDATABASE_EXPORT JDManager:
 
     private:
         
+        bool loadObject_internal(JDObjectInterface* obj);
+        bool loadObjects_internal(int mode);
+        bool saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis);
+        bool saveObjects_internal(unsigned int timeoutMillis);
+        bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis);
 
-        bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList);
+        void onAsyncWorkDone(Internal::JDManagerAysncWork* work);
 
         std::string m_databasePath;
         std::string m_databaseName;
@@ -119,6 +140,7 @@ class JSONDATABASE_EXPORT JDManager:
 
         
         Internal::JDManagerSignals m_signals;
+        Internal::JDManagerAsyncWorker m_asyncWorker;
 
         static std::mutex s_mutex;
 

@@ -26,7 +26,7 @@
     {
       "name": "x64-Release-Profile",
       "generator": "Visual Studio 17 2022 Win64",
-      "configurationType": "ReleaseProfile",
+      "configurationType": "Release",
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
       "cmakeCommandArgs": "-DJD_PROFILING=1",
@@ -36,7 +36,7 @@
     {
       "name": "x64-Debug-Profile",
       "generator": "Visual Studio 17 2022 Win64",
-      "configurationType": "DebugProfile",
+      "configurationType": "Debug",
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}",
       "cmakeCommandArgs": "-DJD_PROFILING=1",

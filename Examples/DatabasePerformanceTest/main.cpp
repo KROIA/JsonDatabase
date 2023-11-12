@@ -2,7 +2,12 @@
 #include <iostream>
 #include "Person.h"
 
-
+#ifndef JD_PROFILING
+#define EASY_BLOCK(name, color)
+#define EASY_END_BLOCK
+#define EASY_FUNCTION(color)
+#define EASY_THREAD(name)
+#endif
 #define CONCURENT_TEST
 
 #ifdef JD_PROFILING
@@ -52,6 +57,7 @@ bool unlockPerson(JDManager* manager, JDObjectInterface*& obj);
 
 int main(int argc, char* argv[])
 {
+    EASY_THREAD("main");
     QCoreApplication a(argc, argv);
 
     globalTable = createPersons();
@@ -220,14 +226,26 @@ bool unlockPerson(JDManager* manager, JDObjectInterface*& obj)
     return false;
 }
 
+
+bool finishSave = false;
+void saveObjectsSlot(bool success)
+{
+	std::cout << "Save Objects success: " << success << "\n";
+    finishSave = true;
+}
+
 #ifdef CONCURENT_TEST
 // Function for the first thread
 void threadFunction1() {
+    EASY_THREAD("Thread 1");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
-    manager1->getSignals().connect_databaseFileChanged_slot([] {manager1->loadObjects(); });
+    
+
+    manager1->getSignals().connect_databaseFileChanged_slot([] {manager1->loadObjectsAsync(); });
+    manager1->getSignals().connect_saveObjects_slot(saveObjectsSlot);
     bool doesRemove = true;
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
     //    std::cout << "Thread 1 is running..." << std::endl;
@@ -246,7 +264,16 @@ void threadFunction1() {
         
         if(doesRemove)
             manager1->removeObject(obj);
-        manager1->saveObjects();
+        finishSave = false;
+        manager1->saveObjectsAsync();
+        {
+            EASY_BLOCK("Wait for save");
+            while (!finishSave)
+            {
+                manager1->update();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+        }
         if(doesRemove)
         {
             std::cout << "Adding Object ID: " << obj->getObjectID() << "\n";
@@ -285,8 +312,8 @@ void threadFunction1() {
 
 void callback()
 {
-    manager2->loadObjects(JDManager::LoadMode::allObjects);
-    manager2->loadObjects(JDManager::LoadMode::allObjects + JDManager::LoadMode::overrideChanges);
+    manager2->loadObjectsAsync(JDManager::LoadMode::allObjects);
+    manager2->loadObjectsAsync(JDManager::LoadMode::allObjects + JDManager::LoadMode::overrideChanges);
    // manager2->disconnectDatabaseFileChangedSlot(callback);
 }
 void onObjectRemoved(const JDObjectContainer& list)
@@ -312,6 +339,7 @@ void onObjectChange(const std::vector<JDObjectPair>& list)
 
 // Function for the second thread
 void threadFunction2() {
+    EASY_THREAD("Thread 2");
     JDObjectInterface* obj = globalTable[0];
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
@@ -366,12 +394,13 @@ void threadFunction2() {
 }
 
 void threadFunction3() {
+    EASY_THREAD("Thread 3");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
     manager3->getSignals().connect_databaseFileChanged_slot([] {
-        //manager3->loadObjects();
+        //manager3->loadObjectsAsync();
         });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
@@ -406,12 +435,13 @@ void threadFunction3() {
 }
 
 void threadFunction4() {
+    EASY_THREAD("Thread 4");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
     manager4->getSignals().connect_databaseFileChanged_slot([] {
-        //manager4->loadObjects(); 
+        //manager4->loadObjectsAsync(); 
         });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
@@ -447,12 +477,13 @@ void threadFunction4() {
 }
 
 void threadFunction5() {
+    EASY_THREAD("Thread 5");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
     manager5->getSignals().connect_databaseFileChanged_slot([] {
-        //manager5->loadObjects();
+        //manager5->loadObjectsAsync();
         });
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
