@@ -11,13 +11,12 @@
 
 namespace JsonDatabase
 {
-    // Pair of JDObjectInterface objects which have the same ID
-    typedef std::pair<JDObjectInterface*, JDObjectInterface*> JDObjectPair;
+    
 
 class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 {
         friend JDManager;
-
+        friend Internal::JsonUtilities;
     public:
         JDObjectInterface();
         JDObjectInterface(const std::string &id);

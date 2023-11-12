@@ -8,44 +8,49 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 namespace JsonDatabase
 {
-
-    class JSONDATABASE_EXPORT FileChangeWatcher 
+    namespace Internal
     {
-    public:
-        FileChangeWatcher(const std::string& filePath);
+        class JSONDATABASE_EXPORT FileChangeWatcher
+        {
+        public:
+            FileChangeWatcher(const std::string& filePath);
 
-        ~FileChangeWatcher();
+            ~FileChangeWatcher();
 
-        void startWatching();
-        void stopWatching();
-        bool hasFileChanged();
-        void clearFileChangedFlag();
+            void startWatching();
+            void stopWatching();
+            bool isWatching() const;
+            bool hasFileChanged();
+            void clearFileChangedFlag();
 
-        void pause();
-        void unpause();
+            void pause();
+            void unpause();
+            bool isPaused() const;
 
-        //void connectSlot(const Signal::SlotFunction& slotFunction);
-        //void disconnectSlot(const Signal::SlotFunction& slotFunction);
+            //void connectSlot(const Signal::SlotFunction& slotFunction);
+            //void disconnectSlot(const Signal::SlotFunction& slotFunction);
 
-    private:
-        std::string getFullPath(const std::string& relativePath);
-        void monitorFileChanges();
-        bool fileChanged();
+        private:
+            std::string getFullPath(const std::string& relativePath);
+            void monitorFileChanges();
+            bool fileChanged();
 
-        std::string m_filePath;
-        HANDLE m_eventHandle;
-        std::thread m_watchThread;
-        std::mutex m_mutex;
-        std::condition_variable m_cv;
-        FILETIME m_lastModificationTime;
-        bool m_stopFlag;
-        bool m_fileChanged;
-        bool m_paused;
+            std::string m_filePath;
+            HANDLE m_eventHandle;
+            std::thread *m_watchThread;
+            std::mutex m_mutex;
+            std::condition_variable m_cv;
+            FILETIME m_lastModificationTime;
+            std::atomic<bool> m_stopFlag;
+            std::atomic<bool> m_fileChanged;
+            std::atomic<bool> m_paused;
 
-        //Signal m_fileChangedSignal;
-    };
+            //Signal m_fileChangedSignal;
+        };
+    }
 }
 

@@ -29,7 +29,7 @@ void threadFunction3();
 void threadFunction4();
 void threadFunction5();
 
-FileChangeWatcher *watcher = nullptr;
+Internal::FileChangeWatcher *watcher = nullptr;
 void collisionChecker();
 
 JDManager* manager1 = nullptr;
@@ -66,9 +66,9 @@ int main(int argc, char* argv[])
     manager5 = new JDManager("database", "Persons", "sessionID5", "USER 5");
 
 #ifdef NDEBUG
-    watcher = new FileChangeWatcher("database\\Persons.json");
+    watcher = new Internal::FileChangeWatcher("database\\Persons.json");
 #else
-    watcher = new FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
+    watcher = new Internal::FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
 #endif
     //manager1->addObjectDefinition<Person>();
     //manager2->addObjectDefinition<Person>();
@@ -99,6 +99,7 @@ int main(int argc, char* argv[])
     manager1->setDatabaseName("Persons");
 
     
+
 
     // Create and start the first thread
     std::thread t1(threadFunction1);
@@ -226,7 +227,7 @@ void threadFunction1() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
-    manager1->connectDatabaseFileChangedSlot([] {manager1->loadObjects(); });
+    manager1->getSignals().connect_databaseFileChanged_slot([] {manager1->loadObjects(); });
     bool doesRemove = true;
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
     //    std::cout << "Thread 1 is running..." << std::endl;
@@ -316,10 +317,10 @@ void threadFunction2() {
     JDObjectInterface* lockedPerson = nullptr;
     auto start = std::chrono::high_resolution_clock::now();
 
-    manager2->connectDatabaseFileChangedSlot(callback);
-    manager2->connectObjectAddedToDatabaseSlot(onObjectAdded);
-    manager2->connectObjectRemovedFromDatabaseSlot(onObjectRemoved);
-    manager2->connectObjectChangedFromDatabaseSlot(onObjectChange);
+    manager2->getSignals().connect_databaseFileChanged_slot(callback);
+    manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);
+    manager2->getSignals().connect_objectRemovedFromDatabase_slot(onObjectRemoved);
+    manager2->getSignals().connect_objectChangedFromDatabase_slot(onObjectChange);
     //manager2->connectObjectOverrideChangeFromDatabaseSlot(onObjectOverrideChange);
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
@@ -369,7 +370,7 @@ void threadFunction3() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
-    manager3->connectDatabaseFileChangedSlot([] {
+    manager3->getSignals().connect_databaseFileChanged_slot([] {
         //manager3->loadObjects();
         });
 
@@ -409,7 +410,7 @@ void threadFunction4() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
-    manager4->connectDatabaseFileChangedSlot([] {
+    manager4->getSignals().connect_databaseFileChanged_slot([] {
         //manager4->loadObjects(); 
         });
 
@@ -450,7 +451,7 @@ void threadFunction5() {
     bool hasLocked = false;
     JDObjectInterface* lockedPerson = nullptr;
 
-    manager5->connectDatabaseFileChangedSlot([] {
+    manager5->getSignals().connect_databaseFileChanged_slot([] {
         //manager5->loadObjects();
         });
 
