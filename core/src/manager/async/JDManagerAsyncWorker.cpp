@@ -116,7 +116,6 @@ namespace JsonDatabase
         void JDManagerAsyncWorker::processWork(const std::vector<JDManagerAysncWork*>& workList)
         {
             JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            JDM_UNIQUE_LOCK;
             for (auto& work : workList)
             {
                 processWork(work);

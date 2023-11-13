@@ -74,11 +74,12 @@ namespace JsonDatabase
         auto it = m_objectMap.find(id);
         if (it != m_objectMap.end())
         {
-            auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
-
-            m_objectVector.erase(it2);
+            
             m_objectMap.erase(it);
         }
+        auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
+        if(it2 != m_objectVector.end())
+            m_objectVector.erase(it2);
     }
 
     JDObjectInterface* JDObjectContainer::getObjectByID(const std::string& id) 

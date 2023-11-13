@@ -16,9 +16,10 @@ namespace JsonDatabase
 				JDObjectInterface* object);
 			~JDManagerAysncWorkSaveSingle();
 
-			bool hasSucceeded() const;
+			bool hasSucceeded() const override;
 			JDObjectInterface * getObject() const;
 			void process() override;
+			std::string getErrorMessage() const override;
 
 		private:
 			JDObjectInterface* m_object;

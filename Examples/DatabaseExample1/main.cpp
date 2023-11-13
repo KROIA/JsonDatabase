@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     C* c1 = new C("c1");
     C* c2 = new C("c2");
 
-    manager.getSignals().connect_saveObjects_slot(&onSaveCallback);
+    manager.getSignals().connect_onSaveObjectsDone_slot(&onSaveCallback);
 
 
     manager.addObject(a1);

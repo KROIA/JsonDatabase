@@ -40,7 +40,7 @@ namespace JsonDatabase
     void JDManager::stopProfiler(const std::string profileFilePath)
     {
 #ifdef JD_PROFILING
-        profiler::dumpBlocksToFile("JDProfile.prof");
+        profiler::dumpBlocksToFile(profileFilePath.c_str());
 #endif
     }
 
@@ -84,6 +84,8 @@ namespace JsonDatabase
 JDManager::~JDManager()
 {
     JDObjectLocker::unlockAllObjs();
+    m_asyncWorker.stop();
+    JDManagerFileSystem::stopFileWatcher();
 }
 void JDManager::setDatabaseName(const std::string& name)
 {
@@ -180,7 +182,6 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj)
     bool wasLockedForWritingByOther = false;
     if (!JDManagerFileSystem::lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::read, wasLockedForWritingByOther, s_fileLockTimeoutMs))
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database\n");
         return false;
     }
 
@@ -193,7 +194,7 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj)
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
     if (index == std::string::npos)
     {
-        JD_CONSOLE_FUNCTION("Object with ID: " << ID << " not found");
+        JD_CONSOLE("bool JDManager::loadObject_internal(JDObjectInterface*) Object with ID: " << ID << " not found");
         return false;
     }
     const QJsonObject& objData = jsons[index];
@@ -210,7 +211,7 @@ bool JDManager::loadObjects_internal(int mode)
     bool wasLockedForWritingByOther = false;
     if (!JDManagerFileSystem::lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::read, wasLockedForWritingByOther, s_fileLockTimeoutMs))
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database\n");
+        JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\""<< getLoadModeStr(mode) <<"\") Can't lock database\n");
         return false;
     }
 
@@ -243,7 +244,8 @@ bool JDManager::loadObjects_internal(int mode)
             std::string ID;
             if (!JDSerializable::getJsonValue(jsons[i], ID, JDObjectInterface::s_tag_objID))
             {
-                JD_CONSOLE_FUNCTION("Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
+                JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode) 
+                    << "\") Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
                 success = false;
             }
             Pair p;
@@ -265,6 +267,8 @@ bool JDManager::loadObjects_internal(int mode)
         {
             JD_GENERAL_PROFILING_BLOCK("Deserialize objects override mode", JD_COLOR_STAGE_2);
             bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
+            std::vector<JDObjectInterface*> objs;
+            objs.reserve(pairs.size());
             // Loads the existing objects and overrides the data in the current object instance
             for (Pair& pair : pairs)
             {
@@ -276,18 +280,23 @@ bool JDManager::loadObjects_internal(int mode)
                     if (hasChanged)
                     {
                         // The loaded object is not equal to the original object
-                        m_signals.objectOverrideChangeFromDatabase.container.addObject(pair.objOriginal);
+                        objs.push_back(pair.objOriginal);
                     }
                 }
                 else
                     success &= Internal::JsonUtilities::deserializeOverrideFromJson(pair.json, pair.objOriginal);
                 pair.obj = pair.objOriginal;
             }
+            if (hasOverrideChangeFromDatabaseSlots && objs.size())
+				m_signals.objectOverrideChangeFromDatabase.addObjs(objs);
         }
         else
         {
             JD_GENERAL_PROFILING_BLOCK("Deserialize objects reinstatiation mode", JD_COLOR_STAGE_2);
             bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
+            std::vector<JDObjectPair> pairsForSignal;
+            pairsForSignal.reserve(pairs.size());
+
             // Loads the existing objects and creates a new object instance if the data has changed
             for (Pair& pair : pairs)
             {
@@ -297,10 +306,13 @@ bool JDManager::loadObjects_internal(int mode)
                 {
                     // The loaded object is not equal to the original object
                     if (hasChangeFromDatabaseSlots)
-                        m_signals.objectChangedFromDatabase.container.push_back(JDObjectPair(pair.objOriginal, pair.obj));
+                        pairsForSignal.push_back(JDObjectPair(pair.objOriginal, pair.obj));
                     replaceObject_internal(pair.obj);
                 }
             }
+            if (hasChangeFromDatabaseSlots && pairsForSignal.size())
+                m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
+
         }
     }
 
@@ -308,6 +320,8 @@ bool JDManager::loadObjects_internal(int mode)
     {
         JD_GENERAL_PROFILING_BLOCK("Deserialize and create new objects", JD_COLOR_STAGE_2);
         bool hasObjectAddedToDatabase = m_signals.objectAddedToDatabase.signal.getSlotCount();
+        std::vector<JDObjectInterface*> objs;
+        objs.reserve(newObjectPairs.size());
         // Loads the new objects and creates a new object instance
         for (Pair& pair : newObjectPairs)
         {
@@ -315,16 +329,21 @@ bool JDManager::loadObjects_internal(int mode)
             // Add the new generated object to the database
             addObject_internal(pair.obj);
             if (hasObjectAddedToDatabase)
-                m_signals.objectAddedToDatabase.container.addObject(pair.obj);
+                objs.push_back(pair.obj);
+                
         }
+        if (hasObjectAddedToDatabase && objs.size())
+            m_signals.objectAddedToDatabase.addObjs(objs);
     }
 
     if (modeRemovedObjects)
     {
         JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
         std::vector<JDObjectInterface*> allObjs = getObjects_internal();
-        m_signals.objectRemovedFromDatabase.container.reserve(allObjs.size());
+        m_signals.objectRemovedFromDatabase.reserve(allObjs.size());
         bool hasObjectRemovedFromDatabase = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
+        std::vector<JDObjectInterface*> objs;
+        objs.reserve(allObjs.size());
         for (size_t i = 0; i < allObjs.size(); ++i)
         {
             for (const Pair& pair : pairs)
@@ -339,10 +358,13 @@ bool JDManager::loadObjects_internal(int mode)
             }
 
             if (hasObjectRemovedFromDatabase)
-                m_signals.objectRemovedFromDatabase.container.addObject(allObjs[i]);
+                objs.push_back(allObjs[i]);
+                
             removeObject_internal(allObjs[i]);
         nextObj:;
         }
+        if (hasObjectRemovedFromDatabase && objs.size())
+			m_signals.objectRemovedFromDatabase.addObjs(objs);
     }
 
     JDManagerFileSystem::unlockFile();
@@ -362,7 +384,6 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
     }
     if (!hasLock)
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database\n");
         return false;
     }
 
@@ -391,7 +412,7 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
 
     JDManagerFileSystem::unpauseFileWatcher();
     JDManagerFileSystem::unlockFile();
-    return true;
+    return success;
 }
 bool JDManager::saveObjects_internal(unsigned int timeoutMillis)
 {
@@ -409,7 +430,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     }
     if (!hasLock)
     {
-        JD_CONSOLE_FUNCTION(" Can't lock database\n");
+        JD_CONSOLE("bool JDManager::saveObjects_internal(vector<JDObjectInterface*>&, timeout=" << timeoutMillis << "ms) Can't lock database\n");
         return false;
     }
     bool success = true;
@@ -429,6 +450,8 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
 
 void JDManager::onAsyncWorkDone(Internal::JDManagerAysncWork* work)
 {
+    if(!work)
+        return;
     m_asyncWorker.removeDoneWork(work);
 
     Internal::JDManagerAysncWorkLoadAllObjects* loadAllWork = dynamic_cast<Internal::JDManagerAysncWorkLoadAllObjects*>(work);
@@ -438,22 +461,28 @@ void JDManager::onAsyncWorkDone(Internal::JDManagerAysncWork* work)
 
     if (loadAllWork)
     {
-        m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_loadObjects, loadAllWork->hasSucceeded(), true);
+        m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectsDone, loadAllWork->hasSucceeded(), true);
     }
     else if (loadSingle)
     {
-		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_loadObject, loadSingle->hasSucceeded(), loadSingle->getObject(), true);
+		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectDone, loadSingle->hasSucceeded(), loadSingle->getObject(), true);
 	}
     else if (saveSingle)
     {
-		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_saveObject, saveSingle->hasSucceeded(), loadSingle->getObject(), true);
+		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectDone, saveSingle->hasSucceeded(), loadSingle->getObject(), true);
 	}
     else if (saveList)
     {
-		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_saveObjects, saveList->hasSucceeded(), true);
+		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectsDone, saveList->hasSucceeded(), true);
 	}
 
+    if (!work->hasSucceeded())
+        onAsyncWorkError(work);
     delete work;
+}
+void JDManager::onAsyncWorkError(Internal::JDManagerAysncWork* work)
+{
+    JD_CONSOLE("Async work failed: "<< work->getErrorMessage() << "\n");
 }
 
 
@@ -466,6 +495,47 @@ const std::string& JDManager::getUser() const
 const std::string& JDManager::getSessionID() const
 {
     return m_sessionID;
+}
+
+
+const std::string& JDManager::getLoadModeStr(int mode) const
+{
+    static std::string str;
+    if (mode == 0)
+    {
+        str = "none";
+        return str;
+    }
+
+    if(mode & (int)LoadMode::allObjects)
+		str += "allObjects";
+    else
+    {
+        if (mode & (int)LoadMode::newObjects)
+        {
+            str += "newObjects";
+        }
+        if (mode & (int)LoadMode::changedObjects)
+        {
+            if (str.size())
+                str += " + ";
+            str += "changedObjects";
+        }
+        if (mode & (int)LoadMode::removedObjects)
+        {
+            if (str.size())
+                str += " + ";
+            str += "removedObjects";
+        }
+    }
+    if (mode & (int)LoadMode::overrideChanges)
+    {
+        if (str.size())
+            str += " + ";
+        str += "overrideChanges";
+    }
+	return str;
+
 }
 
 

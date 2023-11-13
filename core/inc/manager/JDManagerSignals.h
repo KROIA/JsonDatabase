@@ -10,7 +10,17 @@
 
 #define DECLARE_SIGNAL_CONNECT_DISCONNECT(signalName, ...) \
     void connect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction); \
-    void disconnect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction);
+    template<typename ObjectType> \
+    void connect_##signalName##_slot(ObjectType* obj, void(ObjectType::* memberFunc)(__VA_ARGS__)) \
+    { \
+        ##signalName##.connectSlot(obj, memberFunc); \
+    } \
+    void disconnect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction); \
+    template<typename ObjectType> \
+    void disconnect_##signalName##_slot(ObjectType* obj, void(ObjectType::* memberFunc)(__VA_ARGS__)) \
+    { \
+        ##signalName##.disconnectSlot(obj, memberFunc); \
+    } 
 
 
 namespace JsonDatabase
@@ -86,50 +96,85 @@ namespace JsonDatabase
                 The first parameter is the success state of the load operation.
                 The second parameter is the object that was loaded.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(loadObject, bool, JDObjectInterface*)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone, bool, JDObjectInterface*)
+            //void connect_onLoadObjectDone_slot(const Signal<bool, JDObjectInterface*>::SlotFunction& slotFunction, bool onlyOnce);
 
             /*
                 The loadObjects gets emited if the manager has loaded all objects in async mode.
                 The first parameter is the success state of the load operation.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(loadObjects, bool)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectsDone, bool)
 
             /*
                 The saveObject signal gets emited if the manager has saved the given object in async mode.
                 The first parameter is the success state of the save operation.
                 The second parameter is the object that was saved.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(saveObject, bool, JDObjectInterface*)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone, bool, JDObjectInterface*)
 
             /*
                 The saveObjects signal gets emited if the manager has saved all objects in async mode.
                 The first parameter is the success state of the save operation.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(saveObjects, bool)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectsDone, bool)
 
         protected:
             
             struct ContainerSignal
             {
                 Signal<const JDObjectContainer&> signal;
-                JDObjectContainer container;
+                
 
                 ContainerSignal(const std::string& name);
+                void reserve(size_t size);
+                void addObjs(const std::vector<JDObjectInterface*>& objs);
+                void addObj(JDObjectInterface* obj);
+                void clear();
                 void emitSignalIfNotEmpty();
 
                 void connectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot);
+                template<typename ObjectType>
+                void connectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const JDObjectContainer&))
+                {
+                    signal.connectSlot(obj, memberFunc);
+                }
                 void disconnectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot);
+                template<typename ObjectType>
+                void disconnectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const JDObjectContainer&))
+                {
+                    signal.disconnectSlot(obj, memberFunc);
+                }
+            private:
+                JDObjectContainer container;
+                std::mutex m_mutex;
             };
             struct ObjectChangeSignal
             {
                 Signal<const std::vector<JDObjectPair>&> signal;
-                std::vector<JDObjectPair> container;
+                
 
                 ObjectChangeSignal(const std::string& name);
+                void reserve(size_t size);
+                void addPairs(const std::vector<JDObjectPair>& pairs);
+                void addPair(const JDObjectPair& pair);
+                void clear();
                 void emitSignalIfNotEmpty();
 
                 void connectSlot(const Signal<const std::vector<JDObjectPair>&>::SlotFunction& slot);
+                template<typename ObjectType>
+                void connectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const std::vector<JDObjectPair>&))
+                {
+                    signal.connectSlot(obj, memberFunc);
+                }
                 void disconnectSlot(const Signal<const std::vector<JDObjectPair>&>::SlotFunction& slot);
+                template<typename ObjectType>
+                void disconnectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const std::vector<JDObjectPair>&))
+                {
+                    signal.disconnectSlot(obj, memberFunc);
+                }
+            private:
+                std::vector<JDObjectPair> container;
+                std::mutex m_mutex;
             };
 
             Signal<> databaseFileChanged;
@@ -159,16 +204,9 @@ namespace JsonDatabase
                 bool success;
             };
             Signal<bool, JDObjectInterface*> onLoadObjectDone;
-            AsyncLoadObjectData onLoadObjectDataDone; // Change names to on --- Done
-
-            Signal<bool> loadObjects;
-            AsyncLoadObjectsData loadObjectsData;
-
-            Signal<bool, JDObjectInterface*> saveObject;
-            AsyncSaveObjectData saveObjectData;
-
-            Signal<bool> saveObjects;
-            AsyncSaveObjectsData saveObjectsData;
+            Signal<bool> onLoadObjectsDone;
+            Signal<bool, JDObjectInterface*> onSaveObjectDone;
+            Signal<bool> onSaveObjectsDone;
 
             enum Signals
             {
@@ -179,10 +217,10 @@ namespace JsonDatabase
                 signal_objectOverrideChangeFromDatabase,
                 signal_databaseOutdated,
 
-                signal_loadObject,
-                signal_loadObjects,
-                signal_saveObject,
-                signal_saveObjects,
+                signal_onLoadObjectDone,
+                signal_onLoadObjectsDone,
+                signal_onSaveObjectDone,
+                signal_onSaveObjectsDone,
 
                 signal_count
             };

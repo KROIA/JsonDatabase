@@ -105,7 +105,8 @@ class JSONDATABASE_EXPORT JDManager:
 
 
         const std::string& getUser() const; // Owner of this database instance
-        const std::string& getSessionID() const;
+        const std::string& getSessionID() const; // Session ID of this database instance
+        const std::string& getLoadModeStr(int mode) const; // Returns a string representation of the load mode
 
 
         // Checks for changes in the database file
@@ -125,6 +126,7 @@ class JSONDATABASE_EXPORT JDManager:
         bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis);
 
         void onAsyncWorkDone(Internal::JDManagerAysncWork* work);
+        void onAsyncWorkError(Internal::JDManagerAysncWork* work);
 
         std::string m_databasePath;
         std::string m_databaseName;

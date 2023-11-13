@@ -16,9 +16,9 @@ namespace JsonDatabase
 			~JDManagerAysncWorkLoadAllObjects();
 
 
-			bool hasSucceeded() const;
+			bool hasSucceeded() const override;
 			void process() override;
-
+			std::string getErrorMessage() const override;
 		private:
 			bool m_success;
 			int m_loadMode;

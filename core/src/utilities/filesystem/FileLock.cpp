@@ -7,7 +7,7 @@
 
 namespace JsonDatabase
 {
-    const std::string FileLock::s_lockFileEnding = ".clk";
+    const std::string FileLock::s_lockFileEnding = ".lck";
     std::mutex FileLock::m_mutex;
 
     FileLock::FileLock(const std::string& filePath, const std::string &fileName)

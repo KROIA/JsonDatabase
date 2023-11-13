@@ -245,7 +245,7 @@ void threadFunction1() {
     
 
     manager1->getSignals().connect_databaseFileChanged_slot([] {manager1->loadObjectsAsync(); });
-    manager1->getSignals().connect_saveObjects_slot(saveObjectsSlot);
+    manager1->getSignals().connect_onSaveObjectsDone_slot(saveObjectsSlot);
     bool doesRemove = true;
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
     //    std::cout << "Thread 1 is running..." << std::endl;

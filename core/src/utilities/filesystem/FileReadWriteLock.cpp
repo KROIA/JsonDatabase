@@ -33,7 +33,14 @@ namespace JsonDatabase
     bool FileReadWriteLock::lock(Access direction)
     {
         m_wasLockedForWritingByOther = false;
-        return lock_internal(direction);
+        bool success = lock_internal(direction);
+#ifdef JD_DEBUG
+        if (m_lastError != FileLock::Error::none)
+        {
+            JD_CONSOLE("bool FileReadWriteLock::lock(direction="<< accessTypeToString(direction)<<") "<<getLastErrorStr() + "\n");
+        }
+#endif
+        return success;
     }
     bool FileReadWriteLock::lock(Access direction, unsigned int timeoutMs)
     {
@@ -58,18 +65,19 @@ namespace JsonDatabase
             std::this_thread::yield();
             //std::this_thread::sleep_for(std::chrono::microseconds(1)); // Adjust as needed
         }
+#ifdef JD_DEBUG
+        if (m_lastError != FileLock::Error::none)
+        {
+            JD_CONSOLE("bool FileReadWriteLock::lock(direction=" << accessTypeToString(direction) << ") " << getLastErrorStr() + "\n");
+        }
+#endif
         return m_locked;
     }
     bool FileReadWriteLock::lock_internal(Access direction)
     {
         //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
         m_lastError = lockFile(direction);
-#ifdef JD_DEBUG
-        if (m_lastError != FileLock::Error::none)
-        {
-            JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
-        }
-#endif
+
         
 #ifdef JD_PROFILING
         if (m_locked)
@@ -147,7 +155,7 @@ namespace JsonDatabase
         if (direction == Access::read)
             randStr = std::to_string(readerCount) + getRandomString(10);
 
-        std::string lockFileName = m_fileName + "_" + accessType + "-" + randStr + FileLock::s_lockFileEnding;
+        std::string lockFileName = m_fileName + "_" + accessType + "-" + randStr;
 
         m_lock = new FileLock(m_directory, lockFileName);
 
@@ -257,6 +265,8 @@ namespace JsonDatabase
         case FileLock::Error::unableToDeleteLockFile: { static const std::string msg = "FileReadWriteLock::Error::unableToDeleteLockFile"; return msg; };
         case FileLock::Error::unableToLock: { static const std::string msg = "FileReadWriteLock::Error::unableToLock"; return msg; };
         case FileLock::Error::alreadyLocked: { static const std::string msg = "FileReadWriteLock::Error::alreadyLocked"; return msg; };
+        case FileLock::Error::alreadyLockedForReading: { static const std::string msg = "FileReadWriteLock::Error::alreadyLockedForReading"; return msg; };
+        case FileLock::Error::alreadyLockedForWriting: { static const std::string msg = "FileReadWriteLock::Error::alreadyLockedForWriting"; return msg; };
         }
         static std::string unknown;
         unknown = "Unknown FileReadWriteLock Error: " + std::to_string(m_lastError);

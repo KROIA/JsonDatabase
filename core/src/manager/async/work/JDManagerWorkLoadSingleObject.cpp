@@ -33,5 +33,11 @@ namespace JsonDatabase
 			JDM_UNIQUE_LOCK_P;
 			m_success = m_manager.loadObject_internal(m_object);
 		}
+		std::string JDManagerAysncWorkLoadSingleObject::getErrorMessage() const
+		{
+			if (m_success)
+				return "";
+			return "Failed to load the object";
+		}
 	}
 }

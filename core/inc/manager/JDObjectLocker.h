@@ -32,10 +32,10 @@ namespace JsonDatabase
 				programmingError,
 			};
 
-			bool lockObj(JDObjectInterface* obj) const;
-			bool unlockObj(JDObjectInterface* obj) const;
+			bool lockObject(JDObjectInterface* obj) const;
+			bool unlockObject(JDObjectInterface* obj) const;
 			bool unlockAllObjs() const;
-			bool isObjLocked(JDObjectInterface* obj) const;
+			bool isObjectLocked(JDObjectInterface* obj) const;
 
 
 			Error getLastObjLockError() const;
@@ -51,8 +51,9 @@ namespace JsonDatabase
 			bool readLockTable(std::vector<QJsonObject>& locks) const;
 			bool writeLockTable(const std::vector<QJsonObject>& locks) const;
 
-			const std::string& getTableFilePath() const;
+			const std::string& getTablePath() const;
 			const std::string& getTableFileName() const;
+			std::string getTableFileFilePath() const;
 
 			bool getJsonFromID(const std::vector<QJsonObject>& locks,
 				const std::string& targetID,
@@ -61,6 +62,7 @@ namespace JsonDatabase
 
 			void getJsonFromSessionID(const std::vector<QJsonObject>& locks,
 				const std::string& targetSessionID,
+				const std::string& userName,
 				std::vector<QJsonObject>& locksOut,
 				std::vector<size_t>& matches,
 				std::vector<size_t>& mismatches) const;

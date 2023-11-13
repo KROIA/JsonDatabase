@@ -17,8 +17,10 @@ namespace JsonDatabase
 				const std::vector<JDObjectInterface*>& objects);
 			~JDManagerAysncWorkSaveList();
 
-			bool hasSucceeded() const;
+			bool hasSucceeded() const override;
 			void process() override;
+			std::string getErrorMessage() const override;
+
 
 		private:
 			std::vector<JDObjectInterface*> m_objects;

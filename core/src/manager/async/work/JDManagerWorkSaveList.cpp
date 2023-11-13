@@ -29,5 +29,11 @@ namespace JsonDatabase
 			JDM_UNIQUE_LOCK_P;
 			m_success = m_manager.saveObjects_internal(m_objects, JDManager::s_fileLockTimeoutMs);
 		}
+		std::string JDManagerAysncWorkSaveList::getErrorMessage() const
+		{
+			if (m_success)
+				return "";
+			return "Failed to save all objects";
+		}
 	}
 }

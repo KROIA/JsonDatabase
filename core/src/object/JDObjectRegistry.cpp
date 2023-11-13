@@ -31,7 +31,7 @@ namespace JsonDatabase
             if (instance.m_registry.find(className) != instance.m_registry.end())
             {
                 error = Error::typeAlreadyRegistered;
-                JD_CONSOLE_FUNCTION();
+                JD_CONSOLE_FUNCTION("Error::typeAlreadyRegistered");
                 return error;
             }
 

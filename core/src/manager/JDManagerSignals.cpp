@@ -25,10 +25,10 @@ namespace JsonDatabase
             , objectChangedFromDatabase("ChangedFromDatabase")
             , databaseOutdated("DatabaseOutdated")
 
-            , loadObject("onLoadObjectDone")
-            , loadObjects("onLoadObjectsDone")
-            , saveObject("onSaveObjectDone")
-            , saveObjects("onSaveObjectsDone")
+            , onLoadObjectDone("onLoadObjectDone")
+            , onLoadObjectsDone("onLoadObjectsDone")
+            , onSaveObjectDone("onSaveObjectDone")
+            , onSaveObjectsDone("onSaveObjectsDone")
         { }
 
         /*
@@ -44,10 +44,11 @@ namespace JsonDatabase
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const JDObjectContainer&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseOutdated, )
 
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(loadObject,  bool, JDObjectInterface*)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(loadObjects, bool)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(saveObject,  bool, JDObjectInterface*)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(saveObjects, bool)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone,  bool, JDObjectInterface*)
+      
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectsDone, bool)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone,  bool, JDObjectInterface*)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectsDone, bool)
 
         /*
           -----------------------------------------------------------------------------------------------
@@ -57,12 +58,37 @@ namespace JsonDatabase
 
         JDManagerSignals::ContainerSignal::ContainerSignal(const std::string& name)
             : signal(name) {}
+        void JDManagerSignals::ContainerSignal::reserve(size_t size)
+        {
+            JDM_UNIQUE_LOCK;
+            container.reserve(size);
+        }
+        void JDManagerSignals::ContainerSignal::addObjs(const std::vector<JDObjectInterface*>& objs)
+        {
+            JDM_UNIQUE_LOCK;
+            container.addObject(objs);
+        }
+        void JDManagerSignals::ContainerSignal::addObj(JDObjectInterface* obj)
+        {
+            JDM_UNIQUE_LOCK;
+            container.addObject(obj);
+        }
+        void JDManagerSignals::ContainerSignal::clear()
+        {
+            JDM_UNIQUE_LOCK;
+			container.clear();
+        }
         void JDManagerSignals::ContainerSignal::emitSignalIfNotEmpty()
         {
-            if (container.size() == 0)
+            JDObjectContainer cpy;
+            {
+                JDM_UNIQUE_LOCK;
+                cpy = container;
+                container.clear();
+            }
+            if (cpy.size() == 0)
                 return;
-            signal.emitSignal(container);
-            container.clear();
+            signal.emitSignal(cpy);
         }
         void JDManagerSignals::ContainerSignal::connectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot)
         {
@@ -77,12 +103,37 @@ namespace JsonDatabase
 
         JDManagerSignals::ObjectChangeSignal::ObjectChangeSignal(const std::string& name)
             : signal(name) {}
+        void JDManagerSignals::ObjectChangeSignal::reserve(size_t size)
+        {
+            JDM_UNIQUE_LOCK;
+			container.reserve(size);
+        }
+        void JDManagerSignals::ObjectChangeSignal::addPairs(const std::vector<JDObjectPair>& pairs)
+        {
+            JDM_UNIQUE_LOCK;
+            container.insert(container.end(), pairs.begin(), pairs.end());
+        }
+        void JDManagerSignals::ObjectChangeSignal::addPair(const JDObjectPair& pair)
+        {
+            JDM_UNIQUE_LOCK;
+			container.push_back(pair);
+        }
+        void JDManagerSignals::ObjectChangeSignal::clear()
+        {
+            JDM_UNIQUE_LOCK;
+            container.clear();
+        }
         void JDManagerSignals::ObjectChangeSignal::emitSignalIfNotEmpty()
         {
-            if (container.size() == 0)
+            std::vector<JDObjectPair> cpy;
+            {
+				JDM_UNIQUE_LOCK;
+				cpy = container;
+                container.clear();
+			}
+            if (cpy.size() == 0)
                 return;
-            signal.emitSignal(container);
-            container.clear();
+            signal.emitSignal(cpy);
         }
         void JDManagerSignals::ObjectChangeSignal::connectSlot(const Signal<const std::vector<JDObjectPair>&>::SlotFunction& slot)
         {
@@ -95,10 +146,10 @@ namespace JsonDatabase
 
         void JDManagerSignals::clearContainer()
         {
-            objectRemovedFromDatabase.container.clear();
-            objectAddedToDatabase.container.clear();
-            objectOverrideChangeFromDatabase.container.clear();
-            objectChangedFromDatabase.container.clear();
+            objectRemovedFromDatabase.clear();
+            objectAddedToDatabase.clear();
+            objectOverrideChangeFromDatabase.clear();
+            objectChangedFromDatabase.clear();
         }
         void JDManagerSignals::emitIfNotEmpty()
         {
@@ -137,7 +188,7 @@ namespace JsonDatabase
             }
             switch (signal)
             {
-                case Signals::signal_loadObject:
+                case Signals::signal_onLoadObjectDone:
                 {
                     AsyncLoadObjectData *data = new AsyncLoadObjectData();
                     data->success = success;
@@ -148,7 +199,7 @@ namespace JsonDatabase
                     m_signalQueue.push_back(sig);
                     break;
                 }
-                case Signals::signal_saveObject:
+                case Signals::signal_onSaveObjectDone:
                 {
                     AsyncSaveObjectData* data = new AsyncSaveObjectData();
                     data->success = success;
@@ -174,7 +225,7 @@ namespace JsonDatabase
             }
             switch (signal)
             {
-                case Signals::signal_loadObjects:
+                case Signals::signal_onLoadObjectsDone:
                 {
                     AsyncLoadObjectsData* data = new AsyncLoadObjectsData();
                     data->success = success;
@@ -184,7 +235,7 @@ namespace JsonDatabase
                     m_signalQueue.push_back(sig);
                     break;
                 }
-                case Signals::signal_saveObjects:
+                case Signals::signal_onSaveObjectsDone:
                 {
                     AsyncSaveObjectsData* data = new AsyncSaveObjectsData();
                     data->success = success;
@@ -220,48 +271,44 @@ namespace JsonDatabase
                         break;
                     case signal_objectRemovedFromDatabase:
                         objectRemovedFromDatabase.emitSignalIfNotEmpty();
-                        objectRemovedFromDatabase.container.clear();
                         break;
                     case signal_objectAddedToDatabase:
                         objectAddedToDatabase.emitSignalIfNotEmpty();
-                        objectAddedToDatabase.container.clear();
                         break;
                     case signal_objectChangedFromDatabase:
                         objectChangedFromDatabase.emitSignalIfNotEmpty();
-                        objectChangedFromDatabase.container.clear();
                         break;
                     case signal_objectOverrideChangeFromDatabase:
                         objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
-                        objectOverrideChangeFromDatabase.container.clear();
                         break;
                     case signal_databaseOutdated:
                         databaseOutdated.emitSignal();
                         break;
-                    case signal_loadObject:
+                    case signal_onLoadObjectDone:
                     {
                         AsyncLoadObjectData* data = (AsyncLoadObjectData*)signal.data;
-                        loadObject.emitSignal(data->success, data->object);
+                        onLoadObjectDone.emitSignal(data->success, data->object);
                         delete data;
                         break;
                     }
-                    case signal_loadObjects:
+                    case signal_onLoadObjectsDone:
                     {
                         AsyncLoadObjectsData* data = (AsyncLoadObjectsData*)signal.data;
-                        loadObjects.emitSignal(data->success);
+                        onLoadObjectsDone.emitSignal(data->success);
                         delete data;
                         break;
                     }
-                    case signal_saveObject:
+                    case signal_onSaveObjectDone:
                     {
                         AsyncSaveObjectData* data = (AsyncSaveObjectData*)signal.data;
-                        saveObject.emitSignal(data->success, data->object);
+                        onSaveObjectDone.emitSignal(data->success, data->object);
                         delete data;
                         break;
                     }
-                    case signal_saveObjects:
+                    case signal_onSaveObjectsDone:
                     {
                         AsyncSaveObjectsData* data = (AsyncSaveObjectsData*)signal.data;
-                        saveObjects.emitSignal(data->success);
+                        onSaveObjectsDone.emitSignal(data->success);
                         delete data;
                         break;
                     }

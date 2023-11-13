@@ -19,6 +19,8 @@ namespace JsonDatabase
         
 
             virtual void process() = 0;
+            virtual bool hasSucceeded() const = 0;
+            virtual std::string getErrorMessage() const = 0;
         protected:
             JDManager& m_manager;
             std::mutex& m_mutex;

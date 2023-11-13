@@ -117,6 +117,7 @@ namespace JsonDatabase
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if (!obj) return false;
+            if (exists_internal(obj->getObjectID())) return false;
             if (exists_internal(obj)) return false;
             m_objs.addObject(obj);
             return true;
@@ -130,7 +131,7 @@ namespace JsonDatabase
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if (!obj) return false;
-            if (!exists_internal(obj)) return false;
+            if (!exists_internal(obj) && !exists_internal(obj->getObjectID())) return false;
             m_objs.removeObject(obj);
             return true;
         }

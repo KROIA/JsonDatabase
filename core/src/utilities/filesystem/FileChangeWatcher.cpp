@@ -1,5 +1,5 @@
 #include "utilities/filesystem/FileChangeWatcher.h"
-
+#include "utilities/JDUtilities.h"
 
 namespace JsonDatabase
 {
@@ -17,7 +17,7 @@ namespace JsonDatabase
             if (m_eventHandle == INVALID_HANDLE_VALUE) 
             {
                 DWORD error = GetLastError();
-                JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << error << "\n");
+                JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << error << " : "<< Utilities::getLastErrorString(error) << "\n");
             }
         }
 
@@ -121,11 +121,12 @@ namespace JsonDatabase
                             break;
                         }
                     }
+
                     ResetEvent(m_eventHandle);
 
-
+                    
                     BOOL success = ReadDirectoryChangesW(
-                        FindFirstChangeNotificationA(m_filePath.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE),
+                        m_eventHandle,
                         buffer,
                         sizeof(buffer),
                         TRUE,
@@ -134,15 +135,16 @@ namespace JsonDatabase
                         nullptr,
                         nullptr
                     );
+                    //m_eventHandle = FindFirstChangeNotificationA(m_filePath.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
 
                     if (!success) {
                         DWORD error = GetLastError();
-                        JD_CONSOLE_FUNCTION("Error monitoring file changes. GetLastError() =  " << error << "\n");
+                        JD_CONSOLE_FUNCTION("Error monitoring file changes. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
                     }
                 }
                 else {
                     DWORD error = GetLastError();
-                    JD_CONSOLE_FUNCTION("Error waiting for file changes. GetLastError() =  " << error << "\n");
+                    JD_CONSOLE_FUNCTION("Error waiting for file changes. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
                 }
             }
         }
