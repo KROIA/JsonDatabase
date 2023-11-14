@@ -73,7 +73,7 @@ namespace JsonDatabase
 			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
 			{
 				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath()
+				JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\""<<obj->getObjectID()<<"\") Can't aquire lock for file: " << fileLock.getFilePath()
 					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
 					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
 				return false;
@@ -92,14 +92,14 @@ namespace JsonDatabase
 					targetLock.data.sessionID == m_manager.getSessionID())
 				{
 					// Already locked by this session
-					JD_CONSOLE_FUNCTION("Lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() + "\" is already aquired in this session\n");
+					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID() << "\") Lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() + "\" is already aquired in this session\n");
 					m_lastError = Error::none;
 					return true;
 				}
 				else
 				{
 					m_lastError = Error::lockedByOther;
-					JD_CONSOLE_FUNCTION("Can't aquire lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() +
+					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID() << "\") Can't aquire lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() +
 						"\"\nLock Data: \n" + targetLock.toString() + "\n"
 						"Lock is already aquired from user: \"" + targetLock.data.owner + "\"\n");
 					return false;
@@ -113,6 +113,40 @@ namespace JsonDatabase
 			if (!writeLockTable(locks))
 				return false;
 
+
+			// Verify lock success
+			{
+				JD_OBJECT_LOCK_PROFILING_BLOCK("Verify object lock", JD_COLOR_STAGE_11);
+				std::vector<ObjectLockData> verifyLocks;
+				if (!readLockTable(verifyLocks))
+					return false;
+
+				// Check if Lock is already aquired 
+				ObjectLockData targetLock;
+				size_t targetIndex;
+				if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
+				{
+					if (targetLock.data.owner == m_manager.getUser() &&
+						targetLock.data.sessionID == m_manager.getSessionID())
+					{
+						// Already locked by this session
+						m_lastError = Error::none;
+						return true;
+					}
+					else
+					{
+						m_lastError = Error::lockedByOther;
+						JD_CONSOLE("Can't verify the locked object: " << obj->getObjectID() <<" Object is locked by: \""<< targetLock.data.owner <<"\"");
+						return false;
+					}
+				}
+				else
+				{
+					m_lastError = Error::unableToLock;
+					JD_CONSOLE("Can't verify the locked object: "<< obj->getObjectID());
+					return false;
+				}
+			}
 
 			m_lastError = Error::none;
 			return true;
