@@ -150,135 +150,33 @@ namespace JsonDatabase
             nullptr
         );
 
-        if (m_fileHandle == INVALID_HANDLE_VALUE) {
+        if (m_fileHandle == INVALID_HANDLE_VALUE) 
+        {
             m_locked = false;
+            m_fileHandle = nullptr;
             return Error::unableToCreateOrOpenLockFile;
-            //throw std::runtime_error("Unable to create or open file.");
         }
 
-        if (LockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD)) {
-            //std::cout << "File locked successfully." << std::endl;
-        }
-        else {
+        if (!LockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD)) 
+        {
             m_locked = false;
+            CloseHandle(m_fileHandle);
+            m_fileHandle = nullptr;
             return Error::unableToLock;
-            //throw std::runtime_error("Unable to lock file.");
         }
-
-
-
         m_locked = true;
         return Error::none;
     }
-  /*  FileLock::Error FileLock::lockFile_old(Access direction)
-    {
-        JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
-        if (m_locked)
-            return Error::alreadyLocked;
-
-      //  JDM_UNIQUE_LOCK_P;
-
-
-        m_access = Access::unknown;
-
-        std::vector<std::string> files = getFileNamesInDirectory(m_directory, s_lockFileEnding);
-
-        size_t readerCount = 0;
-        for (const std::string& file : files)
-        {
-            if (file.find(s_lockFileEnding) == std::string::npos)
-                continue;
-
-            // Check the filename to see if it matches the file we want to lock
-            size_t pos = file.find_last_of("_");
-            if (pos == std::string::npos)
-				continue;
-            std::string fileName = file.substr(0, pos);
-
-			if (fileName != m_fileName)
-				continue;
-
-			// Check the access type
-            size_t pos2 = file.find_last_of("-");
-            std::string accessType = file.substr(pos + 1, pos2 - pos - 1);
-            Access access = stringToAccessType(accessType);
-            switch (access)
-            {
-                case Access::readWrite:
-                case Access::write:
-                {
-                    // Already locked for writing by a other process
-                    return Error::alreadyLocked;
-                }
-                case Access::read:
-                {
-					++readerCount;
-					break;
-				}
-                case Access::unknown:
-                {
-                    int a = 0;
-
-                }
-            }
-        }
-
-        if (direction == Access::write && readerCount != 0)
-        {
-            // Some are reading, can't write
-            return Error::alreadyLocked;
-        }
-
-
-        std::string accessType = accessTypeToString(direction);
-        std::string randStr;
-        if(direction == Access::read)
-			randStr = std::to_string(readerCount)+getRandomString(10);
-
-        std::string lockFileName = m_filePath + "_" + accessType +"-"+ randStr + s_lockFileEnding;
-
-        m_fileHandle = CreateFile(
-            lockFileName.c_str(),
-            GENERIC_WRITE,
-            0,
-            nullptr,
-            CREATE_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr
-        );
-
-        if (m_fileHandle == INVALID_HANDLE_VALUE) {
-            m_locked = false;
-            return Error::unableToCreateOrOpenLockFile;
-            //throw std::runtime_error("Unable to create or open file.");
-        }
-
-        if (LockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD)) {
-            //std::cout << "File locked successfully." << std::endl;
-        }
-        else {
-            m_locked = false;
-            return Error::unableToLock;
-            //throw std::runtime_error("Unable to lock file.");
-        }
-
-
-        
-        m_locked = true;
-        m_access = direction;
-        m_lockFilePathName = lockFileName;
-        return Error::none;
-    }*/
 
     void FileLock::unlockFile() 
     {
         JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
 
-        if (!m_fileHandle) return;
+        if (!m_locked) return;
 
         UnlockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD);
         CloseHandle(m_fileHandle);
-        m_fileHandle = nullptr;
+        
 
         // Now, delete the file
         if (!DeleteFile(m_lockFilePathName.c_str()))
@@ -288,10 +186,8 @@ namespace JsonDatabase
             JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
         }
 
-
+        m_fileHandle = nullptr;
         m_locked = false;
-
-        //std::cout << "File unlocked successfully." << std::endl;
     }
 
 

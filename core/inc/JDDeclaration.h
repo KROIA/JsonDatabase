@@ -18,6 +18,11 @@ namespace JsonDatabase
         class FileChangeWatcher;
         class JsonUtilities;
 
+        class JDManagerFileSystem;
+        class JDManagerObjectManager;
+        class JDManagerSignals;
+        class JDObjectLocker;
+
         class JDManagerAsyncWorker;
         class JDManagerAysncWork;
 

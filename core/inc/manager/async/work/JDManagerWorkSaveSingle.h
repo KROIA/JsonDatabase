@@ -17,7 +17,6 @@ namespace JsonDatabase
 			~JDManagerAysncWorkSaveSingle();
 
 			bool hasSucceeded() const override;
-			JDObjectInterface * getObject() const;
 			void process() override;
 			std::string getErrorMessage() const override;
 

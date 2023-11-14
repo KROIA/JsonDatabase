@@ -11,14 +11,17 @@ namespace JsonDatabase
 			std::mutex& mtx,
 			const std::vector<JDObjectInterface*>& objects)
 			: JDManagerAysncWork(manager, mtx)
-			, m_objects(objects)
 			, m_success(false)
 		{
-
+			m_objects.resize(objects.size());
+			for (size_t i = 0; i < objects.size(); ++i)
+				m_objects[i] = objects[i]->clone();
+				
 		}
 		JDManagerAysncWorkSaveList::~JDManagerAysncWorkSaveList()
 		{
-
+			for (size_t i = 0; i < m_objects.size(); ++i)
+				delete m_objects[i];
 		}
 		bool JDManagerAysncWorkSaveList::hasSucceeded() const
 		{

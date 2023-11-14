@@ -32,17 +32,19 @@ public:
     bool operator==(const Person& other);
     bool operator!=(const Person& other);
 
-private:
-   
-
-    bool load(const QJsonObject& obj) override;
-    bool save(QJsonObject& obj) const override;
 
     std::string firstName, lastName, gender;
     std::string age;
     std::string email, phone, education, occupation;
     std::string experience, salary, numberOfChildren;
     std::string martialStatus;
+private:
+   
+
+    bool load(const QJsonObject& obj) override;
+    bool save(QJsonObject& obj) const override;
+
+    
 
 
     //static size_t instanceCounter;

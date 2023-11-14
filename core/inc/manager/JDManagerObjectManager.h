@@ -60,7 +60,7 @@ namespace JsonDatabase
             const std::vector<JDObjectInterface*>& getObjects_internal() const;
             void clearObjects_internal();
 
-
+            void update();
         private:
             std::mutex &m_mutex;
             JDObjectContainer m_objs;

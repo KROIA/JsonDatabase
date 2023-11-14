@@ -2,7 +2,6 @@
 #include "manager/JDManager.h"
 #include "utilities/filesystem/StringZipper.h"
 #include "utilities/SystemCommand.h"
-#include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/JDUniqueMutexLock.h"
 
 #include <QtZlib/zlib.h>
@@ -23,7 +22,6 @@ namespace JsonDatabase
 			: m_manager(manager)
             , m_mutex(mtx)
             , m_fileLock(nullptr)
-            , m_databaseFileWatcher(nullptr)
 		{
             
         }
@@ -31,18 +29,13 @@ namespace JsonDatabase
         {
             if(m_fileLock)
                 delete m_fileLock;
-            if (m_databaseFileWatcher)
-            {
-                m_databaseFileWatcher->stopWatching();
-                delete m_databaseFileWatcher;
-            }
         }
 
         void JDManagerFileSystem::setup()
         {
             makeDatabaseDirs();
             makeDatabaseFiles();
-            restartFileWatcher();
+            restartDatabaseFileWatcher();
         }
      
 
@@ -56,10 +49,10 @@ namespace JsonDatabase
             if (m_fileLock)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory<<","
-                    << fileName<<","
+                    << directory<<", "
+                    << fileName<<", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    <<",bool) Lock already aquired\n");
+                    <<", bool) Lock already aquired\n");
                 return false;
             }
 
@@ -68,10 +61,10 @@ namespace JsonDatabase
             if (!m_fileLock->lock(direction))
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory << ","
-                    << fileName << ","
+                    << directory << ", "
+                    << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ",bool) Can't aquire lock for: " << directory << "\\" << fileName << "\n");
+                    << ", bool) Can't aquire lock for: " << directory << "\\" << fileName << "\n");
                 wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
                 delete m_fileLock;
                 m_fileLock = nullptr;
@@ -81,10 +74,10 @@ namespace JsonDatabase
             if (m_fileLock->getLastError() != FileLock::Error::none)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory << ","
-                    << fileName << ","
+                    << directory << ", "
+                    << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ",bool) Lock error: " << m_fileLock->getLastErrorStr() + "\n");
+                    << ", bool) Lock error: " << m_fileLock->getLastErrorStr() + "\n");
             }
             return true;
         }
@@ -98,10 +91,10 @@ namespace JsonDatabase
             if (m_fileLock)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory << ","
-                    << fileName << ","
+                    << directory << ", "
+                    << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ",bool,timeout="<< timeoutMillis<<"ms) Lock already aquired\n");
+                    << ", bool, timeout="<< timeoutMillis<<"ms) Lock already aquired\n");
                 return false;
             }
 
@@ -110,10 +103,10 @@ namespace JsonDatabase
             if (!m_fileLock->lock(direction, timeoutMillis))
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory << ","
-                    << fileName << ","
+                    << directory << ", "
+                    << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ",bool,timeout=" << timeoutMillis << "ms) Timeout while trying to aquire file lock for: " << directory << "\\" << fileName << "\n");
+                    << ", bool, timeout=" << timeoutMillis << "ms) Timeout while trying to aquire file lock for: " << directory << "\\" << fileName << "\n");
                 wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
                 delete m_fileLock;
                 m_fileLock = nullptr;
@@ -123,10 +116,10 @@ namespace JsonDatabase
             if (m_fileLock->getLastError() != FileLock::Error::none)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory << ","
-                    << fileName << ","
+                    << directory << ", "
+                    << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ",bool,timeout=" << timeoutMillis << "ms) Lock error: " << m_fileLock->getLastErrorStr() + "\n");
+                    << ", bool, timeout=" << timeoutMillis << "ms) Lock error: " << m_fileLock->getLastErrorStr() + "\n");
             }
             return true;
         }
@@ -202,7 +195,7 @@ namespace JsonDatabase
             QByteArray data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
             JD_GENERAL_PROFILING_END_BLOCK;
 
-
+            m_fileWatcher.pause();
             // Write the JSON data to the file
             if (zipFormat)
             {
@@ -217,6 +210,7 @@ namespace JsonDatabase
             {
                 return writeFile(data, directory, fileName, s_jsonFileEnding, lockedRead);
             }
+            m_fileWatcher.unpause();
             return false;
         }
 
@@ -317,11 +311,11 @@ namespace JsonDatabase
             }
             else {
                 JD_CONSOLE("bool JDManagerFileSystem::readJsonFile("
-                    << "vector<QJsonObject>&,"
-                    << directory
-                    << fileName
-                    << fileEnding
-                    << "zipFormat=" << (zipFormat ? "true" : "false")
+                    << "vector<QJsonObject>&, "
+                    << directory << ", "
+                    << fileName << ", "
+                    << fileEnding << ", "
+                    << "zipFormat=" << (zipFormat ? "true" : "false") << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") JSON document from file : " << directory + "\\" + fileName + fileEnding << " is not an array\n"); 
                 return false;
@@ -375,11 +369,11 @@ namespace JsonDatabase
             if (jsonError.error != QJsonParseError::NoError)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::readJsonFile("
-                    << "QJsonObject&,"
-                    << directory
-                    << fileName
-                    << fileEnding
-                    << "zipFormat=" << (zipFormat ? "true" : "false")
+                    << "QJsonObject&, "
+                    << directory << ", "
+                    << fileName << ", "
+                    << fileEnding << ", "
+                    << "zipFormat=" << (zipFormat ? "true" : "false") << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't read Jsonfile: " << jsonError.errorString().toStdString().c_str() << "\n");
                 return false;
@@ -407,10 +401,10 @@ namespace JsonDatabase
                 if (!lockFile(directory, fileName, FileReadWriteLock::Access::read, lockedByOther))
                 {
                     JD_CONSOLE("bool JDManagerFileSystem::readFile("
-                        << "QByteArray&,"
-                        << directory
-                        << fileName
-                        << fileEnding
+                        << "QByteArray&, "
+                        << directory << ", "
+                        << fileName << ", "
+                        << fileEnding << ", "
                         << "lockedRead=" << (lockedRead ? "true" : "false")
                         << ") Can't lock file\n");
                     return false;
@@ -433,10 +427,10 @@ namespace JsonDatabase
             if (fileHandle == INVALID_HANDLE_VALUE) {
                 JDFILE_IO_PROFILING_END_BLOCK;
                 JD_CONSOLE("bool JDManagerFileSystem::readFile("
-                    << "QByteArray&,"
-                    << directory
-                    << fileName
-                    << fileEnding
+                    << "QByteArray&, "
+                    << directory << ", "
+                    << fileName << ", "
+                    << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't open file: " << filePath.c_str() << "\n");
                 if (lockedRead)
@@ -449,10 +443,10 @@ namespace JsonDatabase
             if (fileSize == INVALID_FILE_SIZE) {
                 CloseHandle(fileHandle);
                 JD_CONSOLE("bool JDManagerFileSystem::readFile("
-                    << "QByteArray&,"
-                    << directory
-                    << fileName
-                    << fileEnding
+                    << "QByteArray&, "
+                    << directory << ", "
+                    << fileName << ", "
+                    << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't get filesize of: " << filePath.c_str() << "\n");
                 JDFILE_IO_PROFILING_END_BLOCK;
@@ -478,10 +472,10 @@ namespace JsonDatabase
 
             if (!readResult) {
                 JD_CONSOLE("bool JDManagerFileSystem::readFile("
-                    << "QByteArray&,"
-                    << directory
-                    << fileName
-                    << fileEnding
+                    << "QByteArray&, "
+                    << directory << ", "
+                    << fileName << ", "
+                    << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't read file: " << filePath.c_str() << "\n");
             }
@@ -503,10 +497,10 @@ namespace JsonDatabase
                 if (!lockFile(directory, fileName, FileReadWriteLock::Access::write, lockedByOther))
                 {
                     JD_CONSOLE("bool JDManagerFileSystem::writeFile("
-                        << "QByteArray&,"
-                        << directory
-                        << fileName
-                        << fileEnding
+                        << "QByteArray&, "
+                        << directory << ", "
+                        << fileName << ", "
+                        << fileEnding << ", "
                         << "lockedRead=" << (lockedRead ? "true" : "false")
                         << ") Can't lock file\n");
                     return false;
@@ -530,10 +524,10 @@ namespace JsonDatabase
             if (fileHandle == INVALID_HANDLE_VALUE) {
                 JDFILE_IO_PROFILING_END_BLOCK;
                 JD_CONSOLE("bool JDManagerFileSystem::writeFile("
-                    << "QByteArray&,"
-                    << directory
-                    << fileName
-                    << fileEnding
+                    << "QByteArray&, "
+                    << directory << ", "
+                    << fileName << ", "
+                    << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Could not open file " << filePath << " for writing\n");
                 // Error opening file
@@ -564,10 +558,10 @@ namespace JsonDatabase
             if (!writeResult) {
                 // Error writing to file
                 JD_CONSOLE("bool JDManagerFileSystem::writeFile("
-                    << "QByteArray&,"
-                    << directory
-                    << fileName
-                    << fileEnding
+                    << "QByteArray&, "
+                    << directory << ", "
+                    << fileName << ", "
+                    << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Could not write to file " << filePath << "\n");
                 return false;
@@ -639,62 +633,22 @@ namespace JsonDatabase
             return true;
         }
 
-
-        void JDManagerFileSystem::restartFileWatcher()
+        ManagedFileChangeWatcher& JDManagerFileSystem::getDatabaseFileWatcher()
         {
-            if (m_databaseFileWatcher)
-            {
-                m_databaseFileWatcher->stopWatching();
-                delete m_databaseFileWatcher;
-                m_databaseFileWatcher = nullptr;
-            }
-            m_databaseFileWatcher = new FileChangeWatcher(m_manager.getDatabaseFilePath());
-            m_databaseFileWatcher->startWatching();
+            return m_fileWatcher;
         }
-
-        bool JDManagerFileSystem::isFileWatcherRunning() const
+        void JDManagerFileSystem::restartDatabaseFileWatcher()
         {
-            if (!m_databaseFileWatcher)
-                return false;
-            return m_databaseFileWatcher->isWatching();
-        }
-        void JDManagerFileSystem::stopFileWatcher()
-        {
-            if (!m_databaseFileWatcher)
-                return;
-            m_databaseFileWatcher->stopWatching();
-        }
-        bool JDManagerFileSystem::fileWatcherHasFileChanged() const
-        {
-            if (!m_databaseFileWatcher)
-                return false;
-            return m_databaseFileWatcher->hasFileChanged();
-        }
-        void JDManagerFileSystem::clearFileWatcherHasFileChanged()
-        {
-            if (!m_databaseFileWatcher)
-                return;
-            m_databaseFileWatcher->clearFileChangedFlag();
-        }
-
-        void JDManagerFileSystem::pauseFileWatcher()
-        {
-            if (!m_databaseFileWatcher)
-                return;
-            m_databaseFileWatcher->pause();
-        }
-        void JDManagerFileSystem::unpauseFileWatcher()
-        {
-            if (!m_databaseFileWatcher)
-                return;
-            m_databaseFileWatcher->unpause();
-        }
-        bool JDManagerFileSystem::isFileWatcherPaused() const
-        {
-            if (!m_databaseFileWatcher)
-				return false;
-			return m_databaseFileWatcher->isPaused();
+            m_fileWatcher.setup(m_manager.getDatabaseFilePath());
         }
         
+        void JDManagerFileSystem::update()
+        {
+            if (m_fileWatcher.hasFileChanged())
+            {
+                m_manager.getSignals().databaseFileChanged.emitSignal();
+                m_fileWatcher.clearHasFileChanged();
+            }
+        }
     }
 }

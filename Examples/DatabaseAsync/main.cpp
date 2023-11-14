@@ -1,6 +1,8 @@
 #include <QApplication>
 #include <iostream>
-#include "MainWindow.h"
+#include "UIWrapper.h"
+
+
 
 
 
@@ -11,11 +13,7 @@ int main(int argc, char* argv[])
 	JDManager::startProfiler();
 	bool ret;
 	{
-		MainWindow w1("User1");
-		MainWindow w2("User2");
-
-		w1.show();
-		w2.show();
+		UIWrapper wrapper;
 		ret = a.exec();
 	}
 	JDManager::stopProfiler("profiler.prof");

@@ -96,6 +96,16 @@ namespace JsonDatabase
             BYTE buffer[4096];
 
             fileChanged(); // Set initial file modification time
+            BOOL success = ReadDirectoryChangesW(
+                m_eventHandle,
+                buffer,
+                sizeof(buffer),
+                TRUE,
+                FILE_NOTIFY_CHANGE_LAST_WRITE,
+                &bytesReturned,
+                nullptr,
+                nullptr
+            );
             while (!m_stopFlag) {
 
                 DWORD waitResult = WAIT_FAILED;
@@ -125,16 +135,7 @@ namespace JsonDatabase
                     ResetEvent(m_eventHandle);
 
                     
-                    BOOL success = ReadDirectoryChangesW(
-                        m_eventHandle,
-                        buffer,
-                        sizeof(buffer),
-                        TRUE,
-                        FILE_NOTIFY_CHANGE_LAST_WRITE,
-                        &bytesReturned,
-                        nullptr,
-                        nullptr
-                    );
+                    
                     //m_eventHandle = FindFirstChangeNotificationA(m_filePath.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
 
                     if (!success) {
@@ -160,6 +161,87 @@ namespace JsonDatabase
                 return true; // File has changed
             }
             return false;
+        }
+
+
+
+
+        //
+        //    ManagerdFileChangeWatcher
+        //
+
+
+        ManagedFileChangeWatcher::ManagedFileChangeWatcher()
+            : m_databaseFileWatcher(nullptr)
+        {
+
+        }
+        ManagedFileChangeWatcher::~ManagedFileChangeWatcher()
+        {
+            if (m_databaseFileWatcher)
+            {
+                m_databaseFileWatcher->stopWatching();
+                delete m_databaseFileWatcher;
+            }
+        }
+        void ManagedFileChangeWatcher::setup(const std::string& targetFile)
+        {
+            restart(targetFile);
+        }
+        void ManagedFileChangeWatcher::restart(const std::string& targetFile)
+        {
+            if (m_databaseFileWatcher)
+            {
+                m_databaseFileWatcher->stopWatching();
+                delete m_databaseFileWatcher;
+                m_databaseFileWatcher = nullptr;
+            }
+            m_databaseFileWatcher = new FileChangeWatcher(targetFile);
+            m_databaseFileWatcher->startWatching();
+        }
+
+        bool ManagedFileChangeWatcher::isRunning() const
+        {
+            if (!m_databaseFileWatcher)
+                return false;
+            return m_databaseFileWatcher->isWatching();
+        }
+        void ManagedFileChangeWatcher::stop()
+        {
+            if (!m_databaseFileWatcher)
+                return;
+            m_databaseFileWatcher->stopWatching();
+        }
+        bool ManagedFileChangeWatcher::hasFileChanged() const
+        {
+            if (!m_databaseFileWatcher)
+                return false;
+            return m_databaseFileWatcher->hasFileChanged();
+        }
+        void ManagedFileChangeWatcher::clearHasFileChanged()
+        {
+            if (!m_databaseFileWatcher)
+                return;
+            m_databaseFileWatcher->clearFileChangedFlag();
+        }
+
+        void ManagedFileChangeWatcher::pause()
+        {
+            if (!m_databaseFileWatcher)
+                return;
+            m_databaseFileWatcher->pause();
+        }
+        void ManagedFileChangeWatcher::unpause()
+        {
+            if (!m_databaseFileWatcher)
+                return;
+            m_databaseFileWatcher->unpause();
+        }
+        bool ManagedFileChangeWatcher::isPaused() const
+        {
+            if (!m_databaseFileWatcher)
+                return false;
+            return m_databaseFileWatcher->isPaused();
         }
     }
 }

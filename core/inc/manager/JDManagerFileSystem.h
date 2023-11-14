@@ -3,6 +3,7 @@
 #include "JD_base.h"
 #include "JDDeclaration.h"
 #include "utilities/filesystem/FileReadWriteLock.h"
+#include "utilities/filesystem/FileChangeWatcher.h"
 
 #include <QJsonObject>
 #include <mutex>
@@ -91,20 +92,17 @@ namespace JsonDatabase
             bool deleteDir(const std::string& dir) const;
             bool deleteFile(const std::string& file) const;
 
-            void restartFileWatcher();
-            bool isFileWatcherRunning() const;
-            void stopFileWatcher();
-            bool fileWatcherHasFileChanged() const;
-            void clearFileWatcherHasFileChanged();
-            void pauseFileWatcher();
-            void unpauseFileWatcher();
-            bool isFileWatcherPaused() const;
+            ManagedFileChangeWatcher& getDatabaseFileWatcher();
+            void restartDatabaseFileWatcher();
+
+            void update();
+
         private:
             JDManager& m_manager;
             std::mutex& m_mutex;
 
             mutable FileReadWriteLock* m_fileLock;
-            FileChangeWatcher* m_databaseFileWatcher;
+            mutable ManagedFileChangeWatcher m_fileWatcher;
 
             static const std::string s_jsonFileEnding;
 

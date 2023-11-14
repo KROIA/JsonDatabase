@@ -11,22 +11,18 @@ namespace JsonDatabase
 			std::mutex& mtx,
 			JDObjectInterface* object)
 			: JDManagerAysncWork(manager, mtx)
-			, m_object(object)
+			, m_object(object->clone())
 			, m_success(false)
 		{
 
 		}
 		JDManagerAysncWorkSaveSingle::~JDManagerAysncWorkSaveSingle()
 		{
-
+			delete m_object;
 		}
 		bool JDManagerAysncWorkSaveSingle::hasSucceeded() const
 		{
 			return m_success; 
-		}
-		JDObjectInterface* JDManagerAysncWorkSaveSingle::getObject() const
-		{
-			return m_object;
 		}
 		void JDManagerAysncWorkSaveSingle::process()
 		{

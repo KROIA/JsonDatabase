@@ -28,9 +28,6 @@ namespace JsonDatabase
     const unsigned int JDManager::s_fileLockTimeoutMs = 1000;
 
 
-    //std::map<std::string, JDObjectInterface*> JDManager::s_objDefinitions;
-    std::mutex JDManager::s_mutex;
-
     void JDManager::startProfiler()
     {
 #ifdef JD_PROFILING
@@ -85,13 +82,13 @@ JDManager::~JDManager()
 {
     JDObjectLocker::unlockAllObjs();
     m_asyncWorker.stop();
-    JDManagerFileSystem::stopFileWatcher();
+    JDManagerFileSystem::getDatabaseFileWatcher().stop();
 }
 void JDManager::setDatabaseName(const std::string& name)
 {
     JDM_UNIQUE_LOCK_P;
     m_databaseName = name;
-    JDManagerFileSystem::restartFileWatcher();
+    JDManagerFileSystem::restartDatabaseFileWatcher();
 }
 
 void JDManager::setDatabasePath(const std::string &path)
@@ -103,7 +100,7 @@ void JDManager::setDatabasePath(const std::string &path)
     m_databasePath = path;
     JDManagerFileSystem::makeDatabaseDirs();
     JDManagerFileSystem::makeDatabaseFiles();
-    JDManagerFileSystem::restartFileWatcher();
+    JDManagerFileSystem::restartDatabaseFileWatcher();
 }
 const std::string& JDManager::getDatabaseName() const
 {
@@ -259,7 +256,10 @@ bool JDManager::loadObjects_internal(int mode)
         }
     }
     if (!success)
+    {
+        JDManagerFileSystem::unlockFile();
         return false;
+    }
 
     if (modeChangedObjects)
     {
@@ -406,11 +406,10 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
         jsons[index] = data;
     }
 
-    JDManagerFileSystem::pauseFileWatcher();
+    
     // Save the serialized objects
     success &= JDManagerFileSystem::writeJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
 
-    JDManagerFileSystem::unpauseFileWatcher();
     JDManagerFileSystem::unlockFile();
     return success;
 }
@@ -438,12 +437,11 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     std::vector<QJsonObject> jsonData;
     success &= Internal::JsonUtilities::getJsonArray(objList, jsonData);
 
-    JDManagerFileSystem::pauseFileWatcher();
+    
 
     // Save the serialized objects
     success &= JDManagerFileSystem::writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
 
-    JDManagerFileSystem::unpauseFileWatcher();
     JDManagerFileSystem::unlockFile();
     return success;
 }
@@ -482,9 +480,13 @@ void JDManager::onAsyncWorkDone(Internal::JDManagerAysncWork* work)
 }
 void JDManager::onAsyncWorkError(Internal::JDManagerAysncWork* work)
 {
-    JD_CONSOLE("Async work failed: "<< work->getErrorMessage() << "\n");
+    JD_CONSOLE("Async work failed: " + work->getErrorMessage() + "\n");
 }
 
+void JDManager::onObjectLockerFileChanged()
+{
+
+}
 
 
 
@@ -548,12 +550,11 @@ void JDManager::update()
 
     m_asyncWorker.process();
     
-    //JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    if (JDManagerFileSystem::fileWatcherHasFileChanged())
-    {
-        m_signals.databaseFileChanged.emitSignal();
-        JDManagerFileSystem::clearFileWatcherHasFileChanged();
-    }
+    JDManagerFileSystem::update();
+    JDManagerObjectManager::update();
+    JDObjectLocker::update();
+
+    
 
     m_signals.objectAddedToDatabase.emitSignalIfNotEmpty();
     m_signals.objectChangedFromDatabase.emitSignalIfNotEmpty();

@@ -2,6 +2,7 @@
 
 #include "JD_base.h"
 #include "Signal.h"
+#include "JDDeclaration.h"
 
 #include <windows.h>
 #include <iostream>
@@ -45,6 +46,30 @@ namespace JsonDatabase
             std::atomic<bool> m_stopFlag;
             std::atomic<bool> m_fileChanged;
             std::atomic<bool> m_paused;
+        };
+
+
+        class JSONDATABASE_EXPORT ManagedFileChangeWatcher
+        {
+            friend JDManagerFileSystem;
+            friend JDObjectLocker;
+            void setup(const std::string& targetFile);
+            ManagedFileChangeWatcher();
+            ~ManagedFileChangeWatcher();
+        public:
+            
+            
+            void restart(const std::string& targetFile);
+            bool isRunning() const;
+            void stop();
+            bool hasFileChanged() const;
+            void clearHasFileChanged();
+            void pause();
+            void unpause();
+            bool isPaused() const;
+
+        private:
+            FileChangeWatcher* m_databaseFileWatcher;
         };
     }
 }

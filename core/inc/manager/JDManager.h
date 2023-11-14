@@ -33,6 +33,11 @@ class JSONDATABASE_EXPORT JDManager:
     public Internal::JDManagerFileSystem,
     public Internal::JDObjectLocker
 {
+    friend class Internal::JDManagerFileSystem;
+    friend class Internal::JDManagerObjectManager;
+    friend class Internal::JDManagerSignals;
+    friend class Internal::JDObjectLocker;
+
     friend class Internal::JDManagerAsyncWorker;
 
     friend class Internal::JDManagerAysncWorkLoadAllObjects;
@@ -128,6 +133,8 @@ class JSONDATABASE_EXPORT JDManager:
         void onAsyncWorkDone(Internal::JDManagerAysncWork* work);
         void onAsyncWorkError(Internal::JDManagerAysncWork* work);
 
+        void onObjectLockerFileChanged();
+
         std::string m_databasePath;
         std::string m_databaseName;
         std::string m_sessionID;
@@ -143,9 +150,6 @@ class JSONDATABASE_EXPORT JDManager:
         
         Internal::JDManagerSignals m_signals;
         Internal::JDManagerAsyncWorker m_asyncWorker;
-
-        static std::mutex s_mutex;
-
         
 
         static const QString s_timeFormat;

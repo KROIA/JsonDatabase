@@ -200,7 +200,7 @@ bool lockRandomPerson(JDManager* manager, JDObjectInterface*& obj)
         //int randomIndex = rand() % globalTable.size();
         int randomIndex = 100;
         JDObjectInterface* target = globalTable[randomIndex];
-        if (manager->lockObj(target))
+        if (manager->lockObject(target))
         {
             obj = target;
             mutex.unlock();
@@ -215,7 +215,7 @@ bool unlockPerson(JDManager* manager, JDObjectInterface*& obj)
     mutex.lock();
     if (obj != nullptr)
     {
-        if (manager->unlockObj(obj))
+        if (manager->unlockObject(obj))
         {
             obj = nullptr;
             mutex.unlock();

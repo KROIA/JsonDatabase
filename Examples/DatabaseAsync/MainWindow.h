@@ -5,6 +5,7 @@
 #include "ui_MainWindow.h"
 #include "JsonDatabase.h"
 #include "Person.h"
+#include "UIPerson.h"
 
 class MainWindow : public QWidget
 {
@@ -14,6 +15,8 @@ public:
 	MainWindow(const std::string &user, QWidget *parent = nullptr);
 	~MainWindow();
 
+signals:
+	void closeWindow();
 private slots:
 	void onTimerFinished();
 
@@ -21,12 +24,22 @@ private slots:
 	void on_saveDatabase_pushButton_clicked();
 	void on_addObject_pushButton_clicked();
 	void on_deleteObject_pushButton_clicked();
+	void on_editObject_pushButton_clicked();
 
 	void on_lockObject_pushButton_clicked();
 	void on_unlockObject_pushButton_clicked();
+
+	void onPersonSave(Person* person);
 private:
+	// catch the close event
+	void closeEvent(QCloseEvent* event) override;
+
+	JDObjectInterface *getSelectedObject();
+	Person *getSelectedPerson();
+
 	// Signals from the manager
 	void onDatabaseFileChanged();
+	void onLockedObjectsChanged();
 	void onObjectRemovedFromDatabase(const JsonDatabase::JDObjectContainer& removed);
 	void onObjectAddedToDatabase(const JsonDatabase::JDObjectContainer& added);
 	void onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>&changedPairs);
@@ -43,5 +56,6 @@ private:
 	Ui::MainWindow ui;
 	QTimer m_timer;
 
-	JDManager m_manager;
+	JDManager *m_manager;
+	UIPerson* m_uiPersonEditor;
 };

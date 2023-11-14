@@ -19,6 +19,7 @@ namespace JsonDatabase
             : m_manager(manager)
             , m_mutex(mtx)
             , databaseFileChanged("DatabaseFileChanged")
+            , lockedObjectsChanged("LockedObjectsChanged")
             , objectRemovedFromDatabase("RemovedFromDatabase")
             , objectAddedToDatabase("AddedToDatabase")
             , objectOverrideChangeFromDatabase("OverrideChangeFromDatabase")
@@ -38,6 +39,7 @@ namespace JsonDatabase
         */
 
         DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseFileChanged, )
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(lockedObjectsChanged, )
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectRemovedFromDatabase, const JDObjectContainer&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const JDObjectContainer&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectChangedFromDatabase, const std::vector<JDObjectPair>&)
@@ -268,6 +270,9 @@ namespace JsonDatabase
                     {
                     case signal_databaseFileChanged:
                         databaseFileChanged.emitSignal();
+                        break;
+                    case signal_lockedObjectsChanged:
+                        lockedObjectsChanged.emitSignal();
                         break;
                     case signal_objectRemovedFromDatabase:
                         objectRemovedFromDatabase.emitSignalIfNotEmpty();

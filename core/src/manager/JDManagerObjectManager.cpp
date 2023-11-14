@@ -163,5 +163,10 @@ namespace JsonDatabase
             m_objs.clear();
         }
 
+        void JDManagerObjectManager::update()
+        {
+
+        }
+
     }
 }

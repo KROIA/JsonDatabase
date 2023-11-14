@@ -30,7 +30,11 @@ namespace JsonDatabase
         //class JDManager;
         class JSONDATABASE_EXPORT JDManagerSignals
         {
-            friend class JDManager;
+            friend JDManager;
+            friend JDManagerObjectManager;
+            friend JDManagerFileSystem;
+            friend JDObjectLocker;
+
             JDManagerSignals(JDManager& manager, std::mutex& mtx);
         public:
             /*
@@ -48,6 +52,13 @@ namespace JsonDatabase
                 Can be used to reload the database.
             */
             DECLARE_SIGNAL_CONNECT_DISCONNECT(databaseFileChanged, )
+
+
+            /*
+                The lockedObjectsChanged signal gets emited if new objects are locked or unlocked.
+            	Can be used to update the UI.
+            */
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(lockedObjectsChanged, )
 
             /*
                 The objectRemovedFromDatabase signal gets emited if the database has loaded less objects as
@@ -178,6 +189,7 @@ namespace JsonDatabase
             };
 
             Signal<> databaseFileChanged;
+            Signal<> lockedObjectsChanged;
             ContainerSignal objectRemovedFromDatabase;
             ContainerSignal objectAddedToDatabase;
             ObjectChangeSignal objectChangedFromDatabase;
@@ -211,6 +223,7 @@ namespace JsonDatabase
             enum Signals
             {
                 signal_databaseFileChanged,
+                signal_lockedObjectsChanged,
                 signal_objectRemovedFromDatabase,
                 signal_objectAddedToDatabase,
                 signal_objectChangedFromDatabase,
