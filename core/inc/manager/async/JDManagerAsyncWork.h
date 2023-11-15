@@ -2,6 +2,7 @@
 
 #include "JD_base.h"
 #include "JDDeclaration.h"
+#include "manager/async/WorkProgress.h"
 #include <mutex>
 
 namespace JsonDatabase
@@ -24,7 +25,7 @@ namespace JsonDatabase
         protected:
             JDManager& m_manager;
             std::mutex& m_mutex;
-
+            WorkProgress m_progress;
         };
     }
 }

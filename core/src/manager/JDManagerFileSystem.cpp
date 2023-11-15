@@ -161,7 +161,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            WorkProgress* progress) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("std::vector to QJsonArray", JD_COLOR_STAGE_6);
@@ -205,7 +206,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            WorkProgress* progress) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
@@ -239,7 +241,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            WorkProgress* progress) const
         {
             
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -248,6 +251,7 @@ namespace JsonDatabase
             {
                 return false;
             }
+            double deltaProgress = 1.0 / (1+jsonsOut.size());
 
             // Parse the JSON data
             QJsonDocument jsonDocument;
@@ -314,7 +318,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            WorkProgress* progress) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             QByteArray fileData;

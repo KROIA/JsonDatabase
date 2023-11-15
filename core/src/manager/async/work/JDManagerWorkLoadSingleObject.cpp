@@ -14,7 +14,10 @@ namespace JsonDatabase
 			, m_object(object)
 			, m_success(false)
 		{
-
+			if (object)
+			{
+				m_progress.setTaskName("Lade Objekt: " + m_object->getObjectID());
+			}
 		}
 		JDManagerAysncWorkLoadSingleObject::~JDManagerAysncWorkLoadSingleObject()
 		{
@@ -31,7 +34,12 @@ namespace JsonDatabase
 		void JDManagerAysncWorkLoadSingleObject::process()
 		{
 			JDM_UNIQUE_LOCK_P;
-			m_success = m_manager.loadObject_internal(m_object);
+			if (!m_object)
+			{
+				m_success = false;
+				return;
+			}
+			m_success = m_manager.loadObject_internal(m_object, &m_progress);
 		}
 		std::string JDManagerAysncWorkLoadSingleObject::getErrorMessage() const
 		{

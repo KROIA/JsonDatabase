@@ -14,7 +14,7 @@ namespace JsonDatabase
 			, m_success(false)
 			, m_loadMode(mode)
 		{
-
+			m_progress.setTaskName("Lade alle Objekte");
 		}
 		JDManagerAysncWorkLoadAllObjects::~JDManagerAysncWorkLoadAllObjects()
 		{
@@ -27,7 +27,7 @@ namespace JsonDatabase
 		void JDManagerAysncWorkLoadAllObjects::process()
 		{
 			JDM_UNIQUE_LOCK_P;
-			m_success = m_manager.loadObjects_internal(m_loadMode);
+			m_success = m_manager.loadObjects_internal(m_loadMode, &m_progress);
 		}
 		std::string JDManagerAysncWorkLoadAllObjects::getErrorMessage() const
 		{

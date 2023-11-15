@@ -5,6 +5,7 @@
 
 #include "async/JDManagerAsyncWorker.h"
 #include "async/work/JDManagerWorkLoadSingleObject.h"
+#include "async/WorkProgress.h"
 #include "JDManagerSignals.h"
 #include "JDManagerFileSystem.h"
 #include "JDManagerObjectManager.h"
@@ -126,11 +127,11 @@ class JSONDATABASE_EXPORT JDManager:
 
     private:
         
-        bool loadObject_internal(JDObjectInterface* obj);
-        bool loadObjects_internal(int mode);
-        bool saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis);
-        bool saveObjects_internal(unsigned int timeoutMillis);
-        bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis);
+        bool loadObject_internal(JDObjectInterface* obj, Internal::WorkProgress* progress);
+        bool loadObjects_internal(int mode, Internal::WorkProgress* progress);
+        bool saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis, Internal::WorkProgress* progress);
+        bool saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress);
+        bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress);
 
         void onAsyncWorkDone(Internal::JDManagerAysncWork* work);
         void onAsyncWorkError(Internal::JDManagerAysncWork* work);

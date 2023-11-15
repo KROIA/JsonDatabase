@@ -140,7 +140,7 @@ bool JDManager::isZipFormatEnabled() const
 bool JDManager::loadObject(JDObjectInterface* obj)
 {
     JDM_UNIQUE_LOCK_P;
-    return loadObject_internal(obj);
+    return loadObject_internal(obj, nullptr);
 }
 void JDManager::loadObjectAsync(JDObjectInterface* obj)
 {
@@ -149,7 +149,7 @@ void JDManager::loadObjectAsync(JDObjectInterface* obj)
 bool JDManager::loadObjects(int mode)
 {
     JDM_UNIQUE_LOCK_P;
-	return loadObjects_internal(mode);
+	return loadObjects_internal(mode, nullptr);
 }
 void JDManager::loadObjectsAsync(int mode)
 {
@@ -158,7 +158,7 @@ void JDManager::loadObjectsAsync(int mode)
 bool JDManager::saveObject(JDObjectInterface* obj)
 {
     JDM_UNIQUE_LOCK_P;
-    return saveObject_internal(obj, s_fileLockTimeoutMs);
+    return saveObject_internal(obj, s_fileLockTimeoutMs, nullptr);
 }
 void JDManager::saveObjectAsync(JDObjectInterface* obj)
 {
@@ -167,7 +167,7 @@ void JDManager::saveObjectAsync(JDObjectInterface* obj)
 bool JDManager::saveObjects()
 {
     JDM_UNIQUE_LOCK_P;
-    return saveObjects_internal(m_objs.getAllObjects(), s_fileLockTimeoutMs);
+    return saveObjects_internal(m_objs.getAllObjects(), s_fileLockTimeoutMs, nullptr);
 }
 void JDManager::saveObjectsAsync()
 {
@@ -183,7 +183,7 @@ void JDManager::saveObjectsAsync()
 
 
 
-bool JDManager::loadObject_internal(JDObjectInterface* obj)
+bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (!JDManagerObjectManager::exists_internal(obj))
@@ -198,7 +198,7 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj)
     const std::string& ID = obj->getObjectID();
 
     std::vector<QJsonObject> jsons;
-    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
+    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
 
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
     if (index == std::string::npos)
@@ -213,7 +213,7 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj)
 
     return success;
 }
-bool JDManager::loadObjects_internal(int mode)
+bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     bool success = true;
@@ -235,7 +235,7 @@ bool JDManager::loadObjects_internal(int mode)
 
 
     std::vector<QJsonObject> jsons;
-    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
+    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
 
     struct Pair
     {
@@ -382,7 +382,7 @@ bool JDManager::loadObjects_internal(int mode)
     JDManagerFileSystem::unlockFile();
     return success;
 }
-bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis)
+bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (!obj)
@@ -406,7 +406,7 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
     success &= obj->saveInternal(data);
 
 
-    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
+    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
 
     if (index == std::string::npos)
@@ -420,16 +420,16 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
 
     
     // Save the serialized objects
-    success &= JDManagerFileSystem::writeJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
+    success &= JDManagerFileSystem::writeJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
 
     JDManagerFileSystem::unlockFile();
     return success;
 }
-bool JDManager::saveObjects_internal(unsigned int timeoutMillis)
+bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
-    return saveObjects_internal(m_objs.getAllObjects(), timeoutMillis);
+    return saveObjects_internal(m_objs.getAllObjects(), timeoutMillis, progress);
 }
-bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis)
+bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     bool wasLockedForWritingByOther = false;
@@ -452,7 +452,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     
 
     // Save the serialized objects
-    success &= JDManagerFileSystem::writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false);
+    success &= JDManagerFileSystem::writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
 
     JDManagerFileSystem::unlockFile();
     return success;

@@ -2,6 +2,7 @@
 
 #include "manager/async/JDManagerAsyncWork.h"
 
+
 namespace JsonDatabase
 {
 	namespace Internal

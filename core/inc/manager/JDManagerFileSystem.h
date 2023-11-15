@@ -4,6 +4,7 @@
 #include "JDDeclaration.h"
 #include "utilities/filesystem/FileReadWriteLock.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
+#include "manager/async/WorkProgress.h"
 
 #include <QJsonObject>
 #include <mutex>
@@ -48,14 +49,16 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                WorkProgress *progress) const;
             bool writeJsonFile(
                 const QJsonObject& json,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                WorkProgress* progress) const;
 
             bool readJsonFile(
                 std::vector<QJsonObject>& jsonsOut,
@@ -63,14 +66,16 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                WorkProgress* progress) const;
             bool readJsonFile(
                 QJsonObject& objOut,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                WorkProgress* progress) const;
 
             bool readFile(
                 QByteArray& fileDataOut,

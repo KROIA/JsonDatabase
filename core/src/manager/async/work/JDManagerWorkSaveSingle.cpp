@@ -11,10 +11,14 @@ namespace JsonDatabase
 			std::mutex& mtx,
 			JDObjectInterface* object)
 			: JDManagerAysncWork(manager, mtx)
-			, m_object(object->clone())
+			, m_object(nullptr)
 			, m_success(false)
 		{
-
+			if (object)
+			{
+				m_object = object->clone();
+				m_progress.setTaskName("Speichere Objekt: " + m_object->getObjectID());
+			}
 		}
 		JDManagerAysncWorkSaveSingle::~JDManagerAysncWorkSaveSingle()
 		{
@@ -27,7 +31,12 @@ namespace JsonDatabase
 		void JDManagerAysncWorkSaveSingle::process()
 		{
 			JDM_UNIQUE_LOCK_P;
-			m_success = m_manager.saveObject_internal(m_object, JDManager::s_fileLockTimeoutMs);
+			if (!m_object)
+			{
+				m_success = false;
+				return;
+			}
+			m_success = m_manager.saveObject_internal(m_object, JDManager::s_fileLockTimeoutMs, &m_progress);
 		}
 		std::string JDManagerAysncWorkSaveSingle::getErrorMessage() const
 		{

@@ -17,6 +17,7 @@ namespace JsonDatabase
 			for (size_t i = 0; i < objects.size(); ++i)
 				m_objects[i] = objects[i]->clone();
 				
+			m_progress.setTaskName("Speichere "+ std::to_string(m_objects.size())+ " Objekte");
 		}
 		JDManagerAysncWorkSaveList::~JDManagerAysncWorkSaveList()
 		{
@@ -30,7 +31,7 @@ namespace JsonDatabase
 		void JDManagerAysncWorkSaveList::process()
 		{
 			JDM_UNIQUE_LOCK_P;
-			m_success = m_manager.saveObjects_internal(m_objects, JDManager::s_fileLockTimeoutMs);
+			m_success = m_manager.saveObjects_internal(m_objects, JDManager::s_fileLockTimeoutMs, &m_progress);
 		}
 		std::string JDManagerAysncWorkSaveList::getErrorMessage() const
 		{

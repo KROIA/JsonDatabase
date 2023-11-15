@@ -11,7 +11,7 @@ namespace JsonDatabase
             : m_manager(manager)
             , m_mutex(mtx)
         {
-
+            m_progress.setProgress(0);
         }
 
         JDManagerAysncWork::~JDManagerAysncWork()
