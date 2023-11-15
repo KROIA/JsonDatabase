@@ -13,6 +13,22 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
+		// Helper macros
+#define FILE_LOCK(errRetVal) \
+	FileLock fileLock(getTablePath(), getTableFileName()); \
+	{ \
+		FileLock::Error lockErr; \
+		if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs, lockErr)) \
+		{ \
+			err = Error::unableToLock; \
+			JD_CONSOLE_FUNCTION(" Can't aquire lock for file: " << fileLock.getFilePath() \
+				<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms" \
+				<< " LockError: " << FileLock::getErrorStr(lockErr) << "\n"); \
+			return errRetVal; \
+		} \
+	} 
+
+
 		QString JDObjectLocker::s_jsonKey_objectID = "objID";
 		QString JDObjectLocker::s_jsonKey_owner = "owner";
 		QString JDObjectLocker::s_jsonKey_sessionID = "sessionID";
@@ -26,61 +42,51 @@ namespace JsonDatabase
 			, m_lockTableTryGetLockTimeoutMs(1000)
 			, m_useSpecificDatabasePath(false)
 			, m_specificDatabasePath("")
-			, m_lastError(Error::none)
 		{
 
 		}
 
 		JDObjectLocker::~JDObjectLocker()
 		{
-			unlockAllObjs();
+			m_lockTableWatcher.stop();
+			Error err;
+			unlockAllObjs(err);
 		}
-		void JDObjectLocker::setup()
+		bool JDObjectLocker::setup(Error &err)
 		{
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
-			m_lastError = Error::none;
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath()
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				return;
-			}
+			bool success = false;
+			err = Error::none;
 			QFile file(getTableFileFilePath().c_str());
 			if (!file.exists())
 			{
-				writeLockTable({});					
+				FILE_LOCK(false); // Try's to lok the file, if it fails it returns
+				writeLockTable({}, err);					
 			}
+			if (!file.exists())
+				success = false;
 
 			m_lockTableWatcher.setup(getTableFileFilePath());
+			return success;
 		}
 
-		bool JDObjectLocker::lockObject(JDObjectInterface* obj) const
+		bool JDObjectLocker::lockObject(JDObjectInterface* obj, Error& err) const
 		{
 			if (!obj)
 			{
-				m_lastError = Error::objIsNullptr;
+				err = Error::objIsNullptr;
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\""<<obj->getObjectID()<<"\") Can't aquire lock for file: " << fileLock.getFilePath()
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				return false;
-			}
+			err = Error::none;
+			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 				return false;
 
 			// Check if Lock is already aquired 
@@ -93,12 +99,12 @@ namespace JsonDatabase
 				{
 					// Already locked by this session
 					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID() << "\") Lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() + "\" is already aquired in this session\n");
-					m_lastError = Error::none;
+					err = Error::none;
 					return true;
 				}
 				else
 				{
-					m_lastError = Error::lockedByOther;
+					err = Error::lockedByOther;
 					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID() << "\") Can't aquire lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() +
 						"\"\nLock Data: \n" + targetLock.toString() + "\n"
 						"Lock is already aquired from user: \"" + targetLock.data.owner + "\"\n");
@@ -110,7 +116,7 @@ namespace JsonDatabase
 			
 
 			locks.push_back(targetLock);
-			if (!writeLockTable(locks))
+			if (!writeLockTable(locks, err))
 				return false;
 
 
@@ -118,7 +124,7 @@ namespace JsonDatabase
 			{
 				JD_OBJECT_LOCK_PROFILING_BLOCK("Verify object lock", JD_COLOR_STAGE_11);
 				std::vector<ObjectLockData> verifyLocks;
-				if (!readLockTable(verifyLocks))
+				if (!readLockTable(verifyLocks, err))
 					return false;
 
 				// Check if Lock is already aquired 
@@ -130,50 +136,42 @@ namespace JsonDatabase
 						targetLock.data.sessionID == m_manager.getSessionID())
 					{
 						// Already locked by this session
-						m_lastError = Error::none;
+						err = Error::none;
 						return true;
 					}
 					else
 					{
-						m_lastError = Error::lockedByOther;
+						err = Error::lockedByOther;
 						JD_CONSOLE("Can't verify the locked object: " << obj->getObjectID() <<" Object is locked by: \""<< targetLock.data.owner <<"\"");
 						return false;
 					}
 				}
 				else
 				{
-					m_lastError = Error::unableToLock;
+					err = Error::unableToLock;
 					JD_CONSOLE("Can't verify the locked object: "<< obj->getObjectID());
 					return false;
 				}
 			}
 
-			m_lastError = Error::none;
+			err = Error::none;
 			return true;
 		}
-		bool JDObjectLocker::unlockObject(JDObjectInterface* obj) const
+		bool JDObjectLocker::unlockObject(JDObjectInterface* obj, Error& err) const
 		{
 			if (!obj)
 			{
-				m_lastError = Error::objIsNullptr;
+				err = Error::objIsNullptr;
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
-
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath()
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				return false;
-			}
+			err = Error::none;
+			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 				return false;
 
 			// Check if Lock is already aquired 
@@ -190,14 +188,13 @@ namespace JsonDatabase
 					locks.erase(locks.begin() + targetIndex);
 
 					// Save table
-					if (!writeLockTable(locks))
+					if (!writeLockTable(locks, err))
 						return false;
-					m_lastError = Error::none;
 					return true;
 				}
 				else
 				{
-					m_lastError = Error::lockedByOther;
+					err = Error::lockedByOther;
 					
 					JD_CONSOLE_FUNCTION("Can't release lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className()
 					<<"\"\nLock Data: \n" + targetLock.toString() + "\n"
@@ -207,25 +204,19 @@ namespace JsonDatabase
 			}
 			JD_CONSOLE_FUNCTION("Lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() + "\" did not exist\n");
 
-			m_lastError = Error::none;
+			err = Error::none;
 			return true;
 		}
-		bool JDObjectLocker::unlockAllObjs() const
+		bool JDObjectLocker::unlockAllObjs(Error& err) const
 		{
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath()
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				return false;
-			}
+			
+			err = Error::none;
+			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 				return false;
 
 			std::vector<ObjectLockData> locksOut;
@@ -240,38 +231,28 @@ namespace JsonDatabase
 				newLockTable.push_back(locks[mismatches[i]]);
 			}
 
-			if (!writeLockTable(newLockTable))
+			if (!writeLockTable(newLockTable, err))
 				return false;
 
-			m_lastError = Error::none;
+			err = Error::none;
 			return true;
 		}
-		bool JDObjectLocker::isObjectLocked(JDObjectInterface* obj, int& lastError) const
+		bool JDObjectLocker::isObjectLocked(JDObjectInterface* obj, Error& err) const
 		{
 			if (!obj)
 			{
-				m_lastError = Error::objIsNullptr;
-				lastError = m_lastError;
+				err = Error::objIsNullptr;
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath() << "\n"
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms\n"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				lastError = m_lastError;
-				return false;
-			}
+			err = Error::none;
+			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 			{
-				lastError = m_lastError;
 				return false;
 			}
 			// Check if Lock is already aquired 
@@ -279,40 +260,26 @@ namespace JsonDatabase
 			size_t targetIndex;
 			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
 			{
-				m_lastError = Error::none;
-				lastError = m_lastError;
 				return true; // Object is locked by any user
 			}
-			m_lastError = Error::none;
-			lastError = m_lastError;
 			return false;
 		}
-		bool JDObjectLocker::isObjectLockedByMe(JDObjectInterface* obj, int& lastError) const
+		bool JDObjectLocker::isObjectLockedByMe(JDObjectInterface* obj, Error& err) const
 		{
 			if (!obj)
 			{
-				m_lastError = Error::objIsNullptr;
-				lastError = m_lastError;
+				err = Error::objIsNullptr;
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath() << "\n"
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms\n"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				lastError = m_lastError;
-				return false;
-			}
+			err = Error::none;
+			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 			{
-				lastError = m_lastError;
 				return false;
 			}
 
@@ -325,41 +292,27 @@ namespace JsonDatabase
 					targetLock.data.sessionID == m_manager.getSessionID())
 				{
 					// Already locked by this session
-					m_lastError = Error::none;
-					lastError = m_lastError;
 					return true;
 				}
 			}
-			m_lastError = Error::none;
-			lastError = m_lastError;
 			return false;
 		}
-		bool JDObjectLocker::isObjectLockedByOther(JDObjectInterface* obj, int& lastError) const
+		bool JDObjectLocker::isObjectLockedByOther(JDObjectInterface* obj, Error& err) const
 		{
 			if (!obj)
 			{
-				m_lastError = Error::objIsNullptr;
-				lastError = m_lastError;
+				err = Error::objIsNullptr;
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath() << "\n"
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms\n"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				lastError = m_lastError;
-				return false;
-			}
+			err = Error::none;
+			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 			{
-				lastError = m_lastError;
 				return false;
 			}
 
@@ -372,33 +325,22 @@ namespace JsonDatabase
 					targetLock.data.sessionID != m_manager.getSessionID())
 				{
 					// Already locked by this session
-					m_lastError = Error::none;
-					lastError = m_lastError;
 					return true;
 				}
 			}
-			m_lastError = Error::none;
-			lastError = m_lastError;
 			return false;
 		}
-		bool JDObjectLocker::getLockedObjects(std::vector<LockData>& lockedObjectsOut) const
+		bool JDObjectLocker::getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const
 		{
 			JDM_UNIQUE_LOCK_P;
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			lockedObjectsOut.clear();
 
-			FileLock fileLock(getTablePath(), getTableFileName());
-			if (!fileLock.lock(m_lockTableTryGetLockTimeoutMs))
-			{
-				m_lastError = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock.getFilePath() << "\n"
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms\n"
-					<< " LockError: " << fileLock.getLastErrorStr() << "\n");
-				return false;
-			}
+			err = Error::none;
+			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 			{
 				return false;
 			}
@@ -413,23 +355,19 @@ namespace JsonDatabase
 				{
 					JD_CONSOLE_FUNCTION("Object has empty objectID: "
 						<< lock.toString() << "\n");
-					m_lastError = corruptTableData;
+					err = corruptTableData;
 					success = false;
 				}
 			}
-			if(success)
-				m_lastError = Error::none;
+			
 			return success;
 		}
 
 
-		JDObjectLocker::Error JDObjectLocker::getLastObjLockError() const
+
+		const std::string& JDObjectLocker::getErrorStr(Error err) const
 		{
-			return m_lastError;
-		}
-		const std::string& JDObjectLocker::getLastObjLockErrorStr() const
-		{
-			switch (m_lastError)
+			switch (err)
 			{
 			case Error::none: { static const std::string msg = "JDObjectLocker::Error::none"; return msg; };
 			case Error::objIsNullptr: { static const std::string msg = "JDObjectLocker::Error::objIsNullptr"; return msg; };
@@ -441,7 +379,7 @@ namespace JsonDatabase
 			case Error::programmingError: { static const std::string msg = "JDObjectLocker::Error::programmingError"; return msg; };
 			}
 			static std::string unknown;
-			unknown = "Unknown JDObjectLocker Error: " + std::to_string(m_lastError);
+			unknown = "Unknown JDObjectLocker Error: " + std::to_string(err);
 			return unknown;
 		}
 
@@ -528,26 +466,28 @@ namespace JsonDatabase
 		}
 
 
-		void JDObjectLocker::onDatabasePathChange(const std::string& oldPath, const std::string& newPath) const
+		void JDObjectLocker::onDatabasePathChange(const std::string& oldPath, const std::string& newPath, Error& err) const
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
+			FileLock::Error lockErr1;
 			FileLock fileLock1(oldPath, m_lockTableFile);
-			if (!fileLock1.lock(m_lockTableTryGetLockTimeoutMs))
+			if (!fileLock1.lock(m_lockTableTryGetLockTimeoutMs, lockErr1))
 			{
-				m_lastError = Error::unableToLock;
+				err = Error::unableToLock;
 				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock1.getFilePath()
 					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock1.getLastErrorStr() << "\n");
+					<< " LockError: " << fileLock1.getErrorStr(lockErr1) << "\n");
 				return;
 			}
+			FileLock::Error lockErr2;
 			FileLock fileLock2(newPath, m_lockTableFile);
-			if (!fileLock2.lock(m_lockTableTryGetLockTimeoutMs))
+			if (!fileLock2.lock(m_lockTableTryGetLockTimeoutMs, lockErr2))
 			{
-				m_lastError = Error::unableToLock;
+				err = Error::unableToLock;
 				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock2.getFilePath()
 					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock2.getLastErrorStr() << "\n");
+					<< " LockError: " << fileLock2.getErrorStr(lockErr2) << "\n");
 				return;
 			}
 			m_lockTableWatcher.stop();
@@ -556,7 +496,7 @@ namespace JsonDatabase
 			m_specificDatabasePath = oldPath;
 
 			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks))
+			if (!readLockTable(locks, err))
 			{
 				m_useSpecificDatabasePath = false;
 				return;
@@ -572,13 +512,13 @@ namespace JsonDatabase
 			{
 				locksFromOldLocation.push_back(locks[mismatches[i]]);
 			}
-			writeLockTable(locksFromOldLocation);
+			writeLockTable(locksFromOldLocation, err);
 
 
 			m_specificDatabasePath = newPath;
 			std::vector<ObjectLockData> locksFromNewLocation;
 
-			if (!readLockTable(locksFromNewLocation))
+			if (!readLockTable(locksFromNewLocation, err))
 			{
 				m_useSpecificDatabasePath = false;
 				m_lockTableWatcher.setup(getTableFileFilePath());
@@ -590,7 +530,7 @@ namespace JsonDatabase
 				locksFromNewLocation.push_back(locks[matches[i]]);
 			}
 
-			if (!writeLockTable(locksFromNewLocation))
+			if (!writeLockTable(locksFromNewLocation, err))
 			{
 				m_useSpecificDatabasePath = false;
 				m_lockTableWatcher.setup(getTableFileFilePath());
@@ -598,14 +538,14 @@ namespace JsonDatabase
 			}
 
 			m_useSpecificDatabasePath = false;
-			m_lastError = Error::none;
+			err = Error::none;
 			m_lockTableWatcher.setup(getTableFileFilePath());
 			return;
 		}
 		
 		
 
-		bool JDObjectLocker::readLockTable(std::vector<ObjectLockData>& locks) const
+		bool JDObjectLocker::readLockTable(std::vector<ObjectLockData>& locks, Error& err) const
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			std::string filePath = getTableFileFilePath();
@@ -613,14 +553,14 @@ namespace JsonDatabase
 			if (!file.exists())
 			{
 				JD_CONSOLE_FUNCTION("File: " << filePath.c_str() << " does not exist\n");
-				//m_lastError = Error::tableFileNotExist;
+				//err = Error::tableFileNotExist;
 				if (file.open(QIODevice::WriteOnly))
 					file.close();
 				return true;
 			}
 			if (!file.open(QIODevice::ReadOnly)) {
 				JD_CONSOLE_FUNCTION("Failed to open file for reading: " << filePath.c_str() << "\n");
-				m_lastError = Error::cantOpenTableFile;
+				err = Error::cantOpenTableFile;
 				return false;
 			}
 
@@ -631,7 +571,7 @@ namespace JsonDatabase
 				if (!jsonDoc.isArray())
 				{
 					JD_CONSOLE_FUNCTION("Tabledata: " << jsonData.c_str() << " is not a QJsonArray\n");
-					m_lastError = Error::corruptTableData;
+					err = Error::corruptTableData;
 					return false;
 				}
 				QJsonArray array = jsonDoc.array();
@@ -640,14 +580,14 @@ namespace JsonDatabase
 					if (!value.isObject())
 					{
 						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString().toStdString().c_str() << " is not a QJsonObject\n");
-						m_lastError = Error::corruptTableData;
+						err = Error::corruptTableData;
 						return false;
 					}
 					QJsonObject lock = value.toObject();
 					if (!ObjectLockData::isValid(lock))
 					{
 						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString().toStdString().c_str() << " is has missing or corrupt data\n");
-						m_lastError = Error::corruptTableData;
+						err = Error::corruptTableData;
 						return false;
 					}
 
@@ -657,7 +597,7 @@ namespace JsonDatabase
 			}
 			return true;
 		}
-		bool JDObjectLocker::writeLockTable(const std::vector<ObjectLockData>& locks) const
+		bool JDObjectLocker::writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			std::string filePath = getTableFileFilePath();
@@ -665,7 +605,7 @@ namespace JsonDatabase
 			QFile file(filePath.c_str());
 			if (!file.open(QIODevice::WriteOnly)) {
 				JD_CONSOLE_FUNCTION("Failed to open file for writing: " << filePath.c_str() << "\n");
-				m_lastError = Error::cantOpenTableFile;
+				err = Error::cantOpenTableFile;
 				return false;
 			}
 			QJsonArray array;
@@ -675,7 +615,7 @@ namespace JsonDatabase
 				lock.save(sav);
 				if (!ObjectLockData::isValid(sav))
 				{
-					m_lastError = Error::programmingError;
+					err = Error::programmingError;
 					JD_CONSOLE_FUNCTION("Programming error!!! ajust the ObjectLockData::isValid(const QJsonObject&) function\n");
 					return false;
 				}

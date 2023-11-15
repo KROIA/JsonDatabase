@@ -57,6 +57,8 @@ class JSONDATABASE_EXPORT JDManager:
         JDManager(const JDManager &other);
         virtual ~JDManager();
 
+        bool setup();
+
         /*
             Returns the signals handler of this manager.
             Connect callbacks to the available signals.

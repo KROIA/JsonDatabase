@@ -1,5 +1,6 @@
 #include "utilities/filesystem/FileLock.h"
 #include "utilities/JDUniqueMutexLock.h"
+#include "utilities/JDUtilities.h"
 
 #include <thread>
 #include <iostream>
@@ -14,7 +15,6 @@ namespace JsonDatabase
         : m_directory(replaceForwardSlashesWithBackslashes(filePath))
         , m_fileName(fileName)
         , m_locked(false)
-        , m_lastError(Error::none)
         , m_fileHandle(nullptr)
     {
         m_filePath = m_directory + "\\" + m_fileName;
@@ -22,7 +22,8 @@ namespace JsonDatabase
     }
     FileLock::~FileLock() 
     {
-        unlock();
+        Error err;
+        unlock(err);
     }
 
     const std::string& FileLock::getFilePath() const
@@ -33,14 +34,23 @@ namespace JsonDatabase
     {
         return m_fileName;
     }
-    bool FileLock::lock()
+    bool FileLock::lock(Error& err)
     {
+        err = Error::alreadyLocked;
         if (m_locked)
             return true;
-        return lock_internal();        
+        err = lock_internal();
+#ifdef JD_DEBUG
+        if (err != Error::none)
+        {
+            JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+        }
+#endif
+        return m_locked;
     }
-    bool FileLock::lock(unsigned int timeoutMs)
+    bool FileLock::lock(unsigned int timeoutMs, Error& err)
     {
+        err = Error::alreadyLocked;
         if (m_locked)
             return true;
         // Get the current time
@@ -49,73 +59,34 @@ namespace JsonDatabase
         // Calculate the time point when the desired duration will be reached
         auto end = start + std::chrono::milliseconds(timeoutMs);
 
-        while (std::chrono::high_resolution_clock::now() < end && !lock_internal()) {
+        while (std::chrono::high_resolution_clock::now() < end && (err = lock_internal())!=Error::none) {
             JDFILE_FILE_LOCK_PROFILING_BLOCK("FileLock::WaitForFreeLock", JD_COLOR_STAGE_5);
             // Sleep for a short while to avoid busy-waiting
             std::this_thread::yield();
             //std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Adjust as needed
         }
+#ifdef JD_DEBUG
+        if (err != Error::none)
+        {
+            JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+        }
+#endif
         return m_locked;
     }
-    bool FileLock::lock_internal()
+
+    bool FileLock::unlock(Error& err)
     {
-        //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
-        m_lastError = Error::none;
-        if (!m_locked)
-        {
-            m_lastError = lockFile();
-#ifdef JD_DEBUG
-            if (m_lastError != Error::none)
-            {
-                JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
-            }
-#endif
-        }
-#ifdef JD_PROFILING
-        if (m_locked)
-        {
-           // JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("file locked", JD_COLOR_STAGE_10);
-            JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true");
-        }
-        else
-        {
-            JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "false");
-        }
-#endif
-        if (m_lastError == Error::none)
-        {
-            return true;
-        }
-        return false;
-    }
-    void FileLock::unlock()
-    {
-#ifdef JD_PROFILING
-        //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
-        //bool wasLocked = m_locked;
-#endif
-        m_lastError = Error::none;
-        unlockFile();
-#ifdef JD_PROFILING
-        /*if (wasLocked)
-        {
-            JDFILE_FILE_LOCK_PROFILING_END_BLOCK;
-        }*/
-#endif
-        
+        err = unlockFile();    
+        return err == Error::none;
     }
 
     bool FileLock::isLocked() const
     {
         return m_locked;
     }
-    enum FileLock::Error FileLock::getLastError() const
+    const std::string& FileLock::getErrorStr(Error err)
     {
-        return m_lastError;
-    }
-    const std::string& FileLock::getLastErrorStr() const
-    {
-        switch (m_lastError)
+        switch (err)
         {
         case Error::none:                               { static const std::string msg = "FileLock::Error::none"; return msg; };
         case Error::unableToCreateOrOpenLockFile:       { static const std::string msg = "FileLock::Error::unableToCreateOrOpenLockFile"; return msg; };
@@ -124,12 +95,33 @@ namespace JsonDatabase
         case Error::alreadyLocked:                      { static const std::string msg = "FileLock::Error::alreadyLocked"; return msg; };
         case Error::alreadyLockedForReading:            { static const std::string msg = "FileLock::Error::alreadyLockedForReading"; return msg; };
         case Error::alreadyLockedForWriting:            { static const std::string msg = "FileLock::Error::alreadyLockedForWriting"; return msg; };
+        case Error::alreadyUnlocked:                    { static const std::string msg = "FileLock::Error::alreadyUnlocked"; return msg; };
         }
         static std::string unknown;
-        unknown = "Unknown FileLock Error: " + std::to_string(m_lastError);
+        unknown = "Unknown FileLock Error: " + std::to_string(err);
         return unknown;
     }
 
+
+
+
+    FileLock::Error FileLock::lock_internal()
+    {
+        //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
+        Error err = lockFile();
+#ifdef JD_PROFILING
+        if (m_locked)
+        {
+            // JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK("file locked", JD_COLOR_STAGE_10);
+            JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "true");
+        }
+        else
+        {
+            JDFILE_FILE_LOCK_PROFILING_TEXT("locked", "false");
+        }
+#endif
+        return err;
+    }
     FileLock::Error FileLock::lockFile()
     {
         JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
@@ -168,26 +160,39 @@ namespace JsonDatabase
         return Error::none;
     }
 
-    void FileLock::unlockFile() 
+    FileLock::Error FileLock::unlockFile() 
     {
         JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
-
-        if (!m_locked) return;
-
-        UnlockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD);
-        CloseHandle(m_fileHandle);
+        if (!m_locked)
+            return Error::alreadyUnlocked;
         
+        Error err = Error::none;
 
+        
+        
+        if (!UnlockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD))
+        {
+            DWORD error = GetLastError();
+            JD_CONSOLE_FUNCTION("Error UnlockFile. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
+        }
+        
+        if (!CloseHandle(m_fileHandle))
+        {
+            DWORD error = GetLastError();
+            JD_CONSOLE_FUNCTION("Error CloseHandle. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
+        }
         // Now, delete the file
         if (!DeleteFile(m_lockFilePathName.c_str()))
         {
             // Handle error deleting file
-            m_lastError = Error::unableToDeleteLockFile;
-            JD_CONSOLE_FUNCTION(getLastErrorStr() + "\n");
+            err = Error::unableToDeleteLockFile;
+            JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
         }
+        
 
         m_fileHandle = nullptr;
         m_locked = false;
+        return err;
     }
 
 

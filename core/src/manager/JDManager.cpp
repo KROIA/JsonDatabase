@@ -57,10 +57,7 @@ namespace JsonDatabase
         , m_signals(*this, m_mutex)
         , m_asyncWorker(*this, m_mutex)
     {
-        JDManagerObjectManager::setup();
-        JDManagerFileSystem::setup();
-        JDObjectLocker::setup();
-        m_asyncWorker.setup();
+        
     }
     JDManager::JDManager(const JDManager &other)
         : JDManagerObjectManager(m_mutex)
@@ -73,17 +70,31 @@ namespace JsonDatabase
         , m_signals(*this, m_mutex)
         , m_asyncWorker(*this, m_mutex)
     {
-        JDManagerObjectManager::setup();
-        JDManagerFileSystem::setup();
-        JDObjectLocker::setup();
-        m_asyncWorker.setup();
     }
 JDManager::~JDManager()
 {
-    JDObjectLocker::unlockAllObjs();
+    JDObjectLocker::Error lockerError;
+    //JDObjectLocker::stop
+    //JDObjectLocker::unlockAllObjs(lockerError);
     m_asyncWorker.stop();
     JDManagerFileSystem::getDatabaseFileWatcher().stop();
 }
+
+bool JDManager::setup()
+{
+    bool success = true;
+    success &= JDManagerObjectManager::setup();
+    success &= JDManagerFileSystem::setup();
+    JDObjectLocker::Error lockerError;
+    success &= JDObjectLocker::setup(lockerError);
+    if (lockerError != JDObjectLocker::Error::none)
+    {
+        // Unhandled error
+    }
+    m_asyncWorker.setup();
+    return success;
+}
+
 void JDManager::setDatabaseName(const std::string& name)
 {
     JDM_UNIQUE_LOCK_P;
@@ -96,7 +107,8 @@ void JDManager::setDatabasePath(const std::string &path)
     JDM_UNIQUE_LOCK_P;
     if (path == m_databasePath)
         return;
-    JDObjectLocker::onDatabasePathChange(m_databasePath, path);
+    JDObjectLocker::Error lockerError;
+    JDObjectLocker::onDatabasePathChange(m_databasePath, path, lockerError);
     m_databasePath = path;
     JDManagerFileSystem::makeDatabaseDirs();
     JDManagerFileSystem::makeDatabaseFiles();
@@ -218,7 +230,7 @@ bool JDManager::loadObjects_internal(int mode)
 
     bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
 
-    m_signals.clearContainer();
+    //m_signals.clearContainer();
 
 
 
@@ -545,8 +557,8 @@ void JDManager::update()
 {
     if(m_signleEntryUpdateLock)
         return; // Update is already running
-    m_signleEntryUpdateLock = true;
     JDM_UNIQUE_LOCK_M(m_updateMutex);
+    m_signleEntryUpdateLock = true;
 
     m_asyncWorker.process();
     
@@ -555,11 +567,7 @@ void JDManager::update()
     JDObjectLocker::update();
 
     
-
-    m_signals.objectAddedToDatabase.emitSignalIfNotEmpty();
-    m_signals.objectChangedFromDatabase.emitSignalIfNotEmpty();
-    m_signals.objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
-    m_signals.objectRemovedFromDatabase.emitSignalIfNotEmpty();
+    m_signals.emitIfNotEmpty();
     m_signals.emitQueue();
     m_signleEntryUpdateLock = false;
 }

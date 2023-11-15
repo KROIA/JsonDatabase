@@ -20,6 +20,7 @@ signals:
 private slots:
 	void onTimerFinished();
 
+	void on_generatePersons_pushButton_clicked();
 	void on_loadDatabase_pushButton_clicked();
 	void on_saveDatabase_pushButton_clicked();
 	void on_addObject_pushButton_clicked();

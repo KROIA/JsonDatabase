@@ -156,8 +156,8 @@ namespace JsonDatabase
         void JDManagerSignals::emitIfNotEmpty()
         {
             objectRemovedFromDatabase.emitSignalIfNotEmpty();
-            objectAddedToDatabase.emitSignalIfNotEmpty();
             objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
+            objectAddedToDatabase.emitSignalIfNotEmpty();
             objectChangedFromDatabase.emitSignalIfNotEmpty();
         }
 

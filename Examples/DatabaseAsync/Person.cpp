@@ -109,9 +109,9 @@ bool Person::save(QJsonObject& obj) const
 
 
 
-std::vector<JDObjectInterface*> createPersons()
+std::vector<JDObjectInterface*> createPersons(unsigned int startID)
 {
-    int counter = 0;
+    unsigned int counter = startID;
     return std::vector<JDObjectInterface*>
     {
         new Person(std::to_string(counter++),"Sam", "Richards", "Male", "27", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4"),

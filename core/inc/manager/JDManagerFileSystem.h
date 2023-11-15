@@ -19,7 +19,7 @@ namespace JsonDatabase
                 JDManager& manager,
                 std::mutex &mtx);
             ~JDManagerFileSystem();
-            void setup();
+            bool setup();
         public:
 
         protected:
@@ -41,9 +41,7 @@ namespace JsonDatabase
                 std::string& directory,
                 const std::string& fileName,
                 FileReadWriteLock::Access accessType) const;
-            FileLock::Error getLastLockError() const;
-            const std::string& getLastLockErrorStr() const;
-
+            
             bool writeJsonFile(
                 const std::vector<QJsonObject>& jsons,
                 const std::string& directory,

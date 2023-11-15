@@ -95,7 +95,7 @@
 #define JDFILE_IO_PROFILING_VALUE(name, value) JD_PROFILING_VALUE(name, value)
 #define JDFILE_IO_PROFILING_TEXT(name, value) JD_PROFILING_TEXT(name, value)
 
-// File FileLock
+// FileLock
 #define JDFILE_FILE_LOCK_PROFILING_COLORBASE Red
 #define JDFILE_FILE_LOCK_PROFILING_BLOCK_C(text, color) JD_PROFILING_BLOCK_C(text, color)
 #define JDFILE_FILE_LOCK_PROFILING_NONSCOPED_BLOCK_C(text, color) JD_PROFILING_NONSCOPED_BLOCK_C(text, color)
@@ -107,7 +107,7 @@
 #define JDFILE_FILE_LOCK_PROFILING_VALUE(name, value) JD_PROFILING_VALUE(name, value)
 #define JDFILE_FILE_LOCK_PROFILING_TEXT(name, value) JD_PROFILING_TEXT(name, value)
 
-// File JDObjectLocker
+// JDObjectLocker
 #define JD_OBJECT_LOCK_PROFILING_COLORBASE Orange
 #define JD_OBJECT_LOCK_PROFILING_BLOCK_C(text, color) JD_PROFILING_BLOCK_C(text, color)
 #define JD_OBJECT_LOCK_PROFILING_NONSCOPED_BLOCK_C(text, color) JD_PROFILING_NONSCOPED_BLOCK_C(text, color)
@@ -120,7 +120,7 @@
 #define JD_OBJECT_LOCK_PROFILING_TEXT(name, value) JD_PROFILING_TEXT(name, value)
 
 
-// File JDUniqueMutex
+// JDUniqueMutex
 #define JD_MUTEX_PROFILING_COLORBASE DeepPurple
 #define JD_MUTEX_PROFILING_BLOCK_C(text, color) JD_PROFILING_BLOCK_C(text, color)
 #define JD_MUTEX_PROFILING_NONSCOPED_BLOCK_C(text, color) JD_PROFILING_NONSCOPED_BLOCK_C(text, color)
@@ -132,7 +132,7 @@
 #define JD_MUTEX_PROFILING_VALUE(name, value) JD_PROFILING_VALUE(name, value)
 #define JD_MUTEX_PROFILING_TEXT(name, value) JD_PROFILING_TEXT(name, value)
 
-// File Signal
+// Signal
 #define JD_SIGNAL_PROFILING_COLORBASE Pink
 #define JD_SIGNAL_PROFILING_BLOCK_C(text, color) JD_PROFILING_BLOCK_C(text, color)
 #define JD_SIGNAL_PROFILING_NONSCOPED_BLOCK_C(text, color) JD_PROFILING_NONSCOPED_BLOCK_C(text, color)

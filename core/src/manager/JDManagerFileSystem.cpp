@@ -27,15 +27,18 @@ namespace JsonDatabase
         }
         JDManagerFileSystem::~JDManagerFileSystem()
         {
+            m_fileWatcher.stop();
             if(m_fileLock)
                 delete m_fileLock;
         }
 
-        void JDManagerFileSystem::setup()
+        bool JDManagerFileSystem::setup()
         {
-            makeDatabaseDirs();
-            makeDatabaseFiles();
+            bool success = true;
+            success &= makeDatabaseDirs();
+            success &= makeDatabaseFiles();
             restartDatabaseFileWatcher();
+            return success;
         }
      
 
@@ -58,26 +61,25 @@ namespace JsonDatabase
 
             m_fileLock = new FileReadWriteLock(directory, fileName);
 
-            if (!m_fileLock->lock(direction))
+            FileLock::Error lockErr;
+            if (!m_fileLock->lock(direction, wasLockedForWritingByOther, lockErr))
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
                     << directory << ", "
                     << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
                     << ", bool) Can't aquire lock for: " << directory << "\\" << fileName << "\n");
-                wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
                 delete m_fileLock;
                 m_fileLock = nullptr;
                 return false;
             }
-            wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
-            if (m_fileLock->getLastError() != FileLock::Error::none)
+            if (lockErr != FileLock::Error::none)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
                     << directory << ", "
                     << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ", bool) Lock error: " << m_fileLock->getLastErrorStr() + "\n");
+                    << ", bool) Lock error: " << FileLock::getErrorStr(lockErr) + "\n");
             }
             return true;
         }
@@ -99,27 +101,25 @@ namespace JsonDatabase
             }
 
             m_fileLock = new FileReadWriteLock(directory, fileName);
-
-            if (!m_fileLock->lock(direction, timeoutMillis))
+            FileLock::Error lockErr;
+            if (!m_fileLock->lock(direction, timeoutMillis, wasLockedForWritingByOther, lockErr))
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
                     << directory << ", "
                     << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
                     << ", bool, timeout=" << timeoutMillis << "ms) Timeout while trying to aquire file lock for: " << directory << "\\" << fileName << "\n");
-                wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
                 delete m_fileLock;
                 m_fileLock = nullptr;
                 return false;
             }
-            wasLockedForWritingByOther = m_fileLock->wasLockedForWritingByOther();
-            if (m_fileLock->getLastError() != FileLock::Error::none)
+            if (lockErr != FileLock::Error::none)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::lockFile("
                     << directory << ", "
                     << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ", bool, timeout=" << timeoutMillis << "ms) Lock error: " << m_fileLock->getLastErrorStr() + "\n");
+                    << ", bool, timeout=" << timeoutMillis << "ms) Lock error: " << FileLock::getErrorStr(lockErr) + "\n");
             }
             return true;
         }
@@ -130,8 +130,8 @@ namespace JsonDatabase
 
             if (!m_fileLock)
                 return true;
-
-            m_fileLock->unlock();
+            FileLock::Error lockErr;
+            m_fileLock->unlock(lockErr);
             delete m_fileLock;
             m_fileLock = nullptr;
 
@@ -153,21 +153,6 @@ namespace JsonDatabase
                 m_fileLock->getAccessStatus();
             }
             return a == accessType;
-        }
-        FileLock::Error JDManagerFileSystem::getLastLockError() const
-        {
-            if (!m_fileLock)
-                return FileLock::Error::none;
-            return m_fileLock->getLastError();
-        }
-        const std::string& JDManagerFileSystem::getLastLockErrorStr() const
-        {
-            if (!m_fileLock)
-            {
-                static const std::string dummy;
-                return dummy;
-            }
-            return m_fileLock->getLastErrorStr();
         }
 
         bool JDManagerFileSystem::writeJsonFile(
@@ -574,7 +559,7 @@ namespace JsonDatabase
         bool JDManagerFileSystem::makeDatabaseDirs() const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-                bool success = true;
+            bool success = true;
 
             std::string path = m_manager.getDatabasePath();
             QDir dir(path.c_str());
@@ -608,9 +593,10 @@ namespace JsonDatabase
                 else
                 {
 					JD_CONSOLE("bool JDManagerFileSystem::makeDatabaseFiles() Can't create database file: " << m_manager.getDatabaseFilePath().c_str() << "\n");
-				}
+                    return false;
+                }
             }
-            return false;
+            return true;
         }
 
         bool JDManagerFileSystem::deleteDir(const std::string& dir) const

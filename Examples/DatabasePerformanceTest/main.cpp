@@ -71,11 +71,18 @@ int main(int argc, char* argv[])
     manager4 = new JDManager("database", "Persons", "sessionID4", "USER 4");
     manager5 = new JDManager("database", "Persons", "sessionID5", "USER 5");
 
+    manager1->setup();
+    manager2->setup();
+    manager3->setup();
+    manager4->setup();
+    manager5->setup();
+
 #ifdef NDEBUG
     watcher = new Internal::FileChangeWatcher("database\\Persons.json");
 #else
     watcher = new Internal::FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
 #endif
+    watcher->setup();
     //manager1->addObjectDefinition<Person>();
     //manager2->addObjectDefinition<Person>();
     //manager3->addObjectDefinition<Person>();
@@ -200,7 +207,8 @@ bool lockRandomPerson(JDManager* manager, JDObjectInterface*& obj)
         //int randomIndex = rand() % globalTable.size();
         int randomIndex = 100;
         JDObjectInterface* target = globalTable[randomIndex];
-        if (manager->lockObject(target))
+        JsonDatabase::Internal::JDObjectLocker::Error lastError;
+        if (manager->lockObject(target, lastError))
         {
             obj = target;
             mutex.unlock();
@@ -215,7 +223,8 @@ bool unlockPerson(JDManager* manager, JDObjectInterface*& obj)
     mutex.lock();
     if (obj != nullptr)
     {
-        if (manager->unlockObject(obj))
+        JsonDatabase::Internal::JDObjectLocker::Error lastError;
+        if (manager->unlockObject(obj, lastError))
         {
             obj = nullptr;
             mutex.unlock();

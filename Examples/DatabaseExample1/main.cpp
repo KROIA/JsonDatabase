@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
 
 
     JDManager manager("database", "MyData", "sessionID", "USER");
+    manager.setup();
     //JDManager manager("C:\\Users\\alexk\\Documents\\Privat\\Softwareentwicklung\\QT\\Projekte\\JsonDatabase\\example\\bin\\database","sessionID","USER");
     //manager.addObjectDefinition<A>();
     //manager.addObjectDefinition<B>();

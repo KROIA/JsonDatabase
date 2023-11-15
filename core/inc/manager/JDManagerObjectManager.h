@@ -16,7 +16,7 @@ namespace JsonDatabase
             friend class JDManager;
 			JDManagerObjectManager(std::mutex &mtx);
             virtual ~JDManagerObjectManager();
-            void setup();
+            bool setup();
         public:
 
             

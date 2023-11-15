@@ -14,9 +14,9 @@ namespace JsonDatabase
         {
 
         }
-        void JDManagerObjectManager::setup()
+        bool JDManagerObjectManager::setup()
         {
-
+            return true;
         }
         
         

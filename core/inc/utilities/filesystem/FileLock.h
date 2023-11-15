@@ -24,7 +24,8 @@ namespace JsonDatabase
             unableToLock,
             alreadyLocked,
             alreadyLockedForReading,
-            alreadyLockedForWriting
+            alreadyLockedForWriting,
+            alreadyUnlocked
         };
         
 
@@ -36,14 +37,14 @@ namespace JsonDatabase
         const std::string& getFilePath() const;
         const std::string& getFileName() const;
 
-        bool lock();
-        bool lock(unsigned int timeoutMs);
-        void unlock();
+        bool lock(Error& err);
+        bool lock(unsigned int timeoutMs, Error& err);
+        bool unlock(Error& err);
 
         bool isLocked() const;
 
-        Error getLastError() const;
-        const std::string& getLastErrorStr() const;
+        
+        static const std::string& getErrorStr(Error err);
 
 
         static std::string replaceForwardSlashesWithBackslashes(const std::string& input);
@@ -52,10 +53,10 @@ namespace JsonDatabase
 
         static const std::string s_lockFileEnding;
     private:
-        bool lock_internal();
+        Error lock_internal();
         Error lockFile();
         //Error lockFile_old();
-        void unlockFile();
+        Error unlockFile();
 
       
 
@@ -71,7 +72,6 @@ namespace JsonDatabase
         
 
         bool m_locked;
-        Error m_lastError;
 
         
         static std::mutex m_mutex;

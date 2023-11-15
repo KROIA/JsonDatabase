@@ -18,9 +18,6 @@ namespace JsonDatabase
 		class JSONDATABASE_EXPORT JDObjectLocker
 		{
 			friend JDManager;
-			JDObjectLocker(JDManager& manager, std::mutex &mtx);
-			virtual ~JDObjectLocker();
-			void setup();
 		public:
 			enum Error
 			{
@@ -34,12 +31,20 @@ namespace JsonDatabase
 				programmingError,
 			};
 
-			bool lockObject(JDObjectInterface* obj) const;
-			bool unlockObject(JDObjectInterface* obj) const;
-			bool unlockAllObjs() const;
-			bool isObjectLocked(JDObjectInterface* obj, int &lastError) const;
-			bool isObjectLockedByMe(JDObjectInterface* obj, int& lastError) const;
-			bool isObjectLockedByOther(JDObjectInterface* obj, int& lastError) const;
+		private:
+			
+			JDObjectLocker(JDManager& manager, std::mutex &mtx);
+			virtual ~JDObjectLocker();
+			bool setup(Error &err);
+		public:
+			
+
+			bool lockObject(JDObjectInterface* obj, Error& err) const;
+			bool unlockObject(JDObjectInterface* obj, Error& err) const;
+			bool unlockAllObjs(Error& err) const;
+			bool isObjectLocked(JDObjectInterface* obj, Error& err) const;
+			bool isObjectLockedByMe(JDObjectInterface* obj, Error& err) const;
+			bool isObjectLockedByOther(JDObjectInterface* obj, Error& err) const;
 			
 			struct LockData
 			{
@@ -49,11 +54,10 @@ namespace JsonDatabase
 				std::string lockDate;
 				std::string lockTime;
 			};
-			bool getLockedObjects(std::vector<LockData>& lockedObjectsOut) const;
+			bool getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const;
 
 
-			Error getLastObjLockError() const;
-			const std::string& getLastObjLockErrorStr() const;
+			const std::string& getErrorStr(Error err) const;
 		protected:
 			ManagedFileChangeWatcher& getLockTableFileWatcher();
 			void update();
@@ -74,11 +78,11 @@ namespace JsonDatabase
 				JDObjectInterface* obj;
 			};
 
-			void onDatabasePathChange(const std::string& oldPath, const std::string& newPath) const;
+			void onDatabasePathChange(const std::string& oldPath, const std::string& newPath, Error& err) const;
 
 			
-			bool readLockTable(std::vector<ObjectLockData>& locks) const;
-			bool writeLockTable(const std::vector<ObjectLockData>& locks) const;
+			bool readLockTable(std::vector<ObjectLockData>& locks, Error& err) const;
+			bool writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const;
 
 			const std::string& getTablePath() const;
 			const std::string& getTableFileName() const;
@@ -107,8 +111,7 @@ namespace JsonDatabase
 			mutable ManagedFileChangeWatcher m_lockTableWatcher;
 
 
-			mutable Error m_lastError;
-
+			
 			static QString s_jsonKey_objectID;
 			static QString s_jsonKey_owner;
 			static QString s_jsonKey_sessionID;

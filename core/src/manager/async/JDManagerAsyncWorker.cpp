@@ -25,16 +25,19 @@ namespace JsonDatabase
 
         void JDManagerAsyncWorker::addWork(JDManagerAysncWork* work)
         {
+            JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             JDM_UNIQUE_LOCK_M(m_mutexInternal);
             m_workList.push_back(work);
         }
         bool JDManagerAsyncWorker::isWorkDone(JDManagerAysncWork* work)
         {
+            JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             JDM_UNIQUE_LOCK_M(m_mutexInternal);
             return std::find(m_workListDone.begin(), m_workListDone.end(), work) != m_workListDone.end();
         }
         void JDManagerAsyncWorker::removeDoneWork(JDManagerAysncWork* work)
         {
+            JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             JDM_UNIQUE_LOCK_M(m_mutexInternal);
             auto it = std::find(m_workListDone.begin(), m_workListDone.end(), work);
             if (it != m_workListDone.end())
@@ -83,12 +86,11 @@ namespace JsonDatabase
                 {
                     std::unique_lock<std::mutex> lock(m_mutexInternal);
                     JD_ASYNC_WORKER_PROFILING_BLOCK("JDManagerAsyncWorker::threadLoop::idle", JD_COLOR_STAGE_1);
-                    bool stopFlag = m_stopFlag.load();
- 
+
                     // Wait until we have work to do
                     m_cv.wait(lock);
 
-                    if (stopFlag) {
+                    if (m_stopFlag.load()) {
                         break;
                     }
                 }

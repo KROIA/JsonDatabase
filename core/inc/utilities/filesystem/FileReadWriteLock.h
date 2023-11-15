@@ -30,18 +30,14 @@ namespace JsonDatabase
 		const std::string& getFilePath() const;
 		const std::string& getFileName() const;
 
-		bool lock(Access direction);
-		bool lock(Access direction, unsigned int timeoutMs);
-		void unlock();
+		bool lock(Access direction, bool& wasLockedByOtherUserOut, FileLock::Error& err);
+		bool lock(Access direction, unsigned int timeoutMs, bool &wasLockedByOtherUserOut, FileLock::Error& err);
+		void unlock(FileLock::Error& err);
 
 		bool isLocked() const;
-		bool wasLockedForWritingByOther() const;
 
 		Access getAccessStatus() const;
 		Access getAccessStatus(size_t &readerCount) const;
-
-		FileLock::Error getLastError() const;
-		const std::string& getLastErrorStr() const;
 
 		static std::vector<std::string> getFileNamesInDirectory(const std::string& directory);
 		static std::vector<std::string> getFileNamesInDirectory(const std::string& directory, const std::string& fileEndig);
@@ -51,18 +47,15 @@ namespace JsonDatabase
 
 
 	private:
-		bool lock_internal(Access direction);
-		FileLock::Error lockFile(Access direction);
+		FileLock::Error lock_internal(Access direction, bool& wasLockedByOtherUserOut);
+		FileLock::Error lockFile(Access direction, bool& wasLockedByOtherUserOut);
 
 		//std::string m_filePath;
 		std::string m_directory;
 		std::string m_fileName;
 
 		std::string m_lockFilePathName;
-		bool m_wasLockedForWritingByOther;
 
-
-		FileLock::Error m_lastError;
 		bool m_locked;
 		Access m_access;
 
