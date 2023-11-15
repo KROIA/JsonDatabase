@@ -47,5 +47,9 @@ namespace JsonDatabase
 				return "";
 			return "Failed to load the object";
 		}
+		WorkType JDManagerAysncWorkLoadSingleObject::getWorkType() const
+		{
+			return WorkType::loadSingleObject;
+		}
 	}
 }

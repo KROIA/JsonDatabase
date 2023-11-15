@@ -3,6 +3,7 @@
 #include "JD_base.h"
 #include "JDDeclaration.h"
 
+
 #include <string>
 #include <vector>
 #include <QJsonObject>
@@ -15,6 +16,8 @@ namespace JsonDatabase
         {
         public:
             static bool getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut);
+            static bool getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut, 
+                                     WorkProgress* progress, double deltaProgress);
             static bool serializeObject(JDObjectInterface* obj, std::string& serializedOut);
             static bool serializeJson(const QJsonObject& obj, std::string& serializedOut);
 

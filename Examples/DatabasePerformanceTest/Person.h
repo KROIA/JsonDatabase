@@ -52,7 +52,7 @@ public:
         instanceCounter++;
         setObjectID(std::to_string(instanceCounter));
     }
-    Person::~Person()
+    ~Person()
     {
 
     }

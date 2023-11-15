@@ -20,6 +20,7 @@ namespace JsonDatabase
 			bool hasSucceeded() const override;
 			void process() override;
 			std::string getErrorMessage() const override;
+			WorkType getWorkType() const override;
 
 
 		private:

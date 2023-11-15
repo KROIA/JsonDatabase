@@ -44,5 +44,9 @@ namespace JsonDatabase
 				return "";
 			return "Failed to save the object";
 		}
+		WorkType JDManagerAysncWorkSaveSingle::getWorkType() const
+		{
+			return WorkType::saveSingleObject;
+		}
 	}
 }

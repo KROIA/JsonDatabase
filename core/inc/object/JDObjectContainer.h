@@ -3,7 +3,7 @@
 #include "JD_base.h"
 #include "JDObjectInterface.h"
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 namespace JsonDatabase
 {
@@ -15,17 +15,21 @@ namespace JsonDatabase
 
         JDObjectInterface* operator[](const std::string& id);
 	    JDObjectInterface* operator[](size_t index);
+	    bool operator[](JDObjectInterface *obj); // returns true if the object exists in the container
 
         void reserve(size_t size);
 
-        void addObject(JDObjectInterface* obj);
-        void addObject(const std::vector<JDObjectInterface*>& obj);
+        bool addObject(JDObjectInterface* obj);
+        bool addObject(const std::vector<JDObjectInterface*>& objs);
         JDObjectInterface* replaceObject(JDObjectInterface* replacement); // Returns the old object
-        void removeObject(const std::string& id);
-        void removeObject(JDObjectInterface *obj);
+        bool removeObject(const std::string& id);
+        bool removeObject(JDObjectInterface *obj);
+        bool removeObject(const std::vector<JDObjectInterface*>& objs);
 
         JDObjectInterface* getObjectByID(const std::string& id);
         const std::vector<JDObjectInterface*>& getAllObjects() const;
+        const std::unordered_map<std::string, JDObjectInterface*>& getAllObjectsIDMap() const;
+        const std::unordered_map<JDObjectInterface*, JDObjectInterface*>& getAllObjectsPtrMap() const;
 
         bool exists(const std::string& id) const;
         bool exists(JDObjectInterface* obj) const;
@@ -40,7 +44,7 @@ namespace JsonDatabase
         const_iterator end() const;
     private:
         std::vector<JDObjectInterface*> m_objectVector;
-        std::map<std::string, JDObjectInterface*> m_objectMap;
-
+        std::unordered_map<std::string, JDObjectInterface*> m_objectMap;
+        std::unordered_map<JDObjectInterface*, JDObjectInterface*> m_objectPtrMap;
     };
 }

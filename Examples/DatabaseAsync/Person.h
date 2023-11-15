@@ -26,7 +26,7 @@ public:
         string email, string ph, string edu, string occ,
         string exp, string sal, string mart, string chc);
     Person();
-    Person::~Person();
+    ~Person();
 
 
     bool operator==(const Person& other);

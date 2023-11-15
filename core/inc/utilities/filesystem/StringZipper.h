@@ -11,7 +11,7 @@ namespace JsonDatabase
         namespace StringZipper
         {
             extern void compressString(const QString& inputString, QByteArray& compressedData);
-            extern bool decompressString(const QByteArray& compressedData, QString& outputString);
+            extern bool decompressString(QByteArray compressedData, QString& outputString);
         }
     }
 }

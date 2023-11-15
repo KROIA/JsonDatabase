@@ -48,6 +48,7 @@ namespace JsonDatabase
         : JDManagerObjectManager(m_mutex)
         , JDManagerFileSystem(*this, m_mutex)
         , JDObjectLocker(*this, m_mutex)
+        , JDManagerAsyncWorker(*this, m_mutex)
         , m_databasePath(databasePath)
         , m_databaseName(databaseName)
         , m_sessionID(sessionID)
@@ -55,7 +56,7 @@ namespace JsonDatabase
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
         , m_signals(*this, m_mutex)
-        , m_asyncWorker(*this, m_mutex)
+        //, m_asyncWorker(*this, m_mutex)
     {
         
     }
@@ -63,20 +64,23 @@ namespace JsonDatabase
         : JDManagerObjectManager(m_mutex)
         , JDManagerFileSystem(*this, m_mutex)
         , JDObjectLocker(*this, m_mutex)
+        , JDManagerAsyncWorker(*this, m_mutex)
         , m_sessionID(other.m_sessionID)
         , m_user(other.m_user)
         , m_useZipFormat(other.m_useZipFormat)
         , m_signleEntryUpdateLock(false)
         , m_signals(*this, m_mutex)
-        , m_asyncWorker(*this, m_mutex)
+        //, m_asyncWorker(*this, m_mutex)
     {
+
     }
 JDManager::~JDManager()
 {
     JDObjectLocker::Error lockerError;
     //JDObjectLocker::stop
     //JDObjectLocker::unlockAllObjs(lockerError);
-    m_asyncWorker.stop();
+    //m_asyncWorker.stop();
+    JDManagerAsyncWorker::stop();
     JDManagerFileSystem::getDatabaseFileWatcher().stop();
 }
 
@@ -91,7 +95,8 @@ bool JDManager::setup()
     {
         // Unhandled error
     }
-    m_asyncWorker.setup();
+    //m_asyncWorker.setup();
+    JDManagerAsyncWorker::setup();
     return success;
 }
 
@@ -124,7 +129,7 @@ const std::string &JDManager::getDatabasePath() const
 }
 std::string JDManager::getDatabaseFilePath() const
 {
-    return  m_databasePath + "//" + m_databaseName + Internal::JDManagerFileSystem::s_jsonFileEnding;
+    return  m_databasePath + "//" + m_databaseName + Internal::JDManagerFileSystem::getJsonFileEnding();
 }
 
 
@@ -144,7 +149,8 @@ bool JDManager::loadObject(JDObjectInterface* obj)
 }
 void JDManager::loadObjectAsync(JDObjectInterface* obj)
 {
-    m_asyncWorker.addWork(new Internal::JDManagerAysncWorkLoadSingleObject(*this, m_mutex, obj));
+    JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkLoadSingleObject>(*this, m_mutex, obj));
+    //m_asyncWorker.addWork(std::make_shared<Internal::JDManagerAysncWorkLoadSingleObject>(*this, m_mutex, obj));
 }
 bool JDManager::loadObjects(int mode)
 {
@@ -153,7 +159,7 @@ bool JDManager::loadObjects(int mode)
 }
 void JDManager::loadObjectsAsync(int mode)
 {
-    m_asyncWorker.addWork(new Internal::JDManagerAysncWorkLoadAllObjects(*this, m_mutex, mode));
+    JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkLoadAllObjects>(*this, m_mutex, mode));
 }
 bool JDManager::saveObject(JDObjectInterface* obj)
 {
@@ -162,16 +168,18 @@ bool JDManager::saveObject(JDObjectInterface* obj)
 }
 void JDManager::saveObjectAsync(JDObjectInterface* obj)
 {
-    m_asyncWorker.addWork(new Internal::JDManagerAysncWorkSaveSingle(*this, m_mutex, obj));
+    JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveSingle>(*this, m_mutex, obj));
 }
 bool JDManager::saveObjects()
 {
-    JDM_UNIQUE_LOCK_P;
-    return saveObjects_internal(m_objs.getAllObjects(), s_fileLockTimeoutMs, nullptr);
+    //JDM_UNIQUE_LOCK_P;
+    std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
+    return saveObjects_internal(objs, s_fileLockTimeoutMs, nullptr);
 }
 void JDManager::saveObjectsAsync()
 {
-    m_asyncWorker.addWork(new Internal::JDManagerAysncWorkSaveList(*this, m_mutex, m_objs.getAllObjects()));
+    std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
+    JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs));
 }
 /*bool JDManager::saveObjects(const std::vector<JDObjectInterface*>& objList)
 {
@@ -197,9 +205,17 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
     bool success = true;
     const std::string& ID = obj->getObjectID();
 
-    std::vector<QJsonObject> jsons;
-    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
+    if (progress) progress->setComment("Reading database file");
+    std::vector<QJsonObject> jsons; 
 
+    success &= JDManagerFileSystem::readJsonFile(jsons, 
+        getDatabasePath(), 
+        getDatabaseName(), 
+        Internal::JDManagerFileSystem::getJsonFileEnding(), 
+        m_useZipFormat, 
+        false);
+
+    if (progress) progress->setProgress(0.5);
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
     if (index == std::string::npos)
     {
@@ -208,8 +224,10 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
     }
     const QJsonObject& objData = jsons[index];
     bool hasChanged = false;
+    if (progress) progress->setComment("Deserializing object");
     success &= Internal::JsonUtilities::deserializeOverrideFromJson(objData, obj, hasChanged);
     JDManagerFileSystem::unlockFile();
+    if (progress) progress->addProgress(0.5);
 
     return success;
 }
@@ -230,12 +248,18 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
     bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
 
-    //m_signals.clearContainer();
 
-
-
+    if (progress) progress->setComment("Reading database file");
     std::vector<QJsonObject> jsons;
-    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
+
+    success &= JDManagerFileSystem::readJsonFile(jsons, 
+        getDatabasePath(), 
+        getDatabaseName(), 
+        Internal::JDManagerFileSystem::getJsonFileEnding(), 
+        m_useZipFormat, 
+        false);
+
+    if(progress) progress->setProgress(0.2);
 
     struct Pair
     {
@@ -248,6 +272,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     std::vector< Pair> newObjectPairs;
     {
         JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
+        if (progress) progress->setComment("Matching objects with json data");
         for (size_t i = 0; i < jsons.size(); ++i)
         {
             std::string ID;
@@ -266,6 +291,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
             else
                 newObjectPairs.push_back(p);
         }
+        if (progress) progress->addProgress(0.03);
     }
     if (!success)
     {
@@ -273,14 +299,34 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         return false;
     }
 
-    if (modeChangedObjects)
+    double subProgress = 1;
+    if(progress)
+        subProgress = (1 - progress->getProgress()) / 3.0;
+
+    
+    const bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
+    const bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
+    const bool hasObjectAddedToDatabase = m_signals.objectAddedToDatabase.signal.getSlotCount();
+    const bool hasObjectRemovedFromDatabase = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
+
+    std::vector<JDObjectInterface*> overridingObjs;
+    std::vector<JDObjectInterface*> newObjs;
+    std::vector<JDObjectInterface*> removedObjs;
+    std::vector<JDObjectInterface*> replaceObjs;
+    std::vector<JDObjectPair> pairsForSignal;
+
+    std::unordered_map<JDObjectInterface*, JDObjectInterface*> loadedObjects;
+    loadedObjects.reserve(jsons.size());
+
+    if (modeChangedObjects && pairs.size() > 0)
     {
+        double dProgress = subProgress / pairs.size();
         if (overrideChanges)
         {
             JD_GENERAL_PROFILING_BLOCK("Deserialize objects override mode", JD_COLOR_STAGE_2);
-            bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
-            std::vector<JDObjectInterface*> objs;
-            objs.reserve(pairs.size());
+            if (progress) progress->setComment("Deserializing objects override mode");
+            
+            overridingObjs.reserve(pairs.size());
             // Loads the existing objects and overrides the data in the current object instance
             for (Pair& pair : pairs)
             {
@@ -289,76 +335,85 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
                 {
                     bool hasChanged = false;
                     success &= Internal::JsonUtilities::deserializeOverrideFromJson(pair.json, pair.objOriginal, hasChanged);
+                    if (modeRemovedObjects) loadedObjects[pair.objOriginal] = pair.objOriginal;
                     if (hasChanged)
                     {
                         // The loaded object is not equal to the original object
-                        objs.push_back(pair.objOriginal);
+                        overridingObjs.push_back(pair.objOriginal);
                     }
                 }
                 else
                     success &= Internal::JsonUtilities::deserializeOverrideFromJson(pair.json, pair.objOriginal);
                 pair.obj = pair.objOriginal;
+                if(progress) progress->addProgress(dProgress);
             }
-            if (hasOverrideChangeFromDatabaseSlots && objs.size())
-				m_signals.objectOverrideChangeFromDatabase.addObjs(objs);
+            
         }
         else
         {
             JD_GENERAL_PROFILING_BLOCK("Deserialize objects reinstatiation mode", JD_COLOR_STAGE_2);
-            bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
-            std::vector<JDObjectPair> pairsForSignal;
+            if (progress) progress->setComment("Deserializing objects reinstatiation mode");
+            
             pairsForSignal.reserve(pairs.size());
 
             // Loads the existing objects and creates a new object instance if the data has changed
             for (Pair& pair : pairs)
             {
                 success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj);
-
+                if (modeRemovedObjects) loadedObjects[pair.objOriginal] = pair.objOriginal;
                 if (pair.objOriginal != pair.obj)
                 {
                     // The loaded object is not equal to the original object
                     if (hasChangeFromDatabaseSlots)
                         pairsForSignal.push_back(JDObjectPair(pair.objOriginal, pair.obj));
-                    replaceObject_internal(pair.obj);
+                    replaceObjs.push_back(pair.obj);
+                    //replaceObject_internal(pair.obj);
                 }
+                if (progress) progress->addProgress(dProgress);
             }
-            if (hasChangeFromDatabaseSlots && pairsForSignal.size())
-                m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
-
+            
+            
         }
+        
     }
+    else if (progress) progress->addProgress(subProgress);
 
-    if (modeNewObjects)
+    if (modeNewObjects && newObjectPairs.size() > 0)
     {
         JD_GENERAL_PROFILING_BLOCK("Deserialize and create new objects", JD_COLOR_STAGE_2);
-        bool hasObjectAddedToDatabase = m_signals.objectAddedToDatabase.signal.getSlotCount();
-        std::vector<JDObjectInterface*> objs;
-        objs.reserve(newObjectPairs.size());
+        if (progress) progress->setComment("Deserializing and creating new objects");
+        double dProgress = subProgress / newObjectPairs.size();
+        
+        
+        newObjs.reserve(newObjectPairs.size());
         // Loads the new objects and creates a new object instance
         for (Pair& pair : newObjectPairs)
         {
             success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj);
+            if (modeRemovedObjects) loadedObjects[pair.obj] = pair.obj;
             // Add the new generated object to the database
-            addObject_internal(pair.obj);
-            if (hasObjectAddedToDatabase)
-                objs.push_back(pair.obj);
-                
+            //addObject_internal(pair.obj);
+            newObjs.emplace_back(pair.obj);
+            if (progress) progress->addProgress(dProgress);
         }
-        if (hasObjectAddedToDatabase && objs.size())
-            m_signals.objectAddedToDatabase.addObjs(objs);
+        
+        
     }
+    else if (progress) progress->addProgress(subProgress);
 
     if (modeRemovedObjects)
     {
         JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
+        if (progress) progress->setComment("Searching for erased objects");
         std::vector<JDObjectInterface*> allObjs = getObjects_internal();
-        m_signals.objectRemovedFromDatabase.reserve(allObjs.size());
-        bool hasObjectRemovedFromDatabase = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
-        std::vector<JDObjectInterface*> objs;
-        objs.reserve(allObjs.size());
-        for (size_t i = 0; i < allObjs.size(); ++i)
+        double dProgress = subProgress / (allObjs.size()+1);
+        
+        removedObjs.reserve(allObjs.size());
+        for (auto obj : allObjs)
         {
-            for (const Pair& pair : pairs)
+            if (loadedObjects.find(obj) != loadedObjects.end())
+				continue;
+            /*for (const Pair& pair : pairs)
             {
                 if (pair.obj == allObjs[i])
                     goto nextObj;
@@ -368,18 +423,49 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
                 if (pair.obj == allObjs[i])
                     goto nextObj;
             }
-
+            */
             if (hasObjectRemovedFromDatabase)
-                objs.push_back(allObjs[i]);
+                removedObjs.emplace_back(obj);
                 
-            removeObject_internal(allObjs[i]);
+            
         nextObj:;
+            if (progress) progress->addProgress(dProgress);
         }
-        if (hasObjectRemovedFromDatabase && objs.size())
-			m_signals.objectRemovedFromDatabase.addObjs(objs);
+        
     }
-
+    else if (progress) progress->addProgress(subProgress);
     JDManagerFileSystem::unlockFile();
+
+
+    // Copy the data to the signals
+    if (modeChangedObjects)
+    {
+        if (overrideChanges)
+        {
+            if (hasOverrideChangeFromDatabaseSlots && overridingObjs.size())
+                m_signals.objectOverrideChangeFromDatabase.addObjs(overridingObjs);
+        }
+		else
+		{
+            replaceObject_internal(replaceObjs);
+            if (hasChangeFromDatabaseSlots && pairsForSignal.size())
+                m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
+		}
+    }
+    if (modeRemovedObjects)
+    {
+        removeObject_internal(removedObjs);
+        if (hasObjectRemovedFromDatabase && removedObjs.size())
+            m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
+    }
+    if (modeNewObjects)
+    {
+        addObject_internal(newObjs);
+        if (hasObjectAddedToDatabase && newObjs.size())
+            m_signals.objectAddedToDatabase.addObjs(newObjs);
+    }
+    
+
     return success;
 }
 bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis, Internal::WorkProgress* progress)
@@ -399,14 +485,25 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
         return false;
     }
 
+    if (progress) progress->setComment("Serializing object");
     std::string ID = obj->getObjectID();
     std::vector<QJsonObject> jsons;
 
     QJsonObject data;
     success &= obj->saveInternal(data);
 
+    if (progress)
+    {
+        progress->setProgress(0.33);
+        progress->setComment("Reading database file");
+    }
 
-    success &= JDManagerFileSystem::readJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
+    success &= JDManagerFileSystem::readJsonFile(jsons, 
+        getDatabasePath(),
+        getDatabaseName(), 
+        Internal::JDManagerFileSystem::getJsonFileEnding(), 
+        m_useZipFormat, 
+        false);
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
 
     if (index == std::string::npos)
@@ -418,20 +515,33 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
         jsons[index] = data;
     }
 
-    
-    // Save the serialized objects
-    success &= JDManagerFileSystem::writeJsonFile(jsons, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
+    if (progress)
+    { 
+        progress->addProgress(0.33);
+        progress->setComment("Writing database file"); 
+    }
 
+    // Save the serialized objects
+    success &= JDManagerFileSystem::writeJsonFile(jsons, 
+        getDatabasePath(), 
+        getDatabaseName(), 
+        Internal::JDManagerFileSystem::getJsonFileEnding(), 
+        m_useZipFormat, 
+        false);
+    if (progress) progress->addProgress(0.33);
     JDManagerFileSystem::unlockFile();
     return success;
 }
 bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
-    return saveObjects_internal(m_objs.getAllObjects(), timeoutMillis, progress);
+    std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
+    return saveObjects_internal(objs, timeoutMillis, progress);
 }
 bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    if(objList.size() == 0)
+		return true;
     bool wasLockedForWritingByOther = false;
     
     bool hasLock = JDManagerFileSystem::lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::write, wasLockedForWritingByOther, timeoutMillis);
@@ -446,28 +556,44 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     }
     bool success = true;
 
+    if (progress) progress->setComment("Serializing objects");
     std::vector<QJsonObject> jsonData;
-    success &= Internal::JsonUtilities::getJsonArray(objList, jsonData);
-
+   
+    
+    if (progress)
+    {
+        double dProgress = 0.6 / objList.size();
+        success &= Internal::JsonUtilities::getJsonArray(objList, jsonData, progress, dProgress);
+        progress->setComment("Writing database file");
+    }
+	else
+	{
+		success &= Internal::JsonUtilities::getJsonArray(objList, jsonData);
+        progress->addProgress(0.6);
+	}
     
 
     // Save the serialized objects
-    success &= JDManagerFileSystem::writeJsonFile(jsonData, getDatabasePath(), getDatabaseName(), s_jsonFileEnding, m_useZipFormat, false, progress);
-
+    success &= JDManagerFileSystem::writeJsonFile(jsonData, 
+        getDatabasePath(), 
+        getDatabaseName(), Internal::JDManagerFileSystem::getJsonFileEnding(), 
+        m_useZipFormat, 
+        false);
+    if (progress) progress->addProgress(0.4);
     JDManagerFileSystem::unlockFile();
     return success;
 }
 
-void JDManager::onAsyncWorkDone(Internal::JDManagerAysncWork* work)
+void JDManager::onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> work)
 {
     if(!work)
         return;
-    m_asyncWorker.removeDoneWork(work);
+    JDManagerAsyncWorker::removeDoneWork(work);
 
-    Internal::JDManagerAysncWorkLoadAllObjects* loadAllWork = dynamic_cast<Internal::JDManagerAysncWorkLoadAllObjects*>(work);
-    Internal::JDManagerAysncWorkLoadSingleObject* loadSingle = dynamic_cast<Internal::JDManagerAysncWorkLoadSingleObject*>(work);
-    Internal::JDManagerAysncWorkSaveSingle* saveSingle = dynamic_cast<Internal::JDManagerAysncWorkSaveSingle*>(work);
-    Internal::JDManagerAysncWorkSaveList* saveList = dynamic_cast<Internal::JDManagerAysncWorkSaveList*>(work);
+    std::shared_ptr<Internal::JDManagerAysncWorkLoadAllObjects> loadAllWork = std::dynamic_pointer_cast<Internal::JDManagerAysncWorkLoadAllObjects>(work);
+    std::shared_ptr<Internal::JDManagerAysncWorkLoadSingleObject> loadSingle = std::dynamic_pointer_cast<Internal::JDManagerAysncWorkLoadSingleObject>(work);
+    std::shared_ptr<Internal::JDManagerAysncWorkSaveSingle> saveSingle = std::dynamic_pointer_cast<Internal::JDManagerAysncWorkSaveSingle>(work);
+    std::shared_ptr<Internal::JDManagerAysncWorkSaveList> saveList = std::dynamic_pointer_cast<Internal::JDManagerAysncWorkSaveList>(work);
 
     if (loadAllWork)
     {
@@ -488,9 +614,8 @@ void JDManager::onAsyncWorkDone(Internal::JDManagerAysncWork* work)
 
     if (!work->hasSucceeded())
         onAsyncWorkError(work);
-    delete work;
 }
-void JDManager::onAsyncWorkError(Internal::JDManagerAysncWork* work)
+void JDManager::onAsyncWorkError(std::shared_ptr<Internal::JDManagerAysncWork> work)
 {
     JD_CONSOLE("Async work failed: " + work->getErrorMessage() + "\n");
 }
@@ -557,10 +682,11 @@ void JDManager::update()
 {
     if(m_signleEntryUpdateLock)
         return; // Update is already running
-    JDM_UNIQUE_LOCK_M(m_updateMutex);
+    if (!m_updateMutex.try_lock())
+        return;
     m_signleEntryUpdateLock = true;
 
-    m_asyncWorker.process();
+    JDManagerAsyncWorker::process();
     
     JDManagerFileSystem::update();
     JDManagerObjectManager::update();
@@ -570,6 +696,7 @@ void JDManager::update()
     m_signals.emitIfNotEmpty();
     m_signals.emitQueue();
     m_signleEntryUpdateLock = false;
+    m_updateMutex.unlock();
 }
 Internal::JDManagerSignals& JDManager::getSignals()
 {

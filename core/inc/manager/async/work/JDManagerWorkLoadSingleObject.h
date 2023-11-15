@@ -20,6 +20,7 @@ namespace JsonDatabase
 			JDObjectInterface * getObject() const;
 			void process() override;
 			std::string getErrorMessage() const override;
+			WorkType getWorkType() const override;
 
 
 		private:

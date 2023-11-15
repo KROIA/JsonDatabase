@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QFile>
 #include <QDir>
+#include <QtEndian>
 
 namespace JsonDatabase
 {
@@ -32,6 +33,7 @@ namespace JsonDatabase
                 delete m_fileLock;
         }
 
+
         bool JDManagerFileSystem::setup()
         {
             bool success = true;
@@ -39,6 +41,11 @@ namespace JsonDatabase
             success &= makeDatabaseFiles();
             restartDatabaseFileWatcher();
             return success;
+        }
+
+        const std::string& JDManagerFileSystem::getJsonFileEnding()
+        {
+            return s_jsonFileEnding;
         }
      
 
@@ -161,8 +168,7 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead,
-            WorkProgress* progress) const
+            bool lockedRead) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("std::vector to QJsonArray", JD_COLOR_STAGE_6);
@@ -206,8 +212,7 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead,
-            WorkProgress* progress) const
+            bool lockedRead) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
@@ -235,14 +240,18 @@ namespace JsonDatabase
             return false;
         }
 
+
+
+
+        
+
         bool JDManagerFileSystem::readJsonFile(
             std::vector<QJsonObject>& jsonsOut,
             const std::string& directory,
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead,
-            WorkProgress* progress) const
+            bool lockedRead) const
         {
             
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -251,8 +260,7 @@ namespace JsonDatabase
             {
                 return false;
             }
-            double deltaProgress = 1.0 / (1+jsonsOut.size());
-
+           
             // Parse the JSON data
             QJsonDocument jsonDocument;
             if (zipFormat)
@@ -292,7 +300,7 @@ namespace JsonDatabase
                 jsonsOut.reserve(jsonArray.size());
                 for (const auto& jsonValue : jsonArray) {
                     if (jsonValue.isObject()) {
-                        jsonsOut.push_back(jsonValue.toObject());
+                        jsonsOut.emplace_back(jsonValue.toObject());
                     }
                 }
                 JD_GENERAL_PROFILING_END_BLOCK;
@@ -318,8 +326,7 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead,
-            WorkProgress* progress) const
+            bool lockedRead) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             QByteArray fileData;
@@ -444,12 +451,12 @@ namespace JsonDatabase
                     unlockFile();
                 return false;
             }
-
-            std::string content(fileSize, '\0');
+            fileDataOut.resize(fileSize);
+            //std::string content(fileSize, '\0');
             DWORD bytesRead;
             BOOL readResult = ReadFile(
                 fileHandle,
-                &content[0],
+                &fileDataOut.data()[0],
                 fileSize,
                 &bytesRead,
                 nullptr
@@ -469,8 +476,6 @@ namespace JsonDatabase
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't read file: " << filePath.c_str() << "\n");
             }
-
-            fileDataOut = content.c_str();
             return true;
         }
         bool JDManagerFileSystem::writeFile(

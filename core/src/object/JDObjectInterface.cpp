@@ -93,8 +93,14 @@ bool JDObjectInterface::equalData(const QJsonObject& obj) const
     QJsonObject data1;
     QJsonObject data2;
     bool equal = getJsonValue(obj, data1, s_tag_data);
-    equal = save(data2);
-    equal &= data1 == data2;
+    {
+        JD_GENERAL_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
+        equal &= save(data2);
+    }
+    {
+        JD_GENERAL_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
+        equal &= data1 == data2;
+    }
 
     return equal;
 }

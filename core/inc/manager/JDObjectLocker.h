@@ -17,7 +17,7 @@ namespace JsonDatabase
 	{
 		class JSONDATABASE_EXPORT JDObjectLocker
 		{
-			friend JDManager;
+			//friend JDManager;
 		public:
 			enum Error
 			{
@@ -31,7 +31,7 @@ namespace JsonDatabase
 				programmingError,
 			};
 
-		private:
+		protected:
 			
 			JDObjectLocker(JDManager& manager, std::mutex &mtx);
 			virtual ~JDObjectLocker();
@@ -61,6 +61,8 @@ namespace JsonDatabase
 		protected:
 			ManagedFileChangeWatcher& getLockTableFileWatcher();
 			void update();
+			void onDatabasePathChange(const std::string& oldPath, const std::string& newPath, Error& err) const;
+
 
 		private:
 			class JSONDATABASE_EXPORT ObjectLockData : public JDSerializable
@@ -78,8 +80,7 @@ namespace JsonDatabase
 				JDObjectInterface* obj;
 			};
 
-			void onDatabasePathChange(const std::string& oldPath, const std::string& newPath, Error& err) const;
-
+			
 			
 			bool readLockTable(std::vector<ObjectLockData>& locks, Error& err) const;
 			bool writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const;

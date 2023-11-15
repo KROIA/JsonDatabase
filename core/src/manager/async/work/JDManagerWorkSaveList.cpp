@@ -39,5 +39,9 @@ namespace JsonDatabase
 				return "";
 			return "Failed to save all objects";
 		}
+		WorkType JDManagerAysncWorkSaveList::getWorkType() const
+		{
+			return WorkType::saveAllObjects;
+		}
 	}
 }

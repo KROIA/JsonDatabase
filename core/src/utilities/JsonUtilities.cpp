@@ -1,6 +1,7 @@
 #include "utilities/JsonUtilities.h"
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
+#include "manager/async/WorkProgress.h"
 
 #include <QJsonDocument>
 
@@ -20,7 +21,26 @@ namespace JsonDatabase
             {
                 QJsonObject data;
                 success &= o->saveInternal(data);
-                jsonOut.push_back(data);
+                jsonOut.emplace_back(data);
+            }
+            return success;
+        }
+        bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, 
+                                         std::vector<QJsonObject>& jsonOut, 
+                                         WorkProgress* progress,
+                                         double deltaProgress)
+        {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+            jsonOut.reserve(objs.size());
+
+            bool success = true;
+
+            for (auto o : objs)
+            {
+                QJsonObject data;
+                success &= o->saveInternal(data);
+                jsonOut.emplace_back(data);
+                progress->addProgress(deltaProgress);
             }
             return success;
         }

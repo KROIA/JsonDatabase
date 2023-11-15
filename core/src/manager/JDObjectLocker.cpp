@@ -398,74 +398,6 @@ namespace JsonDatabase
 				m_manager.getSignals().lockedObjectsChanged.emitSignal();
 			}
 		}
-
-
-		JDObjectLocker::ObjectLockData::ObjectLockData()
-			: obj(nullptr)
-		{
-			
-		}
-		JDObjectLocker::ObjectLockData::ObjectLockData(JDObjectInterface* obj, const JDManager& manager)
-			: obj(nullptr)
-		{
-			setObject(obj, manager);
-		}
-		void JDObjectLocker::ObjectLockData::setObject(JDObjectInterface* obj, const JDManager& manager)
-		{
-			this->obj = obj;
-			if (!this->obj)
-				return;
-			data.objectID = this->obj->getObjectID();
-			data.owner = manager.getUser();
-			data.sessionID = manager.getSessionID();
-			data.lockDate = QDate::currentDate().toString(Qt::DateFormat::ISODate).toStdString();
-			data.lockTime = QTime::currentTime().toString(Qt::DateFormat::ISODate).toStdString();
-		}
-		bool JDObjectLocker::ObjectLockData::load(const QJsonObject& obj)
-		{
-			if(!isValid(obj))
-				return false;
-			data.objectID = obj[s_jsonKey_objectID].toString().toStdString();
-			data.owner = obj[s_jsonKey_owner].toString().toStdString();
-			data.sessionID = obj[s_jsonKey_sessionID].toString().toStdString();
-			data.lockDate = obj[s_jsonKey_lockDate].toString().toStdString();
-			data.lockTime = obj[s_jsonKey_lockTime].toString().toStdString();
-			return true;
-		}
-		bool JDObjectLocker::ObjectLockData::save(QJsonObject& obj) const
-		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-
-			obj[s_jsonKey_objectID] = data.objectID.c_str();
-			obj[s_jsonKey_owner] = data.owner.c_str();
-			obj[s_jsonKey_sessionID] = data.sessionID.c_str();
-			obj[s_jsonKey_lockDate] = data.lockDate.c_str();
-			obj[s_jsonKey_lockTime] = data.lockTime.c_str();
-			return true;
-		}
-		bool JDObjectLocker::ObjectLockData::isValid(const QJsonObject& lock)
-		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-			if (!lock.contains(s_jsonKey_objectID)) return false;
-			if (!lock.contains(s_jsonKey_owner)) return false;
-			if (!lock.contains(s_jsonKey_sessionID)) return false;
-			if (!lock.contains(s_jsonKey_lockDate)) return false;
-			if (!lock.contains(s_jsonKey_lockTime)) return false;
-
-			return true;
-		}
-		std::string JDObjectLocker::ObjectLockData::toString() const
-		{
-			QJsonObject obj;
-			save(obj);
-			QJsonDocument jsonDoc(obj);
-
-			// Convert the JSON document to a string
-			QString jsonString = jsonDoc.toJson(QJsonDocument::Indented);
-			return jsonString.toStdString();
-		}
-
-
 		void JDObjectLocker::onDatabasePathChange(const std::string& oldPath, const std::string& newPath, Error& err) const
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
@@ -542,6 +474,75 @@ namespace JsonDatabase
 			m_lockTableWatcher.setup(getTableFileFilePath());
 			return;
 		}
+
+
+		JDObjectLocker::ObjectLockData::ObjectLockData()
+			: obj(nullptr)
+		{
+			
+		}
+		JDObjectLocker::ObjectLockData::ObjectLockData(JDObjectInterface* obj, const JDManager& manager)
+			: obj(nullptr)
+		{
+			setObject(obj, manager);
+		}
+		void JDObjectLocker::ObjectLockData::setObject(JDObjectInterface* obj, const JDManager& manager)
+		{
+			this->obj = obj;
+			if (!this->obj)
+				return;
+			data.objectID = this->obj->getObjectID();
+			data.owner = manager.getUser();
+			data.sessionID = manager.getSessionID();
+			data.lockDate = QDate::currentDate().toString(Qt::DateFormat::ISODate).toStdString();
+			data.lockTime = QTime::currentTime().toString(Qt::DateFormat::ISODate).toStdString();
+		}
+		bool JDObjectLocker::ObjectLockData::load(const QJsonObject& obj)
+		{
+			if(!isValid(obj))
+				return false;
+			data.objectID = obj[s_jsonKey_objectID].toString().toStdString();
+			data.owner = obj[s_jsonKey_owner].toString().toStdString();
+			data.sessionID = obj[s_jsonKey_sessionID].toString().toStdString();
+			data.lockDate = obj[s_jsonKey_lockDate].toString().toStdString();
+			data.lockTime = obj[s_jsonKey_lockTime].toString().toStdString();
+			return true;
+		}
+		bool JDObjectLocker::ObjectLockData::save(QJsonObject& obj) const
+		{
+			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+
+			obj[s_jsonKey_objectID] = data.objectID.c_str();
+			obj[s_jsonKey_owner] = data.owner.c_str();
+			obj[s_jsonKey_sessionID] = data.sessionID.c_str();
+			obj[s_jsonKey_lockDate] = data.lockDate.c_str();
+			obj[s_jsonKey_lockTime] = data.lockTime.c_str();
+			return true;
+		}
+		bool JDObjectLocker::ObjectLockData::isValid(const QJsonObject& lock)
+		{
+			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			if (!lock.contains(s_jsonKey_objectID)) return false;
+			if (!lock.contains(s_jsonKey_owner)) return false;
+			if (!lock.contains(s_jsonKey_sessionID)) return false;
+			if (!lock.contains(s_jsonKey_lockDate)) return false;
+			if (!lock.contains(s_jsonKey_lockTime)) return false;
+
+			return true;
+		}
+		std::string JDObjectLocker::ObjectLockData::toString() const
+		{
+			QJsonObject obj;
+			save(obj);
+			QJsonDocument jsonDoc(obj);
+
+			// Convert the JSON document to a string
+			QString jsonString = jsonDoc.toJson(QJsonDocument::Indented);
+			return jsonString.toStdString();
+		}
+
+
+		
 		
 		
 
@@ -564,7 +565,7 @@ namespace JsonDatabase
 				return false;
 			}
 
-			std::string jsonData = file.readAll();
+			std::string jsonData = file.readAll().constData();
 
 			QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData.c_str());
 			if (!jsonDoc.isNull()) {

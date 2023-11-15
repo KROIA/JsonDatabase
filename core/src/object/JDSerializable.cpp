@@ -4,11 +4,14 @@ namespace JsonDatabase
 {
 bool JDSerializable::getJsonValue(const QJsonObject &obj, QJsonObject &value, const QString &key)
 {
+    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
     if(obj.contains(key))
     {
+        JD_GENERAL_PROFILING_BLOCK("contains key",JD_COLOR_STAGE_6);
         QJsonValue val = obj[key];
         if(val.isObject())
         {
+            JD_GENERAL_PROFILING_BLOCK("is object", JD_COLOR_STAGE_7);
             value = val.toObject();
             return true;
         }

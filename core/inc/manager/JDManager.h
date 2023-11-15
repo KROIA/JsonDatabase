@@ -32,7 +32,8 @@ namespace JsonDatabase
 class JSONDATABASE_EXPORT JDManager: 
     public Internal::JDManagerObjectManager, 
     public Internal::JDManagerFileSystem,
-    public Internal::JDObjectLocker
+    public Internal::JDObjectLocker,
+    public Internal::JDManagerAsyncWorker
 {
     friend class Internal::JDManagerFileSystem;
     friend class Internal::JDManagerObjectManager;
@@ -133,8 +134,8 @@ class JSONDATABASE_EXPORT JDManager:
         bool saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress);
         bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress);
 
-        void onAsyncWorkDone(Internal::JDManagerAysncWork* work);
-        void onAsyncWorkError(Internal::JDManagerAysncWork* work);
+        void onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> work);
+        void onAsyncWorkError(std::shared_ptr<Internal::JDManagerAysncWork> work);
 
         void onObjectLockerFileChanged();
 
@@ -152,7 +153,7 @@ class JSONDATABASE_EXPORT JDManager:
 
         
         Internal::JDManagerSignals m_signals;
-        Internal::JDManagerAsyncWorker m_asyncWorker;
+        //Internal::JDManagerAsyncWorker m_asyncWorker;
         
 
         static const QString s_timeFormat;

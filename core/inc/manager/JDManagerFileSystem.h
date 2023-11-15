@@ -4,7 +4,6 @@
 #include "JDDeclaration.h"
 #include "utilities/filesystem/FileReadWriteLock.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
-#include "manager/async/WorkProgress.h"
 
 #include <QJsonObject>
 #include <mutex>
@@ -15,7 +14,7 @@ namespace JsonDatabase
     {
         class JSONDATABASE_EXPORT JDManagerFileSystem
         {
-            friend class JDManager;
+        protected:
             JDManagerFileSystem(
                 JDManager& manager,
                 std::mutex &mtx);
@@ -24,7 +23,7 @@ namespace JsonDatabase
         public:
 
         protected:
-
+            static const std::string& getJsonFileEnding();
 
             bool lockFile(
                 const std::string& directory,
@@ -49,16 +48,14 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead,
-                WorkProgress *progress) const;
+                bool lockedRead) const;
             bool writeJsonFile(
                 const QJsonObject& json,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead,
-                WorkProgress* progress) const;
+                bool lockedRead) const;
 
             bool readJsonFile(
                 std::vector<QJsonObject>& jsonsOut,
@@ -66,16 +63,14 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead,
-                WorkProgress* progress) const;
+                bool lockedRead) const;
             bool readJsonFile(
                 QJsonObject& objOut,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead,
-                WorkProgress* progress) const;
+                bool lockedRead) const;
 
             bool readFile(
                 QByteArray& fileDataOut,
@@ -100,6 +95,7 @@ namespace JsonDatabase
 
             void update();
 
+            
         private:
             JDManager& m_manager;
             std::mutex& m_mutex;

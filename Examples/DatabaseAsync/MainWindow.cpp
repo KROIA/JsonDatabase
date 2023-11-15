@@ -18,6 +18,7 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	, m_manager(nullptr)
 {
 	ui.setupUi(this);
+	setWindowTitle(QString::fromStdString(user));
 
 	m_manager = new JDManager("asyncDatabase", "Person", "sessionID", user);
 	m_manager->setup();
@@ -48,7 +49,7 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 
 	//m_manager->getSignals().disconnect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
 	connect(&m_timer, &QTimer::timeout, this, &MainWindow::onTimerFinished);
-	m_timer.start(10);
+	m_timer.start(1);
 }
 
 MainWindow::~MainWindow()
@@ -64,6 +65,17 @@ void MainWindow::onTimerFinished()
 	EASY_FUNCTION(profiler::colors::Amber);
 	m_manager->update();
 	ui.objectCount_label->setText("Object count: "+QString::number(m_manager->getObjectCount()));
+	JsonDatabase::Internal::WorkProgress progress = m_manager->getWorkProgress();
+	ui.progressBar->setValue(progress.getProgress()*100);
+	ui.progressTaskName_label->setText(QString::fromStdString(progress.getTaskText()));
+	ui.progressComment_label->setText(QString::fromStdString(progress.getComment()));
+}
+
+void MainWindow::on_zipFormat_checkBox_stateChanged(int state)
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+	DEBUG << "\n";
+	m_manager->enableZipFormat(state);
 }
 
 void MainWindow::on_generatePersons_pushButton_clicked()
@@ -83,6 +95,11 @@ void MainWindow::on_saveDatabase_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
+	if (m_manager->isBusy())
+	{
+		DEBUG << "Database is busy\n"; 
+		return;	
+	}
 	m_manager->saveObjectsAsync();
 	//onTimerFinished();
 }
@@ -179,7 +196,110 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 			DEBUG << "Can't unlock object, nullptr\n";
 	}
 }
+void MainWindow::on_test_pushButton_clicked()
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+	DEBUG << "\n";
 
+	std::vector<JDObjectInterface*> objects;
+	std::unordered_map<std::string, JDObjectInterface*> map1;
+	std::unordered_map<JDObjectInterface*, JDObjectInterface*> map2;
+
+	auto added = m_manager->getObjects();
+
+	// mesure start time using chrono 
+	auto start = std::chrono::high_resolution_clock::now();
+	objects.reserve(added.size());
+	for (auto& obj : added)
+	{
+		objects.push_back(obj);
+	}
+
+	// mesure end time using chrono
+	auto end = std::chrono::high_resolution_clock::now();
+	// mesure duration using chrono
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	DEBUG_SIMPLE << "std::vector<JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+
+	// mesure start time using chrono 
+	start = std::chrono::high_resolution_clock::now();
+	map1.reserve(added.size());
+	for (auto& obj : added)
+	{
+		map1[obj->getObjectID()] = obj;
+	}
+
+	// mesure end time using chrono
+	end = std::chrono::high_resolution_clock::now();
+	// mesure duration using chrono
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+
+	// mesure start time using chrono 
+	start = std::chrono::high_resolution_clock::now();
+	map2.reserve(added.size());
+	for (auto& obj : added)
+	{
+		map2[obj] = obj;
+	}
+
+	// mesure end time using chrono
+	end = std::chrono::high_resolution_clock::now();
+	// mesure duration using chrono
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	DEBUG_SIMPLE << "std::unordered_map<JDObjectInterface*, JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+
+
+	size_t iterations = 10;
+	start = std::chrono::high_resolution_clock::now();
+	for (size_t i = 0; i < iterations; ++i)
+	{
+		for (auto& obj : added)
+		{
+			auto it = std::find(objects.begin(), objects.end(), obj);
+			if (it != objects.end())
+			{
+				//DEBUG_SIMPLE << "found\n";
+			}
+		}
+	}
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	DEBUG_SIMPLE << "std::vector<JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+
+	start = std::chrono::high_resolution_clock::now();
+	for (size_t i = 0; i < iterations; ++i)
+	{
+		for (auto& obj : added)
+		{
+			auto it = map1.find(obj->getObjectID());
+			if (it != map1.end())
+			{
+				//DEBUG_SIMPLE << "found\n";
+			}
+		}
+	}
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+
+	start = std::chrono::high_resolution_clock::now();
+	for (size_t i = 0; i < iterations; ++i)
+	{
+		for (auto& obj : added)
+		{
+			auto it = map2.find(obj);
+			if (it != map2.end())
+			{
+				//DEBUG_SIMPLE << "found\n";
+			}
+		}
+	}
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	DEBUG_SIMPLE << "std::unordered_map<JDObjectInterface*, JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+
+}
 void MainWindow::closeEvent(QCloseEvent* event)
 {
 	EASY_FUNCTION(profiler::colors::Amber);

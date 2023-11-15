@@ -13,7 +13,8 @@ namespace JsonDatabase
     {
         class JSONDATABASE_EXPORT JDManagerObjectManager
         {
-            friend class JDManager;
+            //friend class JDManager;
+        protected:
 			JDManagerObjectManager(std::mutex &mtx);
             virtual ~JDManagerObjectManager();
             bool setup();
@@ -52,8 +53,11 @@ namespace JsonDatabase
         protected:
 
             bool addObject_internal(JDObjectInterface* obj);
+            bool addObject_internal(const std::vector<JDObjectInterface*>& objs);
             JDObjectInterface* replaceObject_internal(JDObjectInterface* obj);
+            void replaceObject_internal(const std::vector<JDObjectInterface*>& objs);
             bool removeObject_internal(JDObjectInterface* obj);
+            bool removeObject_internal(const std::vector<JDObjectInterface*>& objs);
             bool exists_internal(JDObjectInterface* obj) const;
             bool exists_internal(const std::string& id) const;
             JDObjectInterface* getObject_internal(const std::string& objID);
@@ -63,6 +67,8 @@ namespace JsonDatabase
             void update();
         private:
             std::mutex &m_mutex;
+
+            mutable std::mutex m_objsMutex;
             JDObjectContainer m_objs;
         };
 
@@ -71,9 +77,8 @@ namespace JsonDatabase
         template<typename T>
         bool JDManagerObjectManager::removeObjects()
         {
-            JD_GENERAL_PROFILING_FUNCTION(COLOR_STAGE_1)
-
-                std::vector<T*> toRemove = getObjects<T>();
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+            std::vector<T*> toRemove = getObjects<T>();
             for (auto obj : toRemove)
             {
                 m_objs.removeObject(obj);
@@ -85,10 +90,8 @@ namespace JsonDatabase
         template<typename T>
         bool JDManagerObjectManager::deleteObjects()
         {
-            JD_GENERAL_PROFILING_FUNCTION(COLOR_STAGE_1)
-
-
-                std::vector<T*> toDelete = getObjects<T>();
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+            std::vector<T*> toDelete = getObjects<T>();
 
             for (auto obj : toDelete)
             {

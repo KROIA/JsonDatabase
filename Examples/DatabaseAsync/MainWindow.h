@@ -20,6 +20,8 @@ signals:
 private slots:
 	void onTimerFinished();
 
+	void on_zipFormat_checkBox_stateChanged(int state);
+
 	void on_generatePersons_pushButton_clicked();
 	void on_loadDatabase_pushButton_clicked();
 	void on_saveDatabase_pushButton_clicked();
@@ -29,6 +31,7 @@ private slots:
 
 	void on_lockObject_pushButton_clicked();
 	void on_unlockObject_pushButton_clicked();
+	void on_test_pushButton_clicked();
 
 	void onPersonSave(Person* person);
 private:

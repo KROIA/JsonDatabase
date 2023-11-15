@@ -25,6 +25,14 @@ namespace JsonDatabase
 
         class JDManagerAsyncWorker;
         class JDManagerAysncWork;
+        class WorkProgress;
+        enum class WorkType
+        {
+            loadAllObjects,
+            loadSingleObject,
+            saveSingleObject,
+            saveAllObjects
+        };
 
         class JDManagerAysncWorkLoadAllObjects;
         class JDManagerAysncWorkLoadSingleObject;

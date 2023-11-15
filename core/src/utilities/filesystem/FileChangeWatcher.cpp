@@ -128,7 +128,7 @@ namespace JsonDatabase
             m_eventHandle = FindFirstChangeNotification(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
 
             if (m_eventHandle == INVALID_HANDLE_VALUE) {
-                std::cerr << "Error starting directory watch: " << GetLastError() << std::endl;
+                JD_CONSOLE_FUNCTION("Error starting directory watch: " << Utilities::getLastErrorString(GetLastError()) << "\n");
                 return;
             }
 
@@ -235,7 +235,7 @@ namespace JsonDatabase
             std::filesystem::path file(m_filePath);
 
             if (!std::filesystem::exists(file)) {
-                std::cerr << "File does not exist!\n";
+                JD_CONSOLE_FUNCTION("File: \"" << m_filePath.c_str() << "\" does not exist!\n");
                 return false;
             }
 

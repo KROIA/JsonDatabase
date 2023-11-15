@@ -16,33 +16,71 @@ namespace JsonDatabase
     }
     JDObjectInterface* JDObjectContainer::operator[](size_t index)
     {
+        
         if(m_objectVector.size() > index)
             return m_objectVector[index];
         return nullptr;
+    }
+    bool JDObjectContainer::operator[](JDObjectInterface *obj)
+    {
+        auto it = m_objectPtrMap.find(obj);
+        if (it != m_objectPtrMap.end())
+        {
+            return it->second;
+        }
+        return false;
     }
 
     void JDObjectContainer::reserve(size_t size)
     {
 		m_objectVector.reserve(size);
+        m_objectPtrMap.reserve(size);
+        m_objectMap.reserve(size);
     }
 
-    void JDObjectContainer::addObject(JDObjectInterface* obj) 
+    bool JDObjectContainer::addObject(JDObjectInterface* obj)
     {
+        if (!obj)
+            return false;
         const std::string &id = obj->getObjectID();
-        m_objectVector.push_back(obj);
+        auto it = m_objectMap.find(id);
+        if (exists(obj))
+            return false;
+        m_objectVector.emplace_back(obj);
         m_objectMap[id] = obj;
+        m_objectPtrMap[obj] = obj;
+        return true;
     }
-    void JDObjectContainer::addObject(const std::vector<JDObjectInterface*>& obj)
+    bool JDObjectContainer::addObject(const std::vector<JDObjectInterface*>& objs)
     {
-        m_objectVector.reserve(m_objectVector.size() + obj.size());
-        m_objectVector.insert(m_objectVector.end(), obj.begin(), obj.end());
-        for (auto it = obj.begin(); it != obj.end(); ++it)
+        bool success = true;
+        m_objectVector.reserve(m_objectVector.size() + objs.size());
+        //m_objectVector.insert(m_objectVector.end(), objs.begin(), objs.end());
+        for (auto it = objs.begin(); it != objs.end(); ++it)
         {
-			m_objectMap[(*it)->getObjectID()] = *it;
+            if (!*it)
+            {
+                success = false;
+                continue;
+            }
+               
+			auto it2 = m_objectPtrMap.find(*it);
+			if (it2 != m_objectPtrMap.end())
+			{
+				success = false;
+				continue;
+			}
+			const std::string &id = (*it)->getObjectID();
+			m_objectMap[id] = *it;
+            m_objectVector.emplace_back(*it);
+            m_objectPtrMap[*it] = *it;
 		}
+        return success;
     }
     JDObjectInterface* JDObjectContainer::replaceObject(JDObjectInterface* replacement)
     {
+        if (!replacement)
+            return nullptr;
         const std::string &id = replacement->getObjectID();
 		auto it = m_objectMap.find(id);
 		if (it != m_objectMap.end())
@@ -51,11 +89,13 @@ namespace JsonDatabase
 			*it2 = replacement;
             JDObjectInterface *old = it->second;
 			it->second = replacement;
+            m_objectPtrMap.erase(old);
+            m_objectPtrMap[replacement] = replacement;
 			return old;
 		}
 		return nullptr;
     }
-    void JDObjectContainer::removeObject(const std::string& id)
+    bool JDObjectContainer::removeObject(const std::string& id)
     {
         auto it = m_objectMap.find(id);
         if (it != m_objectMap.end()) 
@@ -64,22 +104,47 @@ namespace JsonDatabase
 
             m_objectVector.erase(it2);
             m_objectMap.erase(it);
+            m_objectPtrMap.erase(it->second);
+            return true;
         }
+        return false;
     }
-    void JDObjectContainer::removeObject(JDObjectInterface *obj)
+    bool JDObjectContainer::removeObject(JDObjectInterface *obj)
     {
         if(!obj)
-			return;
-        const std::string &id = obj->getObjectID();
-        auto it = m_objectMap.find(id);
-        if (it != m_objectMap.end())
-        {
-            
-            m_objectMap.erase(it);
+			return false;
+        
+        auto it = m_objectPtrMap.find(obj);
+        if (it == m_objectPtrMap.end())
+            return false;
+
+        const std::string& id = obj->getObjectID();
+        auto it2 = m_objectMap.find(id);
+        m_objectMap.erase(it2);
+
+        auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
+        m_objectVector.erase(it3);
+
+        return true;
+    }
+    bool JDObjectContainer::removeObject(const std::vector<JDObjectInterface*>& objs)
+    {
+        if (!objs.size() == 0)
+            return true;
+
+        for (auto& obj : objs) {
+            auto it = m_objectPtrMap.find(obj);
+            if (it == m_objectPtrMap.end())
+                continue;
+
+            const std::string& id = obj->getObjectID();
+            auto it2 = m_objectMap.find(id);
+            m_objectMap.erase(it2);
+
+            auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
+            m_objectVector.erase(it3);
         }
-        auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
-        if(it2 != m_objectVector.end())
-            m_objectVector.erase(it2);
+        return true;
     }
 
     JDObjectInterface* JDObjectContainer::getObjectByID(const std::string& id) 
@@ -96,8 +161,18 @@ namespace JsonDatabase
     {
         return m_objectVector;
     }
+    const std::unordered_map<std::string, JDObjectInterface*>& JDObjectContainer::getAllObjectsIDMap() const
+    {
+        return m_objectMap;
+    }
+    const std::unordered_map<JDObjectInterface*, JDObjectInterface*>& JDObjectContainer::getAllObjectsPtrMap() const
+    {
+        return m_objectPtrMap;
+    }
+
     bool JDObjectContainer::exists(const std::string& id) const
     {
+        
         auto it = m_objectMap.find(id);
         if (it != m_objectMap.end())
         {
@@ -107,12 +182,15 @@ namespace JsonDatabase
     }
     bool JDObjectContainer::exists(JDObjectInterface* obj) const
     {
-        auto it = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
+        if (!obj)
+			return false;
+        return m_objectPtrMap.find(obj) != m_objectPtrMap.end();
+        /*auto it = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
         if(it != m_objectVector.end())
 		{
 			return true;
         }
-        return false;
+        return false;*/
     }
 
     size_t JDObjectContainer::size() const
@@ -123,6 +201,7 @@ namespace JsonDatabase
     {
         m_objectVector.clear();
 		m_objectMap.clear();
+        m_objectPtrMap.clear();
     }
 
     JDObjectContainer::iterator JDObjectContainer::begin() 

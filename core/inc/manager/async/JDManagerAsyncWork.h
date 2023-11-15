@@ -12,6 +12,7 @@ namespace JsonDatabase
         class JSONDATABASE_EXPORT JDManagerAysncWork
         {
             friend class JDManager;
+            friend class JDManagerAsyncWorker;
         public:
             JDManagerAysncWork(
 				JDManager& manager,
@@ -22,6 +23,8 @@ namespace JsonDatabase
             virtual void process() = 0;
             virtual bool hasSucceeded() const = 0;
             virtual std::string getErrorMessage() const = 0;
+            virtual WorkType getWorkType() const = 0;
+
         protected:
             JDManager& m_manager;
             std::mutex& m_mutex;

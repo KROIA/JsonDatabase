@@ -35,5 +35,9 @@ namespace JsonDatabase
 				return "";
 			return "Failed to load all objects";
 		}
+		WorkType JDManagerAysncWorkLoadAllObjects::getWorkType() const
+		{
+			return WorkType::loadAllObjects;
+		}
 	}
 }

@@ -34,7 +34,7 @@ namespace JsonDatabase
             friend JDManagerObjectManager;
             friend JDManagerFileSystem;
             friend JDObjectLocker;
-
+        
             JDManagerSignals(JDManager& manager, std::mutex& mtx);
         public:
             /*
@@ -257,6 +257,7 @@ namespace JsonDatabase
 
             JDManager& m_manager;
             std::mutex& m_mutex;
+            std::mutex m_signalsMutex;
         };
     }
 }

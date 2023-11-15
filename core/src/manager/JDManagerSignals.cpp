@@ -148,6 +148,7 @@ namespace JsonDatabase
 
         void JDManagerSignals::clearContainer()
         {
+            
             objectRemovedFromDatabase.clear();
             objectAddedToDatabase.clear();
             objectOverrideChangeFromDatabase.clear();
@@ -155,6 +156,7 @@ namespace JsonDatabase
         }
         void JDManagerSignals::emitIfNotEmpty()
         {
+            
             objectRemovedFromDatabase.emitSignalIfNotEmpty();
             objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
             objectAddedToDatabase.emitSignalIfNotEmpty();
@@ -163,7 +165,7 @@ namespace JsonDatabase
 
         void JDManagerSignals::addToQueue(Signals signal, bool onlyOnce)
         {
-            JDM_UNIQUE_LOCK_P;
+            JDM_UNIQUE_LOCK_P_M(m_signalsMutex);
             if (onlyOnce)
             {
                 for (size_t i = 0; i < m_signalQueue.size(); ++i)
@@ -179,7 +181,7 @@ namespace JsonDatabase
         }
         void JDManagerSignals::addToQueue(Signals signal, bool success, JDObjectInterface* obj, bool onlyOnce)
         {
-            JDM_UNIQUE_LOCK_P;
+            JDM_UNIQUE_LOCK_P_M(m_signalsMutex);
             if (onlyOnce)
             {
                 for (size_t i = 0; i < m_signalQueue.size(); ++i)
@@ -216,7 +218,7 @@ namespace JsonDatabase
         }
         void JDManagerSignals::addToQueue(Signals signal, bool success, bool onlyOnce)
         {
-            JDM_UNIQUE_LOCK_P;
+            JDM_UNIQUE_LOCK_P_M(m_signalsMutex);
             if (onlyOnce)
             {
                 for (size_t i = 0; i < m_signalQueue.size(); ++i)
@@ -257,7 +259,7 @@ namespace JsonDatabase
             while (hasWork)
             {
                 {
-                    JDM_UNIQUE_LOCK_P;
+                    JDM_UNIQUE_LOCK_P_M(m_signalsMutex);
                     signalQueue = m_signalQueue;
                     m_signalQueue.clear();
                 }
