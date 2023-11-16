@@ -57,6 +57,15 @@ bool JDSerializable::getJsonValue(const QJsonObject &obj, int &value, const QStr
     }
     return false;
 }
+bool JDSerializable::getJsonValue(const QJsonObject& obj, JDObjectID& value, const QString& key)
+{
+    if (obj.contains(key))
+    {
+        value = obj[key].toInt(value.get());
+        return true;
+    }
+    return false;
+}
 bool JDSerializable::getJsonValue(const QJsonObject &obj, double &value, const QString &key)
 {
     if(obj.contains(key))

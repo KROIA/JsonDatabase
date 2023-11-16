@@ -228,26 +228,20 @@ namespace JsonDatabase
 
                 if (fileHandle == INVALID_HANDLE_VALUE) 
                 {
-
+                    // pause for 1 ms
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     return false;
                 }
                 m_lastModificationTime = change;
                 // Close the file handle
                 CloseHandle(fileHandle);
+
+                
+
                 return true;
             }
 
             return false; // File has not changed
-            /*WIN32_FILE_ATTRIBUTE_DATA fileData;
-            if (!GetFileAttributesEx(m_filePath.c_str(), GetFileExInfoStandard, &fileData)) {
-                return false;
-            }
-
-            if (CompareFileTime(&fileData.ftLastAccessTime, &m_lastModificationTime) != 0) {
-                m_lastModificationTime = fileData.ftLastAccessTime;
-                return true; // File has changed
-            }
-            return false;*/
         }
 
 

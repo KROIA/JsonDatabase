@@ -26,14 +26,14 @@ int main(int argc, char *argv[])
     //manager.addObjectDefinition<A>();
     //manager.addObjectDefinition<B>();
     //manager.addObjectDefinition<C>();
-    A* a1 = new A("a1");
-    A* a2 = new A("a2");
+    A* a1 = new A(0);
+    A* a2 = new A(1);
 
-    B* b1 = new B("b1");
-    B* b2 = new B("b2");
+    B* b1 = new B(2);
+    B* b2 = new B(3);
 
-    C* c1 = new C("c1");
-    C* c2 = new C("c2");
+    C* c1 = new C(4);
+    C* c2 = new C(5);
 
     manager.getSignals().connect_onSaveObjectsDone_slot(&onSaveCallback);
 

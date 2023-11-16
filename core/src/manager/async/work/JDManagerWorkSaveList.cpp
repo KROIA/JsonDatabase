@@ -15,7 +15,10 @@ namespace JsonDatabase
 		{
 			m_objects.resize(objects.size());
 			for (size_t i = 0; i < objects.size(); ++i)
+			{
+				//objects[i]->incrementVersionValue();
 				m_objects[i] = objects[i]->clone();
+			}
 				
 			m_progress.setTaskName("Speichere "+ std::to_string(m_objects.size())+ " Objekte");
 		}

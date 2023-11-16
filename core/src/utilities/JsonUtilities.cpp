@@ -70,12 +70,12 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (objOriginal)
             {
-                std::string ID;
+                JDObjectID ID;
                 JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
                 if (objOriginal->equalData(json))
                 {
                     objOut = objOriginal;
-                    objOriginal->setVersion(json); // Update version value from loaded object
+                   // objOriginal->setVersion(json); // Update version value from loaded object
                 }
                 else
                 {
@@ -95,7 +95,7 @@ namespace JsonDatabase
                     return false;
                 }
 
-                std::string ID;
+                JDObjectID ID;
                 JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
 
                 objOut = clone->clone(json, ID);

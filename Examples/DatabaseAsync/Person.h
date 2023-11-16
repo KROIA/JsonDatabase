@@ -22,7 +22,7 @@ public:
     numberOfChildren
     
     */
-    Person(string id, string fn, string ln, string g, string age,
+    Person(JsonDatabase::JDObjectID id, string fn, string ln, string g, string age,
         string email, string ph, string edu, string occ,
         string exp, string sal, string mart, string chc);
     Person();

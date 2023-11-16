@@ -5,9 +5,9 @@
 namespace JsonDatabase
 {
 
-    JDObjectInterface* JDObjectContainer::operator[](const std::string& id)
+    JDObjectInterface* JDObjectContainer::operator[](const JDObjectID &id)
     {
-		auto it = m_objectMap.find(id);
+		auto it = m_objectMap.find(id.get());
 		if (it != m_objectMap.end())
 		{
 			return it->second;
@@ -42,12 +42,12 @@ namespace JsonDatabase
     {
         if (!obj)
             return false;
-        const std::string &id = obj->getObjectID();
-        auto it = m_objectMap.find(id);
+        const JDObjectID &id = obj->getObjectID();
+        auto it = m_objectMap.find(id.get());
         if (exists(obj))
             return false;
         m_objectVector.emplace_back(obj);
-        m_objectMap[id] = obj;
+        m_objectMap[id.get()] = obj;
         m_objectPtrMap[obj] = obj;
         return true;
     }
@@ -70,8 +70,8 @@ namespace JsonDatabase
 				success = false;
 				continue;
 			}
-			const std::string &id = (*it)->getObjectID();
-			m_objectMap[id] = *it;
+			const JDObjectID &id = (*it)->getObjectID();
+			m_objectMap[id.get()] = *it;
             m_objectVector.emplace_back(*it);
             m_objectPtrMap[*it] = *it;
 		}
@@ -81,8 +81,8 @@ namespace JsonDatabase
     {
         if (!replacement)
             return nullptr;
-        const std::string &id = replacement->getObjectID();
-		auto it = m_objectMap.find(id);
+        const JDObjectID &id = replacement->getObjectID();
+		auto it = m_objectMap.find(id.get());
 		if (it != m_objectMap.end())
 		{
 			auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
@@ -95,9 +95,9 @@ namespace JsonDatabase
 		}
 		return nullptr;
     }
-    bool JDObjectContainer::removeObject(const std::string& id)
+    bool JDObjectContainer::removeObject(const JDObjectID &id)
     {
-        auto it = m_objectMap.find(id);
+        auto it = m_objectMap.find(id.get());
         if (it != m_objectMap.end()) 
         {
             auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
@@ -118,8 +118,8 @@ namespace JsonDatabase
         if (it == m_objectPtrMap.end())
             return false;
 
-        const std::string& id = obj->getObjectID();
-        auto it2 = m_objectMap.find(id);
+        const JDObjectID &id = obj->getObjectID();
+        auto it2 = m_objectMap.find(id.get());
         m_objectMap.erase(it2);
 
         auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
@@ -137,8 +137,8 @@ namespace JsonDatabase
             if (it == m_objectPtrMap.end())
                 continue;
 
-            const std::string& id = obj->getObjectID();
-            auto it2 = m_objectMap.find(id);
+            const JDObjectID &id = obj->getObjectID();
+            auto it2 = m_objectMap.find(id.get());
             m_objectMap.erase(it2);
 
             auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
@@ -147,9 +147,9 @@ namespace JsonDatabase
         return true;
     }
 
-    JDObjectInterface* JDObjectContainer::getObjectByID(const std::string& id) 
+    JDObjectInterface* JDObjectContainer::getObjectByID(const JDObjectID &id) 
     {
-        auto it = m_objectMap.find(id);
+        auto it = m_objectMap.find(id.get());
         if (it != m_objectMap.end()) 
         {
             return it->second;
@@ -161,7 +161,7 @@ namespace JsonDatabase
     {
         return m_objectVector;
     }
-    const std::unordered_map<std::string, JDObjectInterface*>& JDObjectContainer::getAllObjectsIDMap() const
+    const std::unordered_map<JDObjectID::IDType, JDObjectInterface*>& JDObjectContainer::getAllObjectsIDMap() const
     {
         return m_objectMap;
     }
@@ -170,10 +170,10 @@ namespace JsonDatabase
         return m_objectPtrMap;
     }
 
-    bool JDObjectContainer::exists(const std::string& id) const
+    bool JDObjectContainer::exists(const JDObjectID &id) const
     {
         
-        auto it = m_objectMap.find(id);
+        auto it = m_objectMap.find(id.get());
         if (it != m_objectMap.end())
         {
             return true;

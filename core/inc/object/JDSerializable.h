@@ -2,6 +2,7 @@
 
 #include "JD_base.h"
 #include "JDDeclaration.h"
+#include "object/JDObjectID.h"
 
 #include <QJsonObject>
 
@@ -19,6 +20,7 @@ namespace JsonDatabase
 		static bool getJsonValue(const QJsonObject& obj, QString& value, const QString& key);
 		static bool getJsonValue(const QJsonObject& obj, std::string& value, const QString& key);
 		static bool getJsonValue(const QJsonObject& obj, int& value, const QString& key);
+		static bool getJsonValue(const QJsonObject& obj, JDObjectID& value, const QString& key);
 		static bool getJsonValue(const QJsonObject& obj, double& value, const QString& key);
 		static bool getJsonValue(const QJsonObject& obj, float& value, const QString& key);
 		static bool getJsonValue(const QJsonObject& obj, bool& value, const QString& key);

@@ -7,7 +7,7 @@ namespace JsonDatabase
 {
 
 const QString JDObjectInterface::s_tag_objID = "objID";
-const QString JDObjectInterface::s_tag_objVersion = "objVersion";
+//const QString JDObjectInterface::s_tag_objVersion = "objVersion";
 const QString JDObjectInterface::s_tag_className = "class";
 const QString JDObjectInterface::s_tag_data = "Data";
 
@@ -23,19 +23,20 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObjectInterface*
 
 
 JDObjectInterface::JDObjectInterface()
-    : m_objID("")
-    , m_version(0)
+    : m_objID(0)
+    //, m_version(0)
 {
 
 }
-JDObjectInterface::JDObjectInterface(const std::string& id)
+JDObjectInterface::JDObjectInterface(const JDObjectID& id)
     : m_objID(id)
-    , m_version(0)
+   // , m_version(0)
 {
 
 }
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
-    : m_version(other.m_version)
+    : m_objID(other.m_objID)
+   // , m_version(other.m_version)
 {
 
 }
@@ -55,11 +56,11 @@ std::vector<JDObjectInterface*> JDObjectInterface::reinstantiate(const std::vect
 	}
 	return ret;
 }
-size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID)
+size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectID &objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        std::string id;
+        JDObjectID id;
         if (JDSerializable::getJsonValue(jsons[i], id, s_tag_objID))
         {
             if (id == objID)
@@ -69,16 +70,16 @@ size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons
     return std::string::npos;
 }
 
-const std::string& JDObjectInterface::getObjectID() const
+const JDObjectID &JDObjectInterface::getObjectID() const
 {
     return m_objID;
 }
-void JDObjectInterface::setObjectID(const std::string& id)
+void JDObjectInterface::setObjectID(const JDObjectID& id)
 {
     m_objID = id;
 }
 
-void JDObjectInterface::setVersion(int version)
+/*void JDObjectInterface::setVersion(int version)
 {
 	m_version = version;
 }
@@ -86,7 +87,7 @@ void JDObjectInterface::setVersion(const QJsonObject& obj)
 {
 	if(obj.contains(s_tag_objVersion))
 		m_version = obj[s_tag_objVersion].toInt(0);
-}
+}*/
 bool JDObjectInterface::equalData(const QJsonObject& obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
@@ -109,8 +110,8 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     
     
-    if(!obj.contains(s_tag_objID) ||
-       !obj.contains(s_tag_objVersion))
+    if(!obj.contains(s_tag_objID) /* ||
+       !obj.contains(s_tag_objVersion)*/)
         return false;
     QJsonObject data;
     bool success = getJsonValue(obj, data, s_tag_data);
@@ -119,25 +120,25 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
         JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
         success &= load(data);
     }
-    setObjectID(obj[s_tag_objID].toString().toStdString());
-    m_version = obj[s_tag_objVersion].toInt(0);
+    setObjectID(obj[s_tag_objID].toInt());
+    //m_version = obj[s_tag_objVersion].toInt(0);
 
-    if(m_version <= 0)
-        success = false;
+   // if(m_version <= 0)
+   //     success = false;
     return success;
 }
 
 
 bool JDObjectInterface::saveInternal(QJsonObject &obj)
 {
-    ++m_version;
+    //++m_version;
     return getSaveData(obj);
 }
 bool JDObjectInterface::getSaveData(QJsonObject& obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    obj[s_tag_objID] = getObjectID().c_str();
-    obj[s_tag_objVersion] = QJsonValue(m_version);
+    obj[s_tag_objID] = getObjectID().get();
+    //obj[s_tag_objVersion] = QJsonValue(m_version);
     obj[s_tag_className] = className().c_str();
     QJsonObject data;
     bool ret;
@@ -149,5 +150,9 @@ bool JDObjectInterface::getSaveData(QJsonObject& obj) const
     obj[s_tag_data] = data;
     return ret;
 }
+/*void JDObjectInterface::incrementVersionValue()
+{
+    ++m_version;
+}*/
 
 }

@@ -82,17 +82,17 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return exists_internal(obj);
         }
-        bool JDManagerObjectManager::exists(const std::string& id) const
+        bool JDManagerObjectManager::exists(const JDObjectID &id) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return exists_internal(id);
         }
-        JDObjectInterface* JDManagerObjectManager::getObject(const std::string& objID)
+        JDObjectInterface* JDManagerObjectManager::getObject(const JDObjectID &id)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return getObject_internal(objID);
+            return getObject_internal(id);
         }
         const std::vector<JDObjectInterface*>& JDManagerObjectManager::getObjects() const
         {
@@ -149,15 +149,15 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             return m_objs.exists(obj);
         }
-        bool JDManagerObjectManager::exists_internal(const std::string& id) const
+        bool JDManagerObjectManager::exists_internal(const JDObjectID &id) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             return m_objs.exists(id);
         }
-        JDObjectInterface* JDManagerObjectManager::getObject_internal(const std::string& objID)
+        JDObjectInterface* JDManagerObjectManager::getObject_internal(const JDObjectID &id)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            return m_objs[objID];
+            return m_objs[id];
         }
         const std::vector<JDObjectInterface*>& JDManagerObjectManager::getObjects_internal() const
         {

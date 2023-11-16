@@ -44,13 +44,13 @@ public:
 
 
         instanceCounter++;
-        setObjectID(std::to_string(instanceCounter));
+        setObjectID(instanceCounter);
     }
     Person()
         : JDObjectInterface()
     {
         instanceCounter++;
-        setObjectID(std::to_string(instanceCounter));
+        setObjectID(instanceCounter);
     }
     ~Person()
     {

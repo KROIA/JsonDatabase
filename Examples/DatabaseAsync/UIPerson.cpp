@@ -35,7 +35,7 @@ void UIPerson::setPerson(Person* person, bool editMode)
 	m_person = person;
 	if (m_person)
 	{
-		ui.objectID_label->setText(QString::fromStdString(m_person->getObjectID()));
+		ui.objectID_label->setText(m_person->getObjectID().toQString());
 		ui.firstName_lineEdit->setText(QString::fromStdString(m_person->firstName));
 		ui.lastName_lineEdit->setText(QString::fromStdString(m_person->lastName));
 	}

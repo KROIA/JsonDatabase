@@ -203,7 +203,7 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
     }
 
     bool success = true;
-    const std::string& ID = obj->getObjectID();
+    const JDObjectID &id = obj->getObjectID();
 
     if (progress) progress->setComment("Reading database file");
     std::vector<QJsonObject> jsons; 
@@ -216,10 +216,10 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
         false);
 
     if (progress) progress->setProgress(0.5);
-    size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
+    size_t index = JDObjectInterface::getJsonIndexByID(jsons, id);
     if (index == std::string::npos)
     {
-        JD_CONSOLE("bool JDManager::loadObject_internal(JDObjectInterface*) Object with ID: " << ID << " not found");
+        JD_CONSOLE("bool JDManager::loadObject_internal(JDObjectInterface*) Object with ID: " << id << " not found");
         return false;
     }
     const QJsonObject& objData = jsons[index];
@@ -275,7 +275,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         if (progress) progress->setComment("Matching objects with json data");
         for (size_t i = 0; i < jsons.size(); ++i)
         {
-            std::string ID;
+            JDObjectID ID;
             if (!JDSerializable::getJsonValue(jsons[i], ID, JDObjectInterface::s_tag_objID))
             {
                 JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode) 
@@ -487,7 +487,7 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
     }
 
     if (progress) progress->setComment("Serializing object");
-    std::string ID = obj->getObjectID();
+    JDObjectID ID = obj->getObjectID();
     std::vector<QJsonObject> jsons;
 
     QJsonObject data;

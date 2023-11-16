@@ -16,8 +16,9 @@ namespace JsonDatabase
 		{
 			if (object)
 			{
+				//object->incrementVersionValue();
 				m_object = object->clone();
-				m_progress.setTaskName("Speichere Objekt: " + m_object->getObjectID());
+				m_progress.setTaskName("Speichere Objekt: " + m_object->getObjectID().toString());
 			}
 		}
 		JDManagerAysncWorkSaveSingle::~JDManagerAysncWorkSaveSingle()

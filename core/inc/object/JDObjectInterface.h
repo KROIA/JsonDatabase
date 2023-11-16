@@ -3,6 +3,7 @@
 #include "JD_base.h"
 #include "JDDeclaration.h"
 #include "JDSerializable.h"
+#include "JDObjectID.h"
 
 #include <QJsonObject>
 #include <string>
@@ -17,31 +18,36 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 {
         friend JDManager;
         friend Internal::JsonUtilities;
+       // friend Internal::JDManagerAysncWorkSaveList;
+       // friend Internal::JDManagerAysncWorkSaveSingle;
     public:
+
+
         JDObjectInterface();
-        JDObjectInterface(const std::string &id);
+        JDObjectInterface(const JDObjectID &id);
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
         // Creates a copy of the original object as a new instance
         static std::vector<JDObjectInterface*> reinstantiate(const std::vector<JDObjectInterface*> &objList);
-        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID);
+        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectID &objID);
 
 
         virtual JDObjectInterface* clone() const = 0;
-        virtual JDObjectInterface* clone(const QJsonObject &obj, const std::string &uniqueID) const = 0;
+        virtual JDObjectInterface* clone(const QJsonObject &obj, const JDObjectID &uniqueID) const = 0;
         virtual const std::string& className() const = 0;
 
-        const std::string& getObjectID() const;
+        const JDObjectID& getObjectID() const;
     protected:
-        void setObjectID(const std::string &id);
+        void setObjectID(const JDObjectID &id);
 
-        void setVersion(int version);
-        void setVersion(const QJsonObject& obj);
+       // void setVersion(int version);
+       // void setVersion(const QJsonObject& obj);
         bool equalData(const QJsonObject &obj) const;
         bool loadInternal(const QJsonObject &obj);
         bool saveInternal(QJsonObject &obj);
         bool getSaveData(QJsonObject &obj) const;
+        //void incrementVersionValue();
 
 
     class JSONDATABASE_EXPORT AutoObjectAddToRegistry
@@ -53,12 +59,12 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
     private:
 
-        std::string m_objID;
-        int m_version; // ObjectVersion
+        JDObjectID m_objID;
+        //int m_version; // ObjectVersion
 
     public:
         static const QString s_tag_objID;
-        static const QString s_tag_objVersion;
+    //    static const QString s_tag_objVersion;
         static const QString s_tag_className;
         static const QString s_tag_data;
     private:
@@ -85,11 +91,11 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     classNameVal(const classNameVal &other); 
 
 #define JD_OBJECT_DECL_CONSTRUCTOR_ID(classNameVal) \
-    classNameVal(const std::string &id); 
+    classNameVal(const JsonDatabase::JDObjectID &id); 
 
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* clone() const override; \
-    classNameVal* clone(const QJsonObject &reader, const std::string &uniqueID) const override; 
+    classNameVal* clone(const QJsonObject &reader, const JsonDatabase::JDObjectID &uniqueID) const override; 
 
 #define JD_OBJECT_DECL_CLASSNAME(classNameVal) \
     const std::string &className() const override; 
@@ -108,7 +114,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
 
 #define JD_OBJECT_IMPL_CONSTRUCTOR_ID(classNameVal) \
-    classNameVal::classNameVal(const std::string &id) \
+    classNameVal::classNameVal(const JsonDatabase::JDObjectID &id) \
         : JDObjectInterface(id) \
     {} 
 
@@ -120,7 +126,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         c->setObjectID(this->getObjectID()); \
         return c; \
     } \
-    classNameVal* classNameVal::clone(const QJsonObject &reader, const std::string &uniqueID) const\
+    classNameVal* classNameVal::clone(const QJsonObject &reader, const JsonDatabase::JDObjectID &uniqueID) const\
     { \
         classNameVal *obj = new classNameVal(uniqueID); \
         obj->loadInternal(reader); \

@@ -98,14 +98,14 @@ namespace JsonDatabase
 					targetLock.data.sessionID == m_manager.getSessionID())
 				{
 					// Already locked by this session
-					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID() << "\") Lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() + "\" is already aquired in this session\n");
+					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID().toString() << "\") Lock for object: \"" + obj->getObjectID().toString() + "\" type: \"" + obj->className() + "\" is already aquired in this session\n");
 					err = Error::none;
 					return true;
 				}
 				else
 				{
 					err = Error::lockedByOther;
-					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID() << "\") Can't aquire lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() +
+					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID().toString() << "\") Can't aquire lock for object: \"" + obj->getObjectID().toString() + "\" type: \"" + obj->className() +
 						"\"\nLock Data: \n" + targetLock.toString() + "\n"
 						"Lock is already aquired from user: \"" + targetLock.data.owner + "\"\n");
 					return false;
@@ -196,13 +196,13 @@ namespace JsonDatabase
 				{
 					err = Error::lockedByOther;
 					
-					JD_CONSOLE_FUNCTION("Can't release lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className()
+					JD_CONSOLE_FUNCTION("Can't release lock for object: \"" + obj->getObjectID().toString() + "\" type: \"" + obj->className()
 					<<"\"\nLock Data: \n" + targetLock.toString() + "\n"
 					<<"Lock is owned by user: " + targetLock.data.owner + "\n");
 					return false;
 				}
 			}
-			JD_CONSOLE_FUNCTION("Lock for object: \"" + obj->getObjectID() + "\" type: \"" + obj->className() + "\" did not exist\n");
+			JD_CONSOLE_FUNCTION("Lock for object: \"" + obj->getObjectID().toString() + "\" type: \"" + obj->className() + "\" did not exist\n");
 
 			err = Error::none;
 			return true;
@@ -349,7 +349,7 @@ namespace JsonDatabase
 			bool success = true;
 			for (const ObjectLockData& lock : locks)
 			{
-				if (lock.data.objectID.size() > 0)
+				if (lock.data.objectID.isValid())
 					lockedObjectsOut.push_back(lock.data);
 				else
 				{
@@ -501,7 +501,7 @@ namespace JsonDatabase
 		{
 			if(!isValid(obj))
 				return false;
-			data.objectID = obj[s_jsonKey_objectID].toString().toStdString();
+			data.objectID = obj[s_jsonKey_objectID].toInt();
 			data.owner = obj[s_jsonKey_owner].toString().toStdString();
 			data.sessionID = obj[s_jsonKey_sessionID].toString().toStdString();
 			data.lockDate = obj[s_jsonKey_lockDate].toString().toStdString();
@@ -512,7 +512,7 @@ namespace JsonDatabase
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 
-			obj[s_jsonKey_objectID] = data.objectID.c_str();
+			obj[s_jsonKey_objectID] = data.objectID.get();
 			obj[s_jsonKey_owner] = data.owner.c_str();
 			obj[s_jsonKey_sessionID] = data.sessionID.c_str();
 			obj[s_jsonKey_lockDate] = data.lockDate.c_str();
@@ -653,7 +653,7 @@ namespace JsonDatabase
 		}
 
 		bool JDObjectLocker::getObjectLockDataFromID(const std::vector<ObjectLockData>& locks,
-			const std::string& targetID,
+			const JDObjectID& targetID,
 			ObjectLockData& lockOut,
 			size_t& index) const
 		{
