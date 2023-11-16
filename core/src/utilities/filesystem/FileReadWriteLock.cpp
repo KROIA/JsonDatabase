@@ -123,7 +123,7 @@ namespace JsonDatabase
         FileLock::Error lockErr1;
         FileLock tmpLock(m_directory, m_fileName);
         if (!tmpLock.lock(s_tryLockTimeoutMs, lockErr1))
-            return FileLock::Error::unableToLock;
+            return lockErr1;
         
         m_access = Access::unknown;
         

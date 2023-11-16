@@ -19,10 +19,6 @@
 
 
 #include <string>
-//#include <map>
-//#include <QJsonObject>
-//#include <QDir>
-//#include <filesystem>
 #include <mutex>
 
 
@@ -99,16 +95,65 @@ class JSONDATABASE_EXPORT JDManager:
             New objects are created and added to the database. See signal objectAddedToDatabase.
             Objects that have loaded different data are replaced with the new instance. See signal objectChangedFromDatabase.
             Objects that are not in the database file anymore are removed from the database. See signal objectRemovedFromDatabase.
+        
+            Emits signals:
+				objectAddedToDatabase
+				objectChangedFromDatabase
+				objectRemovedFromDatabase
+                objectOverrideChangeFromDatabase
         */
         bool loadObjects(int mode = LoadMode::allObjects);
+
+        /*
+            Loads the objects from the database file asynchronously.
+
+            Emits signals:
+                objectAddedToDatabase
+                objectChangedFromDatabase
+                objectRemovedFromDatabase
+                objectOverrideChangeFromDatabase
+                onLoadObjectsDone after the async work is done
+        */
         void loadObjectsAsync(int mode = LoadMode::allObjects);
 
+        /*
+            Saves the object to the database file.
+            If the object is not in the database file, it will be added.
+        */
         bool saveObject(JDObjectInterface *obj);
-        void saveObjectAsync(JDObjectInterface *obj);
-        bool saveObjects();
-        void saveObjectsAsync();
-        //bool saveObjects(const std::vector<JDObjectInterface*> &objList);
 
+        /*
+            Saves the object to the database file asynchronously.
+            If the object is not in the database file, it will be added.
+            A copy of the obj is made while calling this function.
+            only the copy gets saved.
+
+            Emits signals:
+                onSaveObjectDone after the async work is done
+                databaseOutdated if the database has changed before the save could be completed
+                in this case the object is not saved. Try load the database first.
+        */
+        void saveObjectAsync(JDObjectInterface *obj);
+
+        /*
+            Saves all objects which are in this database instance to the database file.
+            
+            Emits signals:
+                databaseOutdated if the database has changed before the save could be completed
+                in this case the object is not saved. Try load the database first.
+        */
+        bool saveObjects();
+
+        /*
+            Saves all objects which are in this database instance to the database file asynchronously.
+
+            Emits signals:
+				onSaveObjectsDone after the async work is done
+				databaseOutdated if the database has changed before the save could be completed
+				in this case the object is not saved. Try load the database first.
+        */
+        void saveObjectsAsync();
+        
         
 
 

@@ -133,16 +133,6 @@ namespace JsonDatabase
             }
 
             fileChanged(); // Set initial file modification time
-            /*BOOL success = ReadDirectoryChangesW(
-                m_eventHandle,
-                buffer,
-                sizeof(buffer),
-                TRUE,
-                FILE_NOTIFY_CHANGE_LAST_WRITE,
-                &bytesReturned,
-                nullptr,
-                nullptr
-            );*/
             while (!m_stopFlag.load()) {
                 JD_GENERAL_PROFILING_BLOCK("while",JD_COLOR_STAGE_8);
                 DWORD waitResult = WAIT_FAILED;
@@ -153,8 +143,6 @@ namespace JsonDatabase
                         waitResult = WaitForSingleObject(m_eventHandle, 1000);
                         if (m_stopFlag.load())
                         {
-                            //JD_PROFILING_END_BLOCK;
-                            //JD_PROFILING_END_BLOCK;
                             waitResult = WAIT_FAILED;
                             goto exitThread;
                         }
@@ -169,19 +157,7 @@ namespace JsonDatabase
                         DWORD error = GetLastError();
                         JD_CONSOLE_FUNCTION("Error FindNextChangeNotification. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
                     }
-                    
-                   /* if (!CloseHandle(m_eventHandle))
-                    {
-                        DWORD error = GetLastError();
-                        JD_CONSOLE_FUNCTION("Error CloseHandle. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
-                    }
-                    m_eventHandle = FindFirstChangeNotification(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
-
-                    if (m_eventHandle == INVALID_HANDLE_VALUE) {
-                        std::cerr << "Error starting directory watch: " << GetLastError() << std::endl;
-                        return;
-                    }*/
-
+                   
 
                     if (fileChanged() && !m_paused.load())
                     {
@@ -197,31 +173,6 @@ namespace JsonDatabase
                             break;
                         }
                     }
-                    
-                    /*if (!ResetEvent(m_eventHandle))
-                    {
-                        DWORD error = GetLastError();
-                        JD_CONSOLE_FUNCTION("Error ResetEvent. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
-                    }*/
-
-                    
-                    
-                    //m_eventHandle = FindFirstChangeNotificationA(m_filePath.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
-                    /*success = ReadDirectoryChangesW(
-                        m_eventHandle,
-                        buffer,
-                        sizeof(buffer),
-                        TRUE,
-                        FILE_NOTIFY_CHANGE_LAST_WRITE,
-                        &bytesReturned,
-                        nullptr,
-                        nullptr
-                    );
-                    if (!success) {
-                        DWORD error = GetLastError();
-                        JD_CONSOLE_FUNCTION("Error monitoring file changes. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
-                        
-                    }*/
                 }
                 else {
                     DWORD error = GetLastError();

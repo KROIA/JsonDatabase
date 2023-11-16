@@ -479,6 +479,7 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
     if (wasLockedForWritingByOther)
     {
         m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
+    	return false;
     }
     if (!hasLock)
     {
@@ -548,6 +549,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     if (wasLockedForWritingByOther)
     {
         m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
+        return false;
     }
     if (!hasLock)
     {
