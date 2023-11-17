@@ -232,7 +232,18 @@ bool JDObjectInterface::getSaveData(JsonValue& obj) const
     obj[s_tag_data] = data;
     return ret;
 #else
+    obj[s_tag_objID] = getObjectID().get();
+    //obj[s_tag_objVersion] = QJsonValue(m_version);
+    obj[s_tag_className] = className().c_str();
+    JsonObject data;
+    bool ret;
+    {
+        JD_GENERAL_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
+        ret = save(data);
+    }
 
+    obj[s_tag_data] = data;
+    return ret;
 #endif
 }
 /*void JDObjectInterface::incrementVersionValue()

@@ -40,10 +40,13 @@ public:
     std::string martialStatus;
 private:
    
-
+#ifdef JD_USE_QJSON
     bool load(const QJsonObject& obj) override;
     bool save(QJsonObject& obj) const override;
-
+#else
+    bool load(const JsonObject& obj) override;
+    bool save(JsonObject& obj) const override;
+#endif
     
 
 

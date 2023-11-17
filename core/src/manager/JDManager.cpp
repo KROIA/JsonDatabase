@@ -299,16 +299,22 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
             if (!jsons[i].getInt(id, JDObjectInterface::s_tag_objID))        
 #endif
             {
+#ifdef JD_USE_QJSON
                 JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode) 
                     << "\") Object with no ID found: " 
-#ifdef JD_USE_QJSON
                     << QJsonValue(jsons[i]).toString().toStdString() 
-#else
-
-#endif
                     << "\n");
+#else
+                JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode)
+                    << "\") Object with no ID found: "
+                    << jsons[i].toString()
+                    << "\n");
+#endif
                 success = false;
             }
+#ifndef JD_USE_QJSON
+            ID = id;
+#endif
             Pair p;
             p.objOriginal = getObject_internal(ID);
             p.obj = nullptr;
@@ -515,9 +521,14 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
 
     if (progress) progress->setComment("Serializing object");
     JDObjectID ID = obj->getObjectID();
+    
+#ifdef JD_USE_QJSON
     std::vector<QJsonObject> jsons;
-
     QJsonObject data;
+#else
+    JsonArray jsons;
+    JsonValue data;
+#endif
     success &= obj->saveInternal(data);
 
     if (progress)
@@ -525,8 +536,7 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
         progress->setProgress(0.33);
         progress->setComment("Reading database file");
     }
-
-    success &= JDManagerFileSystem::readJsonFile(jsons, 
+    success &= JDManagerFileSystem::readJsonFile(jsons,
         getDatabasePath(),
         getDatabaseName(), 
         Internal::JDManagerFileSystem::getJsonFileEnding(), 

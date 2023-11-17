@@ -11,6 +11,9 @@ namespace JsonDatabase
 	{
 #ifdef JD_USE_QJSON
         bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut)
+#else
+        bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, JsonArray& jsonOut)
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             jsonOut.reserve(objs.size());
@@ -19,16 +22,27 @@ namespace JsonDatabase
 
             for (auto o : objs)
             {
+#ifdef JD_USE_QJSON
                 QJsonObject data;
+#else
+                JsonValue data;
+#endif
                 success &= o->saveInternal(data);
                 jsonOut.emplace_back(data);
             }
             return success;
         }
+#ifdef JD_USE_QJSON
         bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, 
                                          std::vector<QJsonObject>& jsonOut, 
                                          WorkProgress* progress,
                                          double deltaProgress)
+#else
+        bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs,
+            JsonArray& jsonOut,
+            WorkProgress* progress,
+            double deltaProgress)
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             jsonOut.reserve(objs.size());
@@ -37,13 +51,18 @@ namespace JsonDatabase
 
             for (auto o : objs)
             {
+#ifdef JD_USE_QJSON
                 QJsonObject data;
+#else
+                JsonValue data;
+#endif
                 success &= o->saveInternal(data);
                 jsonOut.emplace_back(data);
                 progress->addProgress(deltaProgress);
             }
             return success;
         }
+#ifdef JD_USE_QJSON
         bool JsonUtilities::serializeObject(JDObjectInterface* obj, std::string& serializedOut)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
@@ -103,6 +122,7 @@ namespace JsonDatabase
             return true;
         }
 #endif
+
 #ifdef JD_USE_QJSON
         bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool& hasChangedOut)
 #else

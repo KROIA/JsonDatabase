@@ -30,6 +30,9 @@ namespace JsonDatabase
             static bool deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool& hasChangedOut);
             static bool deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj);
 #else
+            static bool getJsonArray(const std::vector<JDObjectInterface*>& objs, JsonArray& jsonOut);
+            static bool getJsonArray(const std::vector<JDObjectInterface*>& objs, JsonArray& jsonOut,
+                WorkProgress* progress, double deltaProgress);
 
             static bool serializeObject(JDObjectInterface* obj, std::string& serializedOut);
             static bool deserializeJson(const JsonValue& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut);

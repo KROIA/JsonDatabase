@@ -364,7 +364,11 @@ namespace JsonDatabase
     {
         if (m_type != Type::Object)
 			return false;
-        objOut = std::get<const JsonObject>(m_value).get(key);
+        const JsonObject& obj = std::get<JsonObject>(m_value);
+        const auto &it = obj.find(key);
+        if (it == obj.end())
+			return false;
+        objOut = it->second;
         return true;
     }
     bool JsonValue::getInt(int& valueOut) const
@@ -407,42 +411,66 @@ namespace JsonDatabase
     {
         if (m_type != Type::Object)
             return false;
-        valueOut = std::get<const JsonObject>(m_value).get(key).getString();
+        const JsonObject& obj = std::get<JsonObject>(m_value);
+        const auto& it = obj.find(key);
+        if (it == obj.end())
+            return false;
+        valueOut = it->second.getString();
         return true;
     }
     bool JsonValue::getInt(int& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
 			return false;
-		valueOut = std::get<const JsonObject>(m_value).get(key).getInt();
+        const JsonObject& obj = std::get<JsonObject>(m_value);
+        const auto& it = obj.find(key);
+        if (it == obj.end())
+            return false;
+        valueOut = it->second.getInt();
 		return true;
     }
     bool JsonValue::getDouble(double& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
             return false;
-        valueOut = std::get<const JsonObject>(m_value).get(key).getDouble();
+        const JsonObject& obj = std::get<JsonObject>(m_value);
+        const auto& it = obj.find(key);
+        if (it == obj.end())
+            return false;
+        valueOut = it->second.getDouble();
         return true;
     }
     bool JsonValue::getBool(bool& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
 			return false;
-		valueOut = std::get<const JsonObject>(m_value).get(key).getBool();
+        const JsonObject& obj = std::get<JsonObject>(m_value);
+        const auto& it = obj.find(key);
+        if (it == obj.end())
+            return false;
+        valueOut = it->second.getBool();
         return true;
     }
     bool JsonValue::getArray(JsonArray& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
             return false;
-        valueOut = std::get<const JsonObject>(m_value).get(key).getArray();
+        const JsonObject& obj = std::get<JsonObject>(m_value);
+        const auto& it = obj.find(key);
+        if (it == obj.end())
+            return false;
+        valueOut = it->second.getArray();
         return true;
     }
     bool JsonValue::getObject(JsonObject& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
 			return false;
-		valueOut = std::get<const JsonObject>(m_value).get(key).getObject();
+        const JsonObject& obj = std::get<JsonObject>(m_value);
+        const auto& it = obj.find(key);
+        if (it == obj.end())
+            return false;
+        valueOut = it->second.getObject();
 		return true;
     }
 

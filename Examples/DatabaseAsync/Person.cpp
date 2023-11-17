@@ -73,7 +73,8 @@ bool Person::operator!=(const Person& other)
 
 
 
-bool Person::load(const QJsonObject& obj)
+
+bool Person::load(const JsonObject& obj)
 {
     getJsonValue(obj, firstName, "firstName");
     getJsonValue(obj, lastName, "lastName");
@@ -90,7 +91,8 @@ bool Person::load(const QJsonObject& obj)
 
     return true;
 }
-bool Person::save(QJsonObject& obj) const
+
+bool Person::save(JsonObject& obj) const
 {
 
    // obj["firstName"] = firstName.c_str();
