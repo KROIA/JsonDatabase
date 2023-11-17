@@ -1,6 +1,6 @@
 #include "Json/JsonValue.h"
 #include "Json/JsonSerializer.h"
-
+#include <QDebug>
 
 namespace JsonDatabase
 {
@@ -92,7 +92,10 @@ namespace JsonDatabase
         // Implement move constructor with std::map<std::string, JsonValue> logic here
     }
 
+    JsonValue::~JsonValue()
+    {
 
+    }
 
 
 
@@ -194,6 +197,7 @@ namespace JsonDatabase
         return !(*this == other);
     }
 
+    /*
     // Less than comparison operator
     bool JsonValue::operator<(const JsonValue& other) const 
     {
@@ -252,7 +256,7 @@ namespace JsonDatabase
     {
         return !(*this < other);
     }
-
+    */
 
     JsonValue::Type JsonValue::getType() const
     {
@@ -309,10 +313,26 @@ namespace JsonDatabase
     // Convert value to string representation
     std::string JsonValue::toString() const 
     {
-        return JsonSerializer::serializeValue(*this);
+        JsonSerializer serializer;
+        return serializer.serializeValue(*this);
     }
 
 
+
+    // Overloading << operator for std::cout
+    std::ostream& operator<<(std::ostream& os, const JsonValue& json)
+    {
+        os << json.toString();
+        return os;
+    }
+
+    // Overloading << operator for qDebug()
+    QDebug operator<<(QDebug debug, const JsonValue& json)
+    {
+        QDebugStateSaver saver(debug);
+        debug << json.toString().c_str(); 
+        return debug;
+    }
 
 
 }

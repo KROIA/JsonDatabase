@@ -62,10 +62,10 @@ namespace JsonDatabase
 
 		bool operator==(const JsonValue& other) const;
 		bool operator!=(const JsonValue& other) const;
-		bool operator<(const JsonValue& other) const;
-		bool operator>(const JsonValue& other) const;
-		bool operator<=(const JsonValue& other) const;
-		bool operator>=(const JsonValue& other) const;
+		// bool operator<(const JsonValue& other) const;
+		// bool operator>(const JsonValue& other) const;
+		// bool operator<=(const JsonValue& other) const;
+		// bool operator>=(const JsonValue& other) const;
 
 		Type getType() const;
 		bool isNull() const;
@@ -78,8 +78,10 @@ namespace JsonDatabase
 		bool isObject() const;
 
 		std::string toString() const;
-
 		std::string serialize() const;
+
+		friend std::ostream& operator<<(std::ostream& os, const JsonValue& json);
+		friend QDebug operator<<(QDebug debug, const JsonValue& json);
 	private:
 		
 		Type m_type;

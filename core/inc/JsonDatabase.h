@@ -6,3 +6,7 @@
 
 
 #include "utilities/filesystem/FileChangeWatcher.h"
+
+#include "Json/JsonDeserializer.h"
+#include "Json/JsonSerializer.h"
+#include "Json/JsonValue.h"

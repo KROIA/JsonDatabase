@@ -8,9 +8,24 @@ namespace JsonDatabase
 	{
 	public:
 
-		static std::string serializeValue(const JsonValue& value);
-		static std::string serializeObject(const JsonObject& object);
-		static std::string serializeArray(const JsonArray& array);
+		std::string serializeValue(const JsonValue& value);
+		std::string serializeObject(const JsonObject& object);
+		std::string serializeArray(const JsonArray& array);
+
+		static std::string serializeInt(int value);
+		static std::string serializeDouble(double value);
+		static std::string serializeBool(bool value);
+	private:
+		std::string serializeString(const std::string& str);
+		const std::string &serializeNull();
+
+		static std::string escapeString(const std::string& str);
+
+
+		int m_indent = 0;
+		bool m_useNewLines = true;
+		bool m_useSpaces = true;
+
 	};
 
 }

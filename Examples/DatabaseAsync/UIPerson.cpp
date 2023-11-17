@@ -24,6 +24,7 @@ UIPerson::~UIPerson()
 void UIPerson::setPerson(Person* person, bool editMode)
 {
 	m_editMode = editMode;
+	qDebug() << person->firstName.c_str();
 	if (!m_editMode)
 	{
 		ui.frame->setEnabled(false);

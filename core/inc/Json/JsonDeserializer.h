@@ -12,22 +12,32 @@ namespace JsonDatabase
 		JsonValue deserializeValue(const std::string& json);
 		JsonValue deserializeObject(const std::string& json);
 		JsonValue deserializeArray(const std::string& json);	
+
+		/*
+			Returns 0 if the string is not a number
+			Returns 1 if the string is an integer
+			Returns 2 if the string is a double
+		*/
+		static int deserializeNumber(const std::string& str, int& intValue, double& doubleValue, size_t &index);
+		static void nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut);
 	private:
 
-		static JsonValue deserializeValue_internal(const std::string& json);
-		static JsonValue deserializeObject_internal(const std::string& json);
-		static JsonValue deserializeArray_internal(const std::string& json);
+		static JsonValue deserializeValue_internal(const std::string& json, size_t& index);
+		static JsonValue deserializeObject_internal(const std::string& json, size_t& index);
+		static JsonValue deserializeArray_internal(const std::string& json, size_t& index);
 
-		static std::pair<std::string, JsonValue> parsePair(const std::string& json, size_t& index);
-		static std::string readString(const std::string& json, size_t& index);
-		static double readNumber(const std::string& json, size_t& index, int &intValue, bool &isInt);
-		static bool readBool(const std::string& json, size_t& index);
+		static std::pair<std::string, JsonValue> deserializePair(const std::string& json, size_t& index);
+		static std::string deserializeString(const std::string& json, size_t& index);
+		//static double deserializeNumber(const std::string& json, size_t& index, int &intValue, bool &isInt);
+		
+		static bool deserializeBool(const std::string& json, size_t& index);
 
 		static void skipWhiteSpace(const std::string& jsonString, size_t& index);
-		static void nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut);
+		
 		static void removeChars(const std::string& jsonString, std::string& jsonStringOut,
-			const std::vector<char> &chars);
+			const std::vector<char>& chars);
 
+		static std::string unescapeString(const std::string &str);
 		/*JsonValue parseValue(const std::string& jsonString);
         void skipWhiteSpace(const std::string& jsonString);
 
