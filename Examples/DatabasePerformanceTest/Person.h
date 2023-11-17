@@ -81,8 +81,11 @@ public:
 
 private:
    
-
+#ifdef JD_USE_QJSON
     bool load(const QJsonObject& obj) override 
+#else
+    bool load(const JsonObject& obj) override
+#endif
     {
         getJsonValue(obj, firstName, "firstName");
         getJsonValue(obj, lastName, "lastName");
@@ -99,7 +102,12 @@ private:
 
         return true;
     }
+
+#ifdef JD_USE_QJSON
     bool save(QJsonObject& obj) const override
+#else
+    bool save(JsonObject& obj) const override
+#endif
     {
         obj["firstName"] = firstName.c_str();
         obj["lastName"] = lastName.c_str();

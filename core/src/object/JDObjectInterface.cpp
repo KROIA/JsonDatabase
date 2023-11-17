@@ -205,7 +205,7 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
 #ifdef JD_USE_QJSON
 bool JDObjectInterface::saveInternal(QJsonObject &obj)
 #else
-bool JDObjectInterface::saveInternal(JsonValue& obj)
+bool JDObjectInterface::saveInternal(JsonObject& obj)
 #endif
 {
     //++m_version;
@@ -214,7 +214,7 @@ bool JDObjectInterface::saveInternal(JsonValue& obj)
 #ifdef JD_USE_QJSON
 bool JDObjectInterface::getSaveData(QJsonObject& obj) const
 #else
-bool JDObjectInterface::getSaveData(JsonValue& obj) const
+bool JDObjectInterface::getSaveData(JsonObject& obj) const
 #endif
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);

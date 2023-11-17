@@ -527,7 +527,7 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
     QJsonObject data;
 #else
     JsonArray jsons;
-    JsonValue data;
+    JsonObject data;
 #endif
     success &= obj->saveInternal(data);
 
@@ -683,6 +683,8 @@ const std::string& JDManager::getSessionID() const
 const std::string& JDManager::getLoadModeStr(int mode) const
 {
     static std::string str;
+    str.clear();
+    str.reserve(100);
     if (mode == 0)
     {
         str = "none";

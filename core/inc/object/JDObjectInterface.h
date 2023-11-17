@@ -63,8 +63,8 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 #else
         bool equalData(const JsonValue& obj) const;
         bool loadInternal(const JsonValue& obj);
-        bool saveInternal(JsonValue& obj);
-        bool getSaveData(JsonValue& obj) const;
+        bool saveInternal(JsonObject& obj);
+        bool getSaveData(JsonObject& obj) const;
 #endif
         //void incrementVersionValue();
 
@@ -125,7 +125,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 #else
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* clone() const override; \
-    classNameVal* clone(const JsonValue &reader, const JsonDatabase::JDObjectID &uniqueID) const override;
+    classNameVal* clone(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectID &uniqueID) const override;
 #endif
 
 #define JD_OBJECT_DECL_CLASSNAME(classNameVal) \
@@ -171,7 +171,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         c->setObjectID(this->getObjectID()); \
         return c; \
     } \
-    classNameVal* classNameVal::clone(const JsonValue &reader, const JsonDatabase::JDObjectID &uniqueID) const\
+    classNameVal* classNameVal::clone(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectID &uniqueID) const\
     { \
         classNameVal *obj = new classNameVal(uniqueID); \
         obj->loadInternal(reader); \

@@ -23,9 +23,12 @@ namespace JsonDatabase
 
 
 		int m_indent = 0;
+		int m_tabSize = 4;
+
 		bool m_useNewLines = true;
 		bool m_useSpaces = true;
 
+		char m_indentChar = ' ';
 	};
 
 }

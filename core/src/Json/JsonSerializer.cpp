@@ -43,7 +43,7 @@ namespace JsonDatabase
         if (m_useNewLines)
         {
             result += "\n";
-            m_indent++;
+            m_indent+= m_tabSize;
         }
         bool first = true;
         for (const auto& pair : object) {
@@ -53,14 +53,14 @@ namespace JsonDatabase
                     result += "\n";
             }
             first = false;
-            result += std::string(m_indent, '\t') + "\"" + pair.first + "\""+ spaced+":"+ spaced + serializeValue(pair.second);
+            result += std::string(m_indent, m_indentChar) + "\"" + pair.first + "\""+ ":"+ spaced + serializeValue(pair.second);
         }
         if (m_useNewLines)
         {
             result += "\n";
-            m_indent--;
+            m_indent-= m_tabSize;
         }
-        result += std::string(m_indent, '\t') + "}";
+        result += std::string(m_indent, m_indentChar) + "}";
         return result;
     }
 
@@ -71,7 +71,7 @@ namespace JsonDatabase
         if (m_useNewLines)
         {
             result += "\n";
-            m_indent++;
+            m_indent+=m_tabSize;
         }
         bool first = true;
         for (const auto& value : array) {
@@ -81,14 +81,14 @@ namespace JsonDatabase
                     result += "\n";
             }
             first = false;
-            result += std::string(m_indent, '\t') + serializeValue(value);
+            result += std::string(m_indent, m_indentChar) + serializeValue(value);
         }
         if (m_useNewLines)
         {
             result += "\n";
-            m_indent--;
+            m_indent-=m_tabSize;
         }
-        result += std::string(m_indent, '\t') + "]";
+        result += std::string(m_indent, m_indentChar) + "]";
         return result;
     }
 

@@ -25,6 +25,8 @@ namespace JsonDatabase
 		friend class JsonSerializer;
 		friend class JsonDeserializer;
 		public:
+
+		using JsonVariantType = std::variant<std::monostate, std::string, int, double, bool, JsonArray, JsonObject>;
 			enum class Type 
 			{
 				Null,
@@ -103,6 +105,7 @@ namespace JsonDatabase
 		bool getArray(JsonArray& valueOut, const std::string& key) const;
 		bool getObject(JsonObject& valueOut, const std::string& key) const;
 
+		JsonVariantType &getVariant();
 
 		std::string toString() const;
 		std::string serialize() const;
@@ -112,7 +115,7 @@ namespace JsonDatabase
 	private:
 		
 		Type m_type;
-		std::variant<std::monostate, std::string, int, double, bool, JsonArray, JsonObject> m_value;
+		JsonVariantType m_value;
 
 		
 	};

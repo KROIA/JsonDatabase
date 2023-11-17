@@ -16,7 +16,11 @@ A::~A()
 
 
 
-bool A::load(const QJsonObject &obj)
+#ifdef JD_USE_QJSON
+bool A::load(const QJsonObject& obj)
+#else
+bool A::load(const JsonDatabase::JsonObject& obj)
+#endif
 {
     qDebug() << "Loading A";
     int value;
@@ -25,7 +29,11 @@ bool A::load(const QJsonObject &obj)
         qDebug() << "AValue is: "<<value;
     return true;
 }
-bool A::save(QJsonObject &obj) const
+#ifdef JD_USE_QJSON
+bool A::save(QJsonObject& obj) const
+#else
+bool A::save(JsonDatabase::JsonObject& obj) const
+#endif
 {
     qDebug() << "Saving A";
     obj["AValue"] = 1;

@@ -396,6 +396,7 @@ namespace JsonDatabase
     {
         if (m_type != Type::Array)
 			return false;
+
 		valueOut = std::get<JsonArray>(m_value);
 		return true;
     }
@@ -474,11 +475,20 @@ namespace JsonDatabase
 		return true;
     }
 
+    JsonValue::JsonVariantType& JsonValue::getVariant()
+    {
+        return m_value;
+    }
+
     // Convert value to string representation
     std::string JsonValue::toString() const 
     {
+        return serialize();
+    }
+    std::string JsonValue::serialize() const
+    {
         JsonSerializer serializer;
-        return serializer.serializeValue(*this);
+		return serializer.serializeValue(*this);
     }
 
 

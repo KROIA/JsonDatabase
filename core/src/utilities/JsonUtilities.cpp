@@ -25,7 +25,7 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                 QJsonObject data;
 #else
-                JsonValue data;
+                JsonObject data;
 #endif
                 success &= o->saveInternal(data);
                 jsonOut.emplace_back(data);
@@ -54,7 +54,7 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                 QJsonObject data;
 #else
-                JsonValue data;
+                JsonObject data;
 #endif
                 success &= o->saveInternal(data);
                 jsonOut.emplace_back(data);
@@ -160,11 +160,11 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
             if (!obj) return false;
 
-            JsonValue data;
+            JsonObject data;
             if (!obj->saveInternal(data))
                 return false;
 
-            serializedOut = data.serialize();
+            serializedOut = JsonValue(data).serialize();
             return true;
         }
         bool JsonUtilities::deserializeJson(const JsonValue& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut)

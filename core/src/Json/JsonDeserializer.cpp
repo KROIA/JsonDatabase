@@ -3,7 +3,8 @@
 namespace JsonDatabase
 {
 
-
+//#define DEBUG_PRINT(value) std::cout << "\n\n\n" << value << "\n\n\n";
+#define DEBUG_PRINT(value)
 
     JsonValue JsonDeserializer::deserializeValue(const std::string& json) 
     {
@@ -90,6 +91,7 @@ namespace JsonDatabase
         //skipWhiteSpace(json, index);
         while (json[index] != '}') {
             auto [key, value] = deserializePair(json, index);
+            DEBUG_PRINT(value);
             object[key] = value;
             if (json[index] == '}')
                 break;
@@ -106,6 +108,7 @@ namespace JsonDatabase
         index++; // Skip the '[' character
         while (json[index] != ']') {
             auto value = deserializeValue_internal(json, index);
+            DEBUG_PRINT(value);
             array.push_back(value);
             // if (json[index] != ']')
             // {
@@ -128,6 +131,7 @@ namespace JsonDatabase
         //index++; // Skip the closing double quote
         index++; // Skip the colon ':'
         JsonValue value = deserializeValue_internal(json, index);
+        //DEBUG_PRINT(value);
         //index++; // Move to the next character or skip ',' or '}'
         return { key, value };
     }
