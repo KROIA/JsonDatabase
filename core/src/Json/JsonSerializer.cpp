@@ -8,6 +8,7 @@ namespace JsonDatabase
 
     std::string JsonSerializer::serializeValue(const JsonValue& value)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string result;
         switch (value.m_type)
         {
@@ -36,6 +37,7 @@ namespace JsonDatabase
 
     std::string JsonSerializer::serializeObject(const JsonObject& object)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         std::string result = "{";
         std::string spaced = std::string(m_useSpaces, ' ');
         if (m_useNewLines)
@@ -64,6 +66,7 @@ namespace JsonDatabase
 
     std::string JsonSerializer::serializeArray(const JsonArray& array)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         std::string result = "[";
         if (m_useNewLines)
         {
@@ -91,14 +94,17 @@ namespace JsonDatabase
 
     std::string JsonSerializer::serializeString(const std::string& str)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         return escapeString(str);
     }
     std::string JsonSerializer::serializeInt(int value)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         return std::to_string(value);
     }
     std::string JsonSerializer::serializeDouble(double value) 
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         /*
             Formats:
             3.14159265358916562
@@ -133,6 +139,7 @@ namespace JsonDatabase
     }
     std::string JsonSerializer::serializeBool(bool value)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         return value ? "true" : "false";
     }
     const std::string &JsonSerializer::serializeNull()
@@ -142,6 +149,7 @@ namespace JsonDatabase
     }
     std::string JsonSerializer::escapeString(const std::string& str)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
         size_t size = str.size();
         for (char c : str) 
         {

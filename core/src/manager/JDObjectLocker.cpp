@@ -5,8 +5,13 @@
 
 
 #include <QFile>
+#ifdef JD_USE_QJSON
 #include <QJsonDocument>
 #include <QJsonArray>
+#else
+#include "Json/JsonSerializer.h"
+#include "Json/JsonDeserializer.h"
+#endif
 #include <QDateTime>
 
 namespace JsonDatabase
@@ -28,12 +33,19 @@ namespace JsonDatabase
 		} \
 	} 
 
-
+#ifdef JD_USE_QJSON
 		QString JDObjectLocker::s_jsonKey_objectID = "objID";
 		QString JDObjectLocker::s_jsonKey_owner = "owner";
 		QString JDObjectLocker::s_jsonKey_sessionID = "sessionID";
 		QString JDObjectLocker::s_jsonKey_lockDate = "lockDate";
 		QString JDObjectLocker::s_jsonKey_lockTime = "lockTime";
+#else
+		std::string JDObjectLocker::s_jsonKey_objectID = "objID";
+		std::string JDObjectLocker::s_jsonKey_owner = "owner";
+		std::string JDObjectLocker::s_jsonKey_sessionID = "sessionID";
+		std::string JDObjectLocker::s_jsonKey_lockDate = "lockDate";
+		std::string JDObjectLocker::s_jsonKey_lockTime = "lockTime";
+#endif
 
 		JDObjectLocker::JDObjectLocker(JDManager& manager, std::mutex& mtx)
 			: m_manager(manager)
@@ -497,29 +509,57 @@ namespace JsonDatabase
 			data.lockDate = QDate::currentDate().toString(Qt::DateFormat::ISODate).toStdString();
 			data.lockTime = QTime::currentTime().toString(Qt::DateFormat::ISODate).toStdString();
 		}
+#ifdef JD_USE_QJSON
 		bool JDObjectLocker::ObjectLockData::load(const QJsonObject& obj)
+#else
+		bool JDObjectLocker::ObjectLockData::load(const JsonObject& obj)
+#endif
 		{
 			if(!isValid(obj))
 				return false;
+#ifdef JD_USE_QJSON
 			data.objectID = obj[s_jsonKey_objectID].toInt();
 			data.owner = obj[s_jsonKey_owner].toString().toStdString();
 			data.sessionID = obj[s_jsonKey_sessionID].toString().toStdString();
 			data.lockDate = obj[s_jsonKey_lockDate].toString().toStdString();
 			data.lockTime = obj[s_jsonKey_lockTime].toString().toStdString();
+#else
+			data.objectID = obj.at(s_jsonKey_objectID).getInt();
+			data.owner = obj.at(s_jsonKey_owner).toString();
+			data.sessionID = obj.at(s_jsonKey_sessionID).toString();
+			data.lockDate = obj.at(s_jsonKey_lockDate).toString();
+			data.lockTime = obj.at(s_jsonKey_lockTime).toString();
+#endif
 			return true;
 		}
+#ifdef JD_USE_QJSON
 		bool JDObjectLocker::ObjectLockData::save(QJsonObject& obj) const
+#else
+		bool JDObjectLocker::ObjectLockData::save(JsonObject& obj) const
+#endif
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-
+#ifdef JD_USE_QJSON
 			obj[s_jsonKey_objectID] = data.objectID.get();
 			obj[s_jsonKey_owner] = data.owner.c_str();
 			obj[s_jsonKey_sessionID] = data.sessionID.c_str();
 			obj[s_jsonKey_lockDate] = data.lockDate.c_str();
 			obj[s_jsonKey_lockTime] = data.lockTime.c_str();
+#else
+			obj[s_jsonKey_objectID] = data.objectID.get();
+			obj[s_jsonKey_owner] = data.owner;
+			obj[s_jsonKey_sessionID] = data.sessionID;
+			obj[s_jsonKey_lockDate] = data.lockDate;
+			obj[s_jsonKey_lockTime] = data.lockTime;
+#endif
 			return true;
 		}
+
+#ifdef JD_USE_QJSON
 		bool JDObjectLocker::ObjectLockData::isValid(const QJsonObject& lock)
+#else
+		bool JDObjectLocker::ObjectLockData::isValid(const JsonObject& lock)
+#endif
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			if (!lock.contains(s_jsonKey_objectID)) return false;
@@ -532,13 +572,22 @@ namespace JsonDatabase
 		}
 		std::string JDObjectLocker::ObjectLockData::toString() const
 		{
+#ifdef JD_USE_QJSON
 			QJsonObject obj;
+#else
+			JsonObject obj;
+#endif
 			save(obj);
+#ifdef JD_USE_QJSON
 			QJsonDocument jsonDoc(obj);
 
 			// Convert the JSON document to a string
 			QString jsonString = jsonDoc.toJson(QJsonDocument::Indented);
 			return jsonString.toStdString();
+#else
+			JsonSerializer serializer;
+			return serializer.serializeObject(obj);
+#endif
 		}
 
 
@@ -566,7 +615,7 @@ namespace JsonDatabase
 			}
 
 			std::string jsonData = file.readAll().constData();
-
+#ifdef JD_USE_QJSON
 			QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData.c_str());
 			if (!jsonDoc.isNull()) {
 				if (!jsonDoc.isArray())
@@ -596,6 +645,39 @@ namespace JsonDatabase
 					locks[locks.size()-1].load(lock);
 				}
 			}
+#else
+			JsonDeserializer deserializer;
+			JsonValue deserialized = deserializer.deserializeValue(jsonData);
+			if (!deserialized.isNull()) {
+				if (!deserialized.isArray())
+				{
+					JD_CONSOLE_FUNCTION("Tabledata: " << jsonData.c_str() << " is not a JsonArray\n");
+					err = Error::corruptTableData;
+					return false;
+				}
+
+				JsonArray array = deserialized.getArray();
+				for (const JsonValue& value : array)
+				{
+					if (!value.isObject())
+					{
+						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString() << " is not a JsonObject\n");
+						err = Error::corruptTableData;
+						return false;
+					}
+					JsonObject lock = value.getObject();
+					if (!ObjectLockData::isValid(lock))
+					{
+						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString() << " is has missing or corrupt data\n");
+						err = Error::corruptTableData;
+						return false;
+					}
+
+					locks.push_back(ObjectLockData());
+					locks[locks.size() - 1].load(lock);
+				}
+			}
+#endif
 			return true;
 		}
 		bool JDObjectLocker::writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const
@@ -609,23 +691,42 @@ namespace JsonDatabase
 				err = Error::cantOpenTableFile;
 				return false;
 			}
+#ifdef JD_USE_QJSON
 			QJsonArray array;
+#else
+			JsonArray array;
+			array.reserve(locks.size());
+#endif
 			for (const ObjectLockData& lock : locks)
 			{
+#ifdef JD_USE_QJSON
 				QJsonObject sav;
 				lock.save(sav);
+#else
+				JsonObject sav;
+				lock.save(sav);
+#endif
 				if (!ObjectLockData::isValid(sav))
 				{
 					err = Error::programmingError;
 					JD_CONSOLE_FUNCTION("Programming error!!! ajust the ObjectLockData::isValid(const QJsonObject&) function\n");
 					return false;
 				}
+#ifdef JD_USE_QJSON
 				array.append(sav);
+#else
+				array.emplace_back(sav);
+#endif
 			}
 
+			QByteArray transmittStr;
+#ifdef JD_USE_QJSON
 			QJsonDocument jsonDoc(array);
-			QByteArray transmittStr = jsonDoc.toJson(QJsonDocument::Indented);
-
+			transmittStr = jsonDoc.toJson(QJsonDocument::Indented);
+#else
+			JsonSerializer serializer;
+			transmittStr = QByteArray::fromStdString(serializer.serializeArray(array));
+#endif
 
 			//m_lockTableWatcher.pause();
 

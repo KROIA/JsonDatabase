@@ -206,7 +206,11 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
     const JDObjectID &id = obj->getObjectID();
 
     if (progress) progress->setComment("Reading database file");
+#ifdef JD_USE_QJSON
     std::vector<QJsonObject> jsons; 
+#else
+    JsonArray jsons;
+#endif
 
     success &= JDManagerFileSystem::readJsonFile(jsons, 
         getDatabasePath(), 
@@ -222,7 +226,11 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
         JD_CONSOLE("bool JDManager::loadObject_internal(JDObjectInterface*) Object with ID: " << id << " not found");
         return false;
     }
+#ifdef JD_USE_QJSON
     const QJsonObject& objData = jsons[index];
+#else
+    const JsonValue &objData = jsons[index];
+#endif
     bool hasChanged = false;
     if (progress) progress->setComment("Deserializing object");
     success &= Internal::JsonUtilities::deserializeOverrideFromJson(objData, obj, hasChanged);

@@ -7,8 +7,12 @@
 
 #include <string>
 #include <vector>
+#ifdef JD_USE_QJSON
 #include <QJsonObject>
 #include <QString>
+#else
+#include "Json/JsonValue.h"
+#endif
 #include <mutex>
 
 namespace JsonDatabase
@@ -71,9 +75,18 @@ namespace JsonDatabase
 				ObjectLockData();
 				ObjectLockData(JDObjectInterface* obj, const JDManager &manager);
 				void setObject(JDObjectInterface* obj, const JDManager& manager);
+#ifdef JD_USE_QJSON
 				bool load(const QJsonObject& obj) override;
 				bool save(QJsonObject& obj) const override;
+
 				static bool isValid(const QJsonObject& lock);
+#else
+				bool load(const JsonObject& obj) override;
+				bool save(JsonObject &obj) const override;
+
+				static bool isValid(const JsonObject& lock);
+#endif
+
 				std::string toString() const;
 
 				LockData data;
@@ -112,12 +125,19 @@ namespace JsonDatabase
 			mutable ManagedFileChangeWatcher m_lockTableWatcher;
 
 
-			
+#ifdef JD_USE_QJSON
 			static QString s_jsonKey_objectID;
 			static QString s_jsonKey_owner;
 			static QString s_jsonKey_sessionID;
 			static QString s_jsonKey_lockDate;
 			static QString s_jsonKey_lockTime;
+#else
+			static std::string s_jsonKey_objectID;
+			static std::string s_jsonKey_owner;
+			static std::string s_jsonKey_sessionID;
+			static std::string s_jsonKey_lockDate;
+			static std::string s_jsonKey_lockTime;
+#endif
 		};
 	}
 }

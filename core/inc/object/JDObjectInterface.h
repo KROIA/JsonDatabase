@@ -5,7 +5,11 @@
 #include "JDSerializable.h"
 #include "JDObjectID.h"
 
+#ifdef JD_USE_QJSON
 #include <QJsonObject>
+#else
+#include "Json/JsonValue.h"
+#endif
 #include <string>
 
 
@@ -30,7 +34,11 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
         // Creates a copy of the original object as a new instance
         static std::vector<JDObjectInterface*> reinstantiate(const std::vector<JDObjectInterface*> &objList);
+#ifdef JD_USE_QJSON
         static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectID &objID);
+#else
+        static size_t getJsonIndexByID(const std::vector<JsonValue>& jsons, const JDObjectID& objID);
+#endif
 
 
         virtual JDObjectInterface* clone() const = 0;
@@ -43,10 +51,17 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
        // void setVersion(int version);
        // void setVersion(const QJsonObject& obj);
+#ifdef JD_USE_QJSON
         bool equalData(const QJsonObject &obj) const;
         bool loadInternal(const QJsonObject &obj);
         bool saveInternal(QJsonObject &obj);
         bool getSaveData(QJsonObject &obj) const;
+#else
+        bool equalData(const JsonValue& obj) const;
+        bool loadInternal(const JsonValue& obj);
+        bool saveInternal(JsonValue& obj);
+        bool getSaveData(JsonValue& obj) const;
+#endif
         //void incrementVersionValue();
 
 
@@ -63,10 +78,16 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         //int m_version; // ObjectVersion
 
     public:
+#ifdef JD_USE_QJSON
         static const QString s_tag_objID;
     //    static const QString s_tag_objVersion;
         static const QString s_tag_className;
         static const QString s_tag_data;
+#else
+        static const std::string s_tag_objID;
+        static const std::string s_tag_className;
+        static const std::string s_tag_data;
+#endif
     private:
         
 };

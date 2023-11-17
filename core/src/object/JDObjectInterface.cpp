@@ -6,11 +6,16 @@
 namespace JsonDatabase
 {
 
-const QString JDObjectInterface::s_tag_objID = "objID";
-//const QString JDObjectInterface::s_tag_objVersion = "objVersion";
-const QString JDObjectInterface::s_tag_className = "class";
-const QString JDObjectInterface::s_tag_data = "Data";
-
+#ifdef JD_USE_QJSON
+    const QString JDObjectInterface::s_tag_objID = "objID";
+    //const QString JDObjectInterface::s_tag_objVersion = "objVersion";
+    const QString JDObjectInterface::s_tag_className = "class";
+    const QString JDObjectInterface::s_tag_data = "Data";
+#else
+    const std::string JDObjectInterface::s_tag_objID = "objID";
+    const std::string JDObjectInterface::s_tag_className = "class";
+    const std::string JDObjectInterface::s_tag_data = "Data";
+#endif
 
 JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObjectInterface* obj)
 {
@@ -56,6 +61,7 @@ std::vector<JDObjectInterface*> JDObjectInterface::reinstantiate(const std::vect
 	}
 	return ret;
 }
+#ifdef JD_USE_QJSON
 size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectID &objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
@@ -69,6 +75,22 @@ size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons
     }
     return std::string::npos;
 }
+#else
+size_t JDObjectInterface::getJsonIndexByID(const std::vector<JsonValue>& jsons, const JDObjectID& objID)
+{
+    for (size_t i = 0; i < jsons.size(); ++i)
+    {
+        JDObjectID id;
+
+        if (JDSerializable::getJsonValue(jsons[i], id, s_tag_objID))
+        {
+            if (id == objID)
+                return i;
+        }
+    }
+    return std::string::npos;
+}
+#endif
 
 const JDObjectID &JDObjectInterface::getObjectID() const
 {
@@ -88,9 +110,14 @@ void JDObjectInterface::setVersion(const QJsonObject& obj)
 	if(obj.contains(s_tag_objVersion))
 		m_version = obj[s_tag_objVersion].toInt(0);
 }*/
+#ifdef JD_USE_QJSON
 bool JDObjectInterface::equalData(const QJsonObject& obj) const
+#else
+bool JDObjectInterface::equalData(const JsonValue& obj) const
+#endif
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+#ifdef JD_USE_QJSON
     QJsonObject data1;
     QJsonObject data2;
     bool equal = getJsonValue(obj, data1, s_tag_data);
@@ -104,12 +131,32 @@ bool JDObjectInterface::equalData(const QJsonObject& obj) const
     }
 
     return equal;
+#else
+    JsonObject data1;
+    JsonObject data2;
+    bool equal = getJsonValue(obj, data1, s_tag_data);
+    {
+        JD_GENERAL_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
+        equal &= save(data2);
+    }
+    {
+        JD_GENERAL_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
+        equal &= data1 == data2;
+    }
+
+    return equal;
+#endif
+    
 }
+#ifdef JD_USE_QJSON
 bool JDObjectInterface::loadInternal(const QJsonObject &obj)
+#else
+bool JDObjectInterface::loadInternal(const JsonValue& obj)
+#endif
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     
-    
+#ifdef JD_USE_QJSON
     if(!obj.contains(s_tag_objID) /* ||
        !obj.contains(s_tag_objVersion)*/)
         return false;
@@ -126,6 +173,24 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
    // if(m_version <= 0)
    //     success = false;
     return success;
+#else
+    if (!obj.contains(s_tag_objID) /* ||
+       !obj.contains(s_tag_objVersion)*/)
+        return false;
+    JsonObject data;
+    bool success = obj.getObject(data, s_tag_data);
+
+    {
+        JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
+        success &= load(data);
+    }
+    setObjectID(obj[s_tag_objID].toInt());
+    //m_version = obj[s_tag_objVersion].toInt(0);
+
+   // if(m_version <= 0)
+   //     success = false;
+    return success;
+#endif
 }
 
 

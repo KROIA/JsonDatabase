@@ -7,6 +7,7 @@ namespace JsonDatabase
 
     JsonValue JsonDeserializer::deserializeValue(const std::string& json) 
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
         size_t index = 0;
         nornmalizeJsonString(json, normalized);
@@ -15,6 +16,7 @@ namespace JsonDatabase
 
     JsonValue JsonDeserializer::deserializeObject(const std::string& json) 
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string jsonString;
         size_t index = 0;
         nornmalizeJsonString(json, jsonString);
@@ -32,6 +34,7 @@ namespace JsonDatabase
 
     JsonValue JsonDeserializer::deserializeArray(const std::string& json) 
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string jsonString;
         size_t index = 0;
         nornmalizeJsonString(json, jsonString);
@@ -48,6 +51,7 @@ namespace JsonDatabase
 
     JsonValue JsonDeserializer::deserializeValue_internal(const std::string& json, size_t& index)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         switch (json[index]) {
         case '{':
             return deserializeObject_internal(json, index);
@@ -78,7 +82,9 @@ namespace JsonDatabase
         }
     }
 
-    JsonValue JsonDeserializer::deserializeObject_internal(const std::string& json, size_t& index) {
+    JsonValue JsonDeserializer::deserializeObject_internal(const std::string& json, size_t& index) 
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         JsonObject object;
         index++; // Skip the '{' character
         //skipWhiteSpace(json, index);
@@ -93,7 +99,9 @@ namespace JsonDatabase
         return JsonValue(object);
     }
 
-    JsonValue JsonDeserializer::deserializeArray_internal(const std::string& json, size_t& index) {
+    JsonValue JsonDeserializer::deserializeArray_internal(const std::string& json, size_t& index) 
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         JsonArray array;
         index++; // Skip the '[' character
         while (json[index] != ']') {
@@ -112,7 +120,9 @@ namespace JsonDatabase
         return JsonValue(array);
     }
 
-    std::pair<std::string, JsonValue> JsonDeserializer::deserializePair(const std::string& json, size_t& index) {
+    std::pair<std::string, JsonValue> JsonDeserializer::deserializePair(const std::string& json, size_t& index) 
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
         //index++; // Skip the opening double quote
         std::string key = deserializeString(json, index);
         //index++; // Skip the closing double quote
@@ -122,7 +132,9 @@ namespace JsonDatabase
         return { key, value };
     }
 
-    std::string JsonDeserializer::deserializeString(const std::string& json, size_t& index) {
+    std::string JsonDeserializer::deserializeString(const std::string& json, size_t& index) 
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
         index++; // Skip the opening double quote
         size_t start = index;
         bool isString = true;
@@ -176,6 +188,7 @@ namespace JsonDatabase
 
     int JsonDeserializer::deserializeNumber(const std::string& str, int& intValue, double& doubleValue, size_t& index)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
         intValue = 0;
         doubleValue = 0;
         std::size_t found = str.find_first_not_of("-0123456789.eE", index);
@@ -279,7 +292,9 @@ namespace JsonDatabase
         return 2;
     }
 
-    bool JsonDeserializer::deserializeBool(const std::string& json, size_t& index) {
+    bool JsonDeserializer::deserializeBool(const std::string& json, size_t& index) 
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
         std::string str;
         if (json[index] == 't') {
             //str = json.substr(index, 4); // true
@@ -293,19 +308,22 @@ namespace JsonDatabase
         }
     }
 
-    void JsonDeserializer::skipWhiteSpace(const std::string& jsonString, size_t &index) {
+    void JsonDeserializer::skipWhiteSpace(const std::string& jsonString, size_t &index) 
+    {
         while (index < jsonString.size() && std::isspace(jsonString[index])) {
             index++;
         }
     }
     void JsonDeserializer::nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 		std::vector<char> chars = { '\n', '\t', '\r', ' '};
 		removeChars(jsonString, jsonStringOut, chars);
     }
     void JsonDeserializer::removeChars(const std::string& jsonString, std::string& jsonStringOut,
         const std::vector<char>& chars)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
         jsonStringOut.resize(jsonString.size(), '\0');
         size_t count = 0;
         bool isString = false;
@@ -346,6 +364,7 @@ namespace JsonDatabase
 
     std::string JsonDeserializer::unescapeString(const std::string& str)
     {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         // remove dummy escape symbols and replace them with the real ones
         std::string result;
         result.reserve(str.size());

@@ -5,8 +5,14 @@
 #include "utilities/JDUniqueMutexLock.h"
 
 #include <QtZlib/zlib.h>
+#ifdef JD_USE_QJSON
 #include <QJsonDocument>
 #include <QJsonArray>
+#else
+#include "Json/JsonValue.h"
+#include "Json/JsonDeserializer.h"
+#include "Json/JsonSerializer.h"
+#endif
 #include <QFile>
 #include <QDir>
 #include <QtEndian>
@@ -161,7 +167,7 @@ namespace JsonDatabase
             }
             return a == accessType;
         }
-
+#ifdef JD_USE_QJSON
         bool JDManagerFileSystem::writeJsonFile(
             const std::vector<QJsonObject>& jsons,
             const std::string& directory,
@@ -169,8 +175,18 @@ namespace JsonDatabase
             const std::string& fileEnding,
             bool zipFormat,
             bool lockedRead) const
+#else
+        bool JDManagerFileSystem::writeJsonFile(
+            const JsonArray& jsons,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+#ifdef JD_USE_QJSON
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("std::vector to QJsonArray", JD_COLOR_STAGE_6);
             QJsonArray jsonArray;
 
@@ -179,12 +195,19 @@ namespace JsonDatabase
                 jsonArray.append(QJsonValue(jsonObject));
             }
             JD_GENERAL_PROFILING_END_BLOCK;
+#endif
 
 
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("toJson", JD_COLOR_STAGE_6);
+            QByteArray data;
+#ifdef JD_USE_QJSON
             QJsonDocument jsonDocument(jsonArray);
             // Convert QJsonDocument to a QByteArray for writing to a file
-            QByteArray data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
+            data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
+#else
+            JsonSerializer serializer;
+            data = QByteArray::fromStdString(serializer.serializeArray(jsons));
+#endif
             JD_GENERAL_PROFILING_END_BLOCK;
 
             m_fileWatcher.pause();
@@ -206,6 +229,7 @@ namespace JsonDatabase
             return false;
         }
 
+#ifdef JD_USE_QJSON
         bool JDManagerFileSystem::writeJsonFile(
             const QJsonObject& json,
             const std::string& directory,
@@ -213,13 +237,29 @@ namespace JsonDatabase
             const std::string& fileEnding,
             bool zipFormat,
             bool lockedRead) const
+#else
+        bool JDManagerFileSystem::writeJsonFile(
+            const JsonValue& json,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
+
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("toJson", JD_COLOR_STAGE_6);
+            QByteArray data;
+#ifdef JD_USE_QJSON
             QJsonDocument jsonDocument(json);
             // Convert QJsonDocument to a QByteArray for writing to a file
-            QByteArray data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
+            data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
+#else
+            JsonSerializer serializer;
+            data = QByteArray::fromStdString(serializer.serializeValue(json));
+#endif
             JD_GENERAL_PROFILING_END_BLOCK;
 
 
@@ -244,7 +284,7 @@ namespace JsonDatabase
 
 
         
-
+#ifdef JD_USE_QJSON
         bool JDManagerFileSystem::readJsonFile(
             std::vector<QJsonObject>& jsonsOut,
             const std::string& directory,
@@ -252,6 +292,15 @@ namespace JsonDatabase
             const std::string& fileEnding,
             bool zipFormat,
             bool lockedRead) const
+#else
+        bool JDManagerFileSystem::readJsonFile(
+            JsonArray& jsonsOut,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const
+#endif
         {
             
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -262,7 +311,12 @@ namespace JsonDatabase
             }
            
             // Parse the JSON data
+#ifdef JD_USE_QJSON
             QJsonDocument jsonDocument;
+#else
+            JsonDeserializer deserializer;
+            JsonValue deserialized;
+#endif
             if (zipFormat)
             {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
@@ -271,29 +325,46 @@ namespace JsonDatabase
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+#ifdef JD_USE_QJSON
                     jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
+#else
+                    deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString());
+#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
                 else
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+#ifdef JD_USE_QJSON
                     jsonDocument = QJsonDocument::fromJson(fileData);
+#else
+                    deserialized = deserializer.deserializeValue(fileData.toStdString());
+#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
             }
             else
             {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+#ifdef JD_USE_QJSON
                 jsonDocument = QJsonDocument::fromJson(fileData);
+#else
+                deserialized = deserializer.deserializeValue(fileData.toStdString());
+#endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
 
 
-
+#ifdef JD_USE_QJSON
             // Check if the JSON document is an array
-            if (jsonDocument.isArray()) {
+            if (jsonDocument.isArray()) 
+#else
+            if (deserialized.isArray())
+#endif
+            {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("QJsonArray to std::vector", JD_COLOR_STAGE_6);
+#ifdef JD_USE_QJSON
                 QJsonArray jsonArray = jsonDocument.array();
 
                 // Iterate through the array and add QJsonObjects to the vector
@@ -303,6 +374,9 @@ namespace JsonDatabase
                         jsonsOut.emplace_back(jsonValue.toObject());
                     }
                 }
+#else
+                deserialized.getArray(jsonsOut);
+#endif
                 JD_GENERAL_PROFILING_END_BLOCK;
                 return true;
             }
@@ -320,6 +394,8 @@ namespace JsonDatabase
 
             return false;
         }
+
+#ifdef JD_USE_QJSON
         bool JDManagerFileSystem::readJsonFile(
             QJsonObject& objOut,
             const std::string& directory,
@@ -327,6 +403,15 @@ namespace JsonDatabase
             const std::string& fileEnding,
             bool zipFormat,
             bool lockedRead) const
+#else
+        bool JDManagerFileSystem::readJsonFile(
+            JsonValue& objOut,
+            const std::string& directory,
+            const std::string& fileName,
+            const std::string& fileEnding,
+            bool zipFormat,
+            bool lockedRead) const
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             QByteArray fileData;
@@ -334,10 +419,15 @@ namespace JsonDatabase
             {
                 return false;
             }
+#ifdef JD_USE_QJSON
             QJsonParseError jsonError;
             jsonError.error = QJsonParseError::NoError;
 
             QJsonDocument document;
+#else
+            JsonDeserializer deserializer;
+            JsonValue deserialized;
+#endif
             if (zipFormat)
             {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
@@ -346,23 +436,36 @@ namespace JsonDatabase
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+#ifdef JD_USE_QJSON
                     document = QJsonDocument::fromJson(uncompressed.toUtf8());
+#else
+                    deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString());
+#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
                 else
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+#ifdef JD_USE_QJSON
                     document = QJsonDocument::fromJson(fileData);
+#else
+                    deserialized = deserializer.deserializeValue(fileData.toStdString());
+#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
             }
             else
             {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
+#ifdef JD_USE_QJSON
                 document = QJsonDocument::fromJson(fileData, &jsonError);
+#else
+                deserialized = deserializer.deserializeValue(fileData.toStdString());
+#endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
+#ifdef JD_USE_QJSON
             if (jsonError.error != QJsonParseError::NoError)
             {
                 JD_CONSOLE("bool JDManagerFileSystem::readJsonFile("
@@ -375,11 +478,23 @@ namespace JsonDatabase
                     << ") Can't read Jsonfile: " << jsonError.errorString().toStdString().c_str() << "\n");
                 return false;
             }
+#else
+
+#endif
+#ifdef JD_USE_QJSON
             if (document.isObject())
             {
                 objOut = document.object();
                 return true;
             }
+#else
+            if (deserialized.isObject())
+            {
+                //objOut = std::move(deserialized);
+                objOut = deserialized;
+                return true;
+            }
+#endif
 
             return false;
         }

@@ -310,6 +310,142 @@ namespace JsonDatabase
         return m_type == Type::Object;
     }
 
+    bool JsonValue::contains(const std::string& key) const
+    {
+        if (m_type != Type::Object)
+            return false;
+		return std::get<JsonObject>(m_value).contains(key);
+    }
+    JsonValue& JsonValue::operator[](const std::string& key)
+    {
+        if (m_type != Type::Object)
+        {
+            static JsonValue nullValue;
+            nullValue = JsonValue();
+            return nullValue;
+        }
+        return std::get<JsonObject>(m_value)[key];
+    }
+
+
+    const std::string& JsonValue::getString() const
+    {
+        return std::get<std::string>(m_value);
+    }
+    int JsonValue::getInt() const
+    {
+        return std::get<int>(m_value);
+    }
+    double JsonValue::getDouble() const
+    {
+        return std::get<double>(m_value);
+    }
+    bool JsonValue::getBool() const
+    {
+        return std::get<bool>(m_value);
+    }
+    const JsonArray& JsonValue::getArray() const
+    {
+        return std::get<JsonArray>(m_value);
+    }
+    const JsonObject& JsonValue::getObject() const
+    {
+        return std::get<JsonObject>(m_value);
+    }
+
+    bool JsonValue::getString(std::string& valueOut) const
+    {
+        if(m_type != Type::String)
+			return false;
+        valueOut = std::get<std::string>(m_value);
+		return true;
+    }
+    bool JsonValue::getString(JsonValue& objOut, const std::string& key) const
+    {
+        if (m_type != Type::Object)
+			return false;
+        objOut = std::get<const JsonObject>(m_value)[key];
+        return true;
+    }
+    bool JsonValue::getInt(int& valueOut) const
+    {
+        if (m_type != Type::Int)
+            return false;
+        valueOut = std::get<int>(m_value);
+        return true;
+    }
+    bool JsonValue::getDouble(double& valueOut) const
+    {
+        if (m_type != Type::Double)
+			return false;
+		valueOut = std::get<double>(m_value);
+		return true;
+    }
+    bool JsonValue::getBool(bool& valueOut) const
+    {
+		if (m_type != Type::Bool)
+            return false;
+        valueOut = std::get<bool>(m_value);
+        return true;
+    }
+    bool JsonValue::getArray(JsonArray& valueOut) const
+    {
+        if (m_type != Type::Array)
+			return false;
+		valueOut = std::get<JsonArray>(m_value);
+		return true;
+    }
+    bool JsonValue::getObject(JsonObject& valueOut) const
+    {
+        if (m_type != Type::Object)
+            return false;
+        valueOut = std::get<JsonObject>(m_value);
+        return true;
+    }
+
+    bool JsonValue::getString(std::string& valueOut, const std::string& key) const
+    {
+        if (m_type != Type::Object)
+            return false;
+        valueOut = std::get<const JsonObject>(m_value)[key].getString();
+        return true;
+    }
+    bool JsonValue::getInt(int& valueOut, const std::string& key) const
+    {
+        if (m_type != Type::Object)
+			return false;
+		valueOut = std::get<const JsonObject>(m_value)[key].getInt();
+		return true;
+    }
+    bool JsonValue::getDouble(double& valueOut, const std::string& key) const
+    {
+        if (m_type != Type::Object)
+            return false;
+        valueOut = std::get<const JsonObject>(m_value)[key].getDouble();
+        return true;
+    }
+    bool JsonValue::getBool(bool& valueOut, const std::string& key) const
+    {
+        if (m_type != Type::Object)
+			return false;
+		valueOut = std::get<const JsonObject>(m_value)[key].getBool();
+        return true;
+    }
+    bool JsonValue::getArray(JsonArray& valueOut, const std::string& key) const
+    {
+        if (m_type != Type::Object)
+            return false;
+        valueOut = std::get<const JsonObject>(m_value)[key].getArray();
+        return true;
+    }
+    bool JsonValue::getObject(JsonObject& valueOut, const std::string& key) const
+    {
+        if (m_type != Type::Object)
+			return false;
+		valueOut = std::get<const JsonObject>(m_value)[key].getObject();
+		return true;
+    }
+
     // Convert value to string representation
     std::string JsonValue::toString() const 
     {

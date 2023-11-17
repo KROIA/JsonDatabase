@@ -42,6 +42,7 @@ namespace JsonDatabase
         return error;
     }
 
+#ifdef JD_USE_QJSON
     JDObjectInterface* JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
     {
         std::string className;
@@ -51,6 +52,17 @@ namespace JsonDatabase
         }
         return nullptr;
     }
+#else
+    JDObjectInterface* JDObjectRegistry::getObjectDefinition(const JsonValue& json)
+    {
+        std::string className;
+        if (json.getString(className, JDObjectInterface::s_tag_className))
+        {
+            return getObjectDefinition(className);
+        }
+        return nullptr;
+    }
+#endif
     JDObjectInterface* JDObjectRegistry::getObjectDefinition(const std::string& className)
     {
         const std::map<std::string, JDObjectInterface*>& registry = getRegisteredTypes();

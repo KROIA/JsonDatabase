@@ -2,6 +2,7 @@
 
 namespace JsonDatabase
 {
+#ifdef JD_USE_QJSON
 bool JDSerializable::getJsonValue(const QJsonObject &obj, QJsonObject &value, const QString &key)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -93,4 +94,5 @@ bool JDSerializable::getJsonValue(const QJsonObject &obj, bool &value, const QSt
     }
     return false;
 }
+#endif
 }

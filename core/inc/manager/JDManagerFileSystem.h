@@ -5,7 +5,11 @@
 #include "utilities/filesystem/FileReadWriteLock.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
 
+#ifdef JD_USE_QJSON
 #include <QJsonObject>
+#else
+#include "Json/JsonValue.h"
+#endif
 #include <mutex>
 
 namespace JsonDatabase
@@ -42,6 +46,7 @@ namespace JsonDatabase
                 const std::string& fileName,
                 FileReadWriteLock::Access accessType) const;
             
+#ifdef JD_USE_QJSON
             bool writeJsonFile(
                 const std::vector<QJsonObject>& jsons,
                 const std::string& directory,
@@ -57,6 +62,7 @@ namespace JsonDatabase
                 bool zipFormat,
                 bool lockedRead) const;
 
+
             bool readJsonFile(
                 std::vector<QJsonObject>& jsonsOut,
                 const std::string& directory,
@@ -71,7 +77,66 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead) const;
+            /*
+            bool readFile(
+                QByteArray& fileDataOut,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool lockedRead) const;
+            bool writeFile(
+                const QByteArray& fileData,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool lockedRead) const;
+                */
 
+#else
+            bool writeJsonFile(
+                const JsonArray& jsons,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool zipFormat,
+                bool lockedRead) const;
+            bool writeJsonFile(
+                const JsonValue& json,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool zipFormat,
+                bool lockedRead) const;
+
+
+            bool readJsonFile(
+                JsonArray& jsonsOut,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool zipFormat,
+                bool lockedRead) const;
+            bool readJsonFile(
+                JsonValue& objOut,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool zipFormat,
+                bool lockedRead) const;
+
+           /* bool readFile(
+                std::string& fileDataOut,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool lockedRead) const;
+            bool writeFile(
+                const std::string& fileData,
+                const std::string& directory,
+                const std::string& fileName,
+                const std::string& fileEnding,
+                bool lockedRead) const;*/
+#endif
             bool readFile(
                 QByteArray& fileDataOut,
                 const std::string& directory,

@@ -24,8 +24,11 @@ namespace JsonDatabase
         
         static Error registerType(JDObjectInterface* obj);
         static const std::map<std::string, JDObjectInterface*>& getRegisteredTypes();
-
+#ifdef JD_USE_QJSON
         static JDObjectInterface* getObjectDefinition(const QJsonObject& json);
+#else
+        static JDObjectInterface* getObjectDefinition(const JsonValue& json);
+#endif
         static JDObjectInterface* getObjectDefinition(const std::string& className);
 
     private:

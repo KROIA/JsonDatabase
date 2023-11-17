@@ -77,6 +77,33 @@ namespace JsonDatabase
 		bool isArray() const;
 		bool isObject() const;
 
+		bool contains(const std::string& key) const; // returns true if this is an object and contains the key
+		JsonValue& operator[](const std::string& key); // returns the value of the key if this is an object
+
+
+		const std::string &getString() const;
+		int getInt() const;
+		double getDouble() const;
+		bool getBool() const;
+		const JsonArray& getArray() const;
+		const JsonObject& getObject() const;
+
+		bool getString(std::string& valueOut) const;
+		bool getString(JsonValue& objOut, const std::string &key) const;
+		bool getInt(int& valueOut) const;
+		bool getDouble(double& valueOut) const;
+		bool getBool(bool& valueOut) const;
+		bool getArray(JsonArray& valueOut) const;
+		bool getObject(JsonObject& valueOut) const;
+
+		bool getString(std::string& valueOut, const std::string& key) const;
+		bool getInt(int& valueOut, const std::string& key) const;
+		bool getDouble(double& valueOut, const std::string& key) const;
+		bool getBool(bool& valueOut, const std::string& key) const;
+		bool getArray(JsonArray& valueOut, const std::string& key) const;
+		bool getObject(JsonObject& valueOut, const std::string& key) const;
+
+
 		std::string toString() const;
 		std::string serialize() const;
 

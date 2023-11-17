@@ -17,13 +17,14 @@ bool test_json_deserialize();
 int main(int argc, char* argv[])
 {
 	QCoreApplication a(argc, argv);
-
+	JDManager::startProfiler();
 	bool success = true;
 	success &= test_json_stringParse();
 
 	success &= test_json_objectNesting();
 	success &= test_json_deserialize();
 	std::cout << "All tests " << (success ? "passed" : "failed") << "\n\n\n";
+	JDManager::stopProfiler("json.prof");
 	return a.exec();
 }
 
