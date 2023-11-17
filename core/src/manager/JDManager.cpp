@@ -258,7 +258,11 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
 
     if (progress) progress->setComment("Reading database file");
+#ifdef JD_USE_QJSON
     std::vector<QJsonObject> jsons;
+#else
+    JsonArray jsons;
+#endif
 
     success &= JDManagerFileSystem::readJsonFile(jsons, 
         getDatabasePath(), 
@@ -273,7 +277,11 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     {
         JDObjectInterface* objOriginal;
         JDObjectInterface* obj;
+#ifdef JD_USE_QJSON
         QJsonObject json;
+#else
+        JsonValue json;
+#endif
     };
 
     std::vector< Pair> pairs;
@@ -284,10 +292,21 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         for (size_t i = 0; i < jsons.size(); ++i)
         {
             JDObjectID ID;
+#ifdef JD_USE_QJSON
             if (!JDSerializable::getJsonValue(jsons[i], ID, JDObjectInterface::s_tag_objID))
+#else
+            int id;
+            if (!jsons[i].getInt(id, JDObjectInterface::s_tag_objID))        
+#endif
             {
                 JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode) 
-                    << "\") Object with no ID found: " << QJsonValue(jsons[i]).toString().toStdString() + "\n");
+                    << "\") Object with no ID found: " 
+#ifdef JD_USE_QJSON
+                    << QJsonValue(jsons[i]).toString().toStdString() 
+#else
+
+#endif
+                    << "\n");
                 success = false;
             }
             Pair p;
@@ -567,7 +586,11 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     bool success = true;
 
     if (progress) progress->setComment("Serializing objects");
+#ifdef JD_USE_QJSON
     std::vector<QJsonObject> jsonData;
+#else
+    JsonArray jsonData;
+#endif
    
     
     if (progress)

@@ -364,7 +364,7 @@ namespace JsonDatabase
     {
         if (m_type != Type::Object)
 			return false;
-        objOut = std::get<const JsonObject>(m_value)[key];
+        objOut = std::get<const JsonObject>(m_value).get(key);
         return true;
     }
     bool JsonValue::getInt(int& valueOut) const
@@ -407,42 +407,42 @@ namespace JsonDatabase
     {
         if (m_type != Type::Object)
             return false;
-        valueOut = std::get<const JsonObject>(m_value)[key].getString();
+        valueOut = std::get<const JsonObject>(m_value).get(key).getString();
         return true;
     }
     bool JsonValue::getInt(int& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
 			return false;
-		valueOut = std::get<const JsonObject>(m_value)[key].getInt();
+		valueOut = std::get<const JsonObject>(m_value).get(key).getInt();
 		return true;
     }
     bool JsonValue::getDouble(double& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
             return false;
-        valueOut = std::get<const JsonObject>(m_value)[key].getDouble();
+        valueOut = std::get<const JsonObject>(m_value).get(key).getDouble();
         return true;
     }
     bool JsonValue::getBool(bool& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
 			return false;
-		valueOut = std::get<const JsonObject>(m_value)[key].getBool();
+		valueOut = std::get<const JsonObject>(m_value).get(key).getBool();
         return true;
     }
     bool JsonValue::getArray(JsonArray& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
             return false;
-        valueOut = std::get<const JsonObject>(m_value)[key].getArray();
+        valueOut = std::get<const JsonObject>(m_value).get(key).getArray();
         return true;
     }
     bool JsonValue::getObject(JsonObject& valueOut, const std::string& key) const
     {
         if (m_type != Type::Object)
 			return false;
-		valueOut = std::get<const JsonObject>(m_value)[key].getObject();
+		valueOut = std::get<const JsonObject>(m_value).get(key).getObject();
 		return true;
     }
 

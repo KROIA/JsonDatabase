@@ -102,7 +102,12 @@ namespace JsonDatabase
             }
             return true;
         }
+#endif
+#ifdef JD_USE_QJSON
         bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool& hasChangedOut)
+#else
+		bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObjectInterface* obj, bool& hasChangedOut)
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (!obj->equalData(json))
@@ -114,7 +119,11 @@ namespace JsonDatabase
             }
             return true;
         }
+#ifdef JD_USE_QJSON
         bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj)
+#else
+        bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObjectInterface* obj)
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (!obj->loadInternal(json))
@@ -124,17 +133,19 @@ namespace JsonDatabase
             }
             return true;
         }
-#else
+
+#ifndef JD_USE_QJSON
         bool JsonUtilities::serializeObject(JDObjectInterface* obj, std::string& serializedOut)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
             if (!obj) return false;
 
-            JsonObject data;
+            JsonValue data;
             if (!obj->saveInternal(data))
                 return false;
 
-            return serializeJson(data, serializedOut);
+            serializedOut = data.serialize();
+            return true;
         }
         bool JsonUtilities::deserializeJson(const JsonValue& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut)
         {
@@ -142,7 +153,16 @@ namespace JsonDatabase
             if (objOriginal)
             {
                 JDObjectID ID;
-                JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
+                int id;
+                if(json.getInt(id, JDObjectInterface::s_tag_objID))
+					ID = id;
+                else
+                {
+                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \"" 
+                    						<< JDObjectInterface::s_tag_objID << "\" is missed\n" 
+                    						<< "Object: " << json);
+                    return false;
+                }
                 if (objOriginal->equalData(json))
                 {
                     objOut = objOriginal;
@@ -159,7 +179,13 @@ namespace JsonDatabase
                 if (!clone)
                 {
                     std::string className;
-                    JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className);
+                    if (!json.getString(className, JDObjectInterface::s_tag_className))
+                    {
+                        JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
+                            <<JDObjectInterface::s_tag_className<< "\" is missed\n" 
+                            <<"Object: "<<json);
+                        return false;
+                    }
 
                     JD_CONSOLE_FUNCTION("Objecttype: " << className.c_str() << " is not known by this database. "
                         "Call: addObjectDefinition<" << className.c_str() << ">(); first\n");
@@ -167,12 +193,21 @@ namespace JsonDatabase
                 }
 
                 JDObjectID ID;
-                JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
-
+                int id;
+                if (json.getInt(id, JDObjectInterface::s_tag_objID))
+                    ID = id;
+                else
+                {
+                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
+                        << JDObjectInterface::s_tag_objID << "\" is missed\n"
+                        << "Object: " << json);
+                    return false;
+                }
                 objOut = clone->clone(json, ID);
             }
             return true;
         }
+
 #endif
 	}
 }

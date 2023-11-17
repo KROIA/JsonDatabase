@@ -76,15 +76,16 @@ size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons
     return std::string::npos;
 }
 #else
-size_t JDObjectInterface::getJsonIndexByID(const std::vector<JsonValue>& jsons, const JDObjectID& objID)
+size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectID& objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        JDObjectID id;
-
-        if (JDSerializable::getJsonValue(jsons[i], id, s_tag_objID))
+        JDObjectID ID;
+        int id;
+        if (jsons[i].getInt(id, s_tag_objID))
         {
-            if (id == objID)
+            ID = id;
+            if (ID == objID)
                 return i;
         }
     }
@@ -133,8 +134,9 @@ bool JDObjectInterface::equalData(const JsonValue& obj) const
     return equal;
 #else
     JsonObject data1;
+    bool equal = obj.getObject(data1, s_tag_data);
     JsonObject data2;
-    bool equal = getJsonValue(obj, data1, s_tag_data);
+
     {
         JD_GENERAL_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
         equal &= save(data2);
@@ -184,7 +186,14 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
         JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
         success &= load(data);
     }
-    setObjectID(obj[s_tag_objID].toInt());
+#ifdef JD_USE_QJSON
+    setObjectID(obj.getInt(s_tag_objID));
+#else
+    int id;
+    if (!obj.getInt(id, s_tag_objID))
+        return false;
+    setObjectID(id);
+#endif
     //m_version = obj[s_tag_objVersion].toInt(0);
 
    // if(m_version <= 0)
@@ -193,15 +202,23 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
 #endif
 }
 
-
+#ifdef JD_USE_QJSON
 bool JDObjectInterface::saveInternal(QJsonObject &obj)
+#else
+bool JDObjectInterface::saveInternal(JsonValue& obj)
+#endif
 {
     //++m_version;
     return getSaveData(obj);
 }
+#ifdef JD_USE_QJSON
 bool JDObjectInterface::getSaveData(QJsonObject& obj) const
+#else
+bool JDObjectInterface::getSaveData(JsonValue& obj) const
+#endif
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+#ifdef JD_USE_QJSON
     obj[s_tag_objID] = getObjectID().get();
     //obj[s_tag_objVersion] = QJsonValue(m_version);
     obj[s_tag_className] = className().c_str();
@@ -214,6 +231,9 @@ bool JDObjectInterface::getSaveData(QJsonObject& obj) const
 
     obj[s_tag_data] = data;
     return ret;
+#else
+
+#endif
 }
 /*void JDObjectInterface::incrementVersionValue()
 {
