@@ -5,6 +5,8 @@
 
 #include <QJsonDocument>
 
+
+
 namespace JsonDatabase
 {
 	namespace Internal
@@ -15,22 +17,7 @@ namespace JsonDatabase
         bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, JsonArray& jsonOut)
 #endif
         {
-            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            jsonOut.reserve(objs.size());
-
-            bool success = true;
-
-            for (auto o : objs)
-            {
-#ifdef JD_USE_QJSON
-                QJsonObject data;
-#else
-                JsonObject data;
-#endif
-                success &= o->saveInternal(data);
-                jsonOut.emplace_back(data);
-            }
-            return success;
+            return getJsonArray(objs, jsonOut, nullptr, 0.0);
         }
 #ifdef JD_USE_QJSON
         bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, 
@@ -45,20 +32,79 @@ namespace JsonDatabase
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            jsonOut.reserve(objs.size());
-
+            
+            
             bool success = true;
 
-            for (auto o : objs)
+#ifdef JD_ENABLE_MULTITHREADING
+            unsigned int threadCount = std::thread::hardware_concurrency();
+            if(threadCount > 100)
+                threadCount = 100;
+            size_t objCount = objs.size();
+            if (objCount > 100 && threadCount)
             {
+                struct ThreadData
+                {
+                    size_t start;
+                    size_t end;
+                };
+                std::vector<std::thread*> threads(threadCount, nullptr);
+                std::vector<ThreadData> threadData(threadCount);
+                size_t chunkSize = objCount / threadCount;
+                size_t remainder = objCount % threadCount;
+                size_t start = 0;
+                jsonOut.resize(objCount);
+
+
+                for (size_t i = 0; i < threadCount; ++i)
+                {
+                    threadData[i].start = start;
+                    threadData[i].end = start + chunkSize;
+                    start += chunkSize;
+                    if (i == threadCount - 1)
+                        threadData[i].end += remainder;
+                    threads[i] = new std::thread([&threadData, &objs, i, &jsonOut]()
+                        {
+                            ThreadData& data = threadData[i];
+                            for (size_t j = data.start; j < data.end; ++j)
+                            {
 #ifdef JD_USE_QJSON
-                QJsonObject data;
+                                QJsonObject data;
 #else
-                JsonObject data;
+                                JsonObject data;
 #endif
-                success &= o->saveInternal(data);
-                jsonOut.emplace_back(data);
-                progress->addProgress(deltaProgress);
+                                objs[j]->saveInternal(data);
+                                jsonOut[j] = std::move(data);
+                            }
+                        });
+                }
+                // Wait for all threads to finish
+                for (size_t i = 0; i < threadCount; ++i)
+                {
+                    threads[i]->join();
+                    if (progress)
+                    {
+                        progress->addProgress(deltaProgress * (threadData[i].end - threadData[i].start));
+                    }
+                    delete threads[i];
+                }
+            }
+            else
+#endif
+            {
+                jsonOut.resize(objs.size());
+                for (auto o : objs)
+                {
+#ifdef JD_USE_QJSON
+                    QJsonObject data;
+#else
+                    JsonObject data;
+#endif
+                    success &= o->saveInternal(data);
+                    jsonOut.emplace_back(std::move(data));
+                    if(progress)
+                        progress->addProgress(deltaProgress);
+                }
             }
             return success;
         }

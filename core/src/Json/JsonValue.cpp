@@ -94,7 +94,7 @@ namespace JsonDatabase
 
     JsonValue::~JsonValue()
     {
-
+        
     }
 
 
@@ -476,6 +476,10 @@ namespace JsonDatabase
     }
 
     JsonValue::JsonVariantType& JsonValue::getVariant()
+    {
+        return m_value;
+    }
+    const JsonValue::JsonVariantType& JsonValue::getConstVariant() const
     {
         return m_value;
     }

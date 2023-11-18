@@ -26,6 +26,8 @@ namespace JsonDatabase
             , objectChangedFromDatabase("ChangedFromDatabase")
             , databaseOutdated("DatabaseOutdated")
 
+            , onStartAsyncWork("onStartAsyncWork")
+            , onEndAsyncWork("onEndAsyncWork")
             , onLoadObjectDone("onLoadObjectDone")
             , onLoadObjectsDone("onLoadObjectsDone")
             , onSaveObjectDone("onSaveObjectDone")
@@ -46,8 +48,9 @@ namespace JsonDatabase
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const JDObjectContainer&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseOutdated, )
 
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onStartAsyncWork,)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onEndAsyncWork,)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone,  bool, JDObjectInterface*)
-      
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectsDone, bool)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone,  bool, JDObjectInterface*)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectsDone, bool)
@@ -270,57 +273,63 @@ namespace JsonDatabase
                 {
                     switch (signal.signal)
                     {
-                    case signal_databaseFileChanged:
-                        databaseFileChanged.emitSignal();
-                        break;
-                    case signal_lockedObjectsChanged:
-                        lockedObjectsChanged.emitSignal();
-                        break;
-                    case signal_objectRemovedFromDatabase:
-                        objectRemovedFromDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_objectAddedToDatabase:
-                        objectAddedToDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_objectChangedFromDatabase:
-                        objectChangedFromDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_objectOverrideChangeFromDatabase:
-                        objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_databaseOutdated:
-                        databaseOutdated.emitSignal();
-                        break;
-                    case signal_onLoadObjectDone:
-                    {
-                        AsyncLoadObjectData* data = (AsyncLoadObjectData*)signal.data;
-                        onLoadObjectDone.emitSignal(data->success, data->object);
-                        delete data;
-                        break;
-                    }
-                    case signal_onLoadObjectsDone:
-                    {
-                        AsyncLoadObjectsData* data = (AsyncLoadObjectsData*)signal.data;
-                        onLoadObjectsDone.emitSignal(data->success);
-                        delete data;
-                        break;
-                    }
-                    case signal_onSaveObjectDone:
-                    {
-                        AsyncSaveObjectData* data = (AsyncSaveObjectData*)signal.data;
-                        onSaveObjectDone.emitSignal(data->success, data->object);
-                        delete data;
-                        break;
-                    }
-                    case signal_onSaveObjectsDone:
-                    {
-                        AsyncSaveObjectsData* data = (AsyncSaveObjectsData*)signal.data;
-                        onSaveObjectsDone.emitSignal(data->success);
-                        delete data;
-                        break;
-                    }
-                    default:
-                        break;
+                        case signal_onStartAsyncWork:
+						    onStartAsyncWork.emitSignal();
+						    break;
+                        case signal_onEndAsyncWork:
+                            onEndAsyncWork.emitSignal();
+                            break;
+                        case signal_databaseFileChanged:
+                            databaseFileChanged.emitSignal();
+                            break;
+                        case signal_lockedObjectsChanged:
+                            lockedObjectsChanged.emitSignal();
+                            break;
+                        case signal_objectRemovedFromDatabase:
+                            objectRemovedFromDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_objectAddedToDatabase:
+                            objectAddedToDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_objectChangedFromDatabase:
+                            objectChangedFromDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_objectOverrideChangeFromDatabase:
+                            objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_databaseOutdated:
+                            databaseOutdated.emitSignal();
+                            break;
+                        case signal_onLoadObjectDone:
+                        {
+                            AsyncLoadObjectData* data = (AsyncLoadObjectData*)signal.data;
+                            onLoadObjectDone.emitSignal(data->success, data->object);
+                            delete data;
+                            break;
+                        }
+                        case signal_onLoadObjectsDone:
+                        {
+                            AsyncLoadObjectsData* data = (AsyncLoadObjectsData*)signal.data;
+                            onLoadObjectsDone.emitSignal(data->success);
+                            delete data;
+                            break;
+                        }
+                        case signal_onSaveObjectDone:
+                        {
+                            AsyncSaveObjectData* data = (AsyncSaveObjectData*)signal.data;
+                            onSaveObjectDone.emitSignal(data->success, data->object);
+                            delete data;
+                            break;
+                        }
+                        case signal_onSaveObjectsDone:
+                        {
+                            AsyncSaveObjectsData* data = (AsyncSaveObjectsData*)signal.data;
+                            onSaveObjectsDone.emitSignal(data->success);
+                            delete data;
+                            break;
+                        }
+                        default:
+                            break;
                     }
                 }
             }

@@ -350,7 +350,28 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                 jsonDocument = QJsonDocument::fromJson(fileData);
 #else
-                deserialized = deserializer.deserializeValue(fileData.toStdString());
+                std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+                std::string str = fileData.toStdString();
+                std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+                double time1 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
+
+                begin = std::chrono::steady_clock::now();
+                deserializer.deserializeValue(str, deserialized);
+                end = std::chrono::steady_clock::now();
+                double time2 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
+
+
+                // std::cout << "Time difference = " << time1 << "[ms]" << std::endl;
+                // 
+                // begin = std::chrono::steady_clock::now();
+                // std::string str2(fileData.constData(), fileData.size());
+                // end = std::chrono::steady_clock::now();
+                // double time3 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
+                // 
+                // begin = std::chrono::steady_clock::now();
+                // deserialized = deserializer.deserializeValue(str2);
+                // end = std::chrono::steady_clock::now();
+                // double time4 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
@@ -375,28 +396,11 @@ namespace JsonDatabase
                     }
                 }
 #else
-                // mesure start time using chrono
-                std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
                 // deserialized.getArray(jsonsOut); // Old slow version
                 {
                     JsonValue::JsonVariantType& variant = deserialized.getVariant();
                     jsonsOut = std::move(std::get<JsonArray>(variant));
                 }
-
-                // mesure end time using chrono
-                std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-                // mesure time difference and convert to ms
-                double time1 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
-                // print time difference
-                std::cout << "Time difference = " << time1 << "[ms]" << std::endl;
-
-                JsonArray testArray;
-                begin = std::chrono::steady_clock::now();
-                testArray = std::move(jsonsOut);
-				end = std::chrono::steady_clock::now();
-                double time2 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
-                // print time difference
-                std::cout << "Time difference = " << time2 << "[ms]" << std::endl;
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;
                 return true;

@@ -2,7 +2,7 @@
 #include <iostream>
 #include "JsonDatabase.h"
 #include <vector>
-
+#include <QFile>
 
 using namespace std;
 using namespace JsonDatabase;
@@ -13,16 +13,18 @@ std::string fileData;
 bool test_json_stringParse();
 bool test_json_objectNesting();
 bool test_json_deserialize();
+bool test_stingNormalization();
 
 int main(int argc, char* argv[])
 {
 	QCoreApplication a(argc, argv);
 	JDManager::startProfiler();
 	bool success = true;
-	success &= test_json_stringParse();
+	//success &= test_json_stringParse();
 
-	success &= test_json_objectNesting();
-	success &= test_json_deserialize();
+	//success &= test_json_objectNesting();
+	//success &= test_json_deserialize();
+	success &= test_stingNormalization();
 	std::cout << "All tests " << (success ? "passed" : "failed") << "\n\n\n";
 	JDManager::stopProfiler("json.prof");
 	return a.exec();
@@ -238,3 +240,85 @@ bool test_json_deserialize()
 	std::cout << "test_json_deserialize" << " End " << (success ? "passed" : "failed") << "\n\n\n";
 	return success;
 }
+
+bool test_stingNormalization()
+{
+	std::cout << "test_stingNormalization" << " Start\n";
+	bool success = true;
+
+	QFile file("asyncDatabase/Person.json");
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		std::cout << "test_stingNormalization" << " End " << (success ? "passed" : "failed") << "\n\n\n";
+		return false;
+	}
+	std::string fileData = file.readAll().toStdString();
+	file.close();
+
+	struct PerformanceData
+	{
+		double time;
+		clock_t clocks;
+	};
+	std::vector<PerformanceData> performanceData;
+
+	size_t length = fileData.length();
+	size_t iterations = 100;
+	
+	double time = 0;
+	clock_t clocks = 0;
+	performanceData.reserve(iterations);
+	for (size_t i = 0; i < iterations; ++i)
+	{
+		std::string output;
+		std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+		clock_t startClock = clock();
+
+		JsonDeserializer::nornmalizeJsonString(fileData, output);
+
+		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		clock_t endClock = clock();
+		PerformanceData data;
+		data.time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
+		data.clocks = endClock - startClock;
+		
+		
+		
+		double processedCharsPerSecond = length / (data.time / 1000.0);
+		double clocksPerChar = data.clocks / (double)length;
+		std::cout << "[" << i<<"] process time: " << data.time << "ms clocks: " << data.clocks
+			<< " chars/sec: " << processedCharsPerSecond << " clk/char: " << clocksPerChar << endl;
+		time += data.time;
+		clocks += data.clocks;
+		performanceData.push_back(data);
+	}
+	time /= iterations;
+	clocks /= iterations;
+
+	double processedCharsPerSecond = length / (time / 1000.0);
+	double clocksPerChar = clocks / (double)length;
+	std::cout << "process time: "<< time << "ms clocks: "<< clocks 
+		<< " chars/sec: "<< processedCharsPerSecond << " clk/char: "<< clocksPerChar << endl;
+
+	std::cout << "test_stingNormalization" << " End " << (success ? "passed" : "failed") << "\n\n\n";
+
+	// Save performance data to csv file using QFile and ";" as separator
+	QFile csvFile("performanceData.csv");
+	if (!csvFile.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		std::cout << "test_stingNormalization" << " End " << (success ? "passed" : "failed") << "\n\n\n";
+		return false;
+	}
+	QTextStream csvStream(&csvFile);
+	csvStream << "time;clocks\n";
+	for (auto& data : performanceData)
+	{
+		csvStream << data.time << ";" << data.clocks << "\n";
+	}
+	csvFile.close();
+	
+	return success;
+}
+
+
+

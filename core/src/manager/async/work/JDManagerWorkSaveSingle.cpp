@@ -31,7 +31,8 @@ namespace JsonDatabase
 		}
 		void JDManagerAysncWorkSaveSingle::process()
 		{
-			JDM_UNIQUE_LOCK_P;
+			JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+			//JDM_UNIQUE_LOCK_P;
 			if (!m_object)
 			{
 				m_success = false;

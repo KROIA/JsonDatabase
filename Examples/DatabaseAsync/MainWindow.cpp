@@ -40,6 +40,8 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
     m_manager->getSignals().connect_databaseOutdated_slot(this, &MainWindow::onDatabaseOutdated);
 
 
+    m_manager->getSignals().connect_onStartAsyncWork_slot(this, &MainWindow::onAsyncWorkStarted);
+    m_manager->getSignals().connect_onEndAsyncWork_slot(this, &MainWindow::onAsyncWorkFinished);
     m_manager->getSignals().connect_onLoadObjectsDone_slot(this, &MainWindow::onLoadAllDone);
 	m_manager->getSignals().connect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
     m_manager->getSignals().connect_onSaveObjectsDone_slot(this, &MainWindow::onSaveAllDone);
@@ -49,12 +51,16 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 
 	//m_manager->getSignals().disconnect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
 	connect(&m_timer, &QTimer::timeout, this, &MainWindow::onTimerFinished);
-	m_timer.start(1);
+	m_timer.start(10);
+
+	connect(&m_asyncUpdateTimer, &QTimer::timeout, this, &MainWindow::onAsyncUpdateTimerFinished);
+	//m_timer.start(1);
 }
 
 MainWindow::~MainWindow()
 {
 	m_timer.stop();
+	m_asyncUpdateTimer.stop();
 	delete m_manager;
 	m_manager = nullptr;
 	//JDManager::stopProfiler(m_manager->getUser()+"_asyncProfile.prof");
@@ -65,10 +71,19 @@ void MainWindow::onTimerFinished()
 	EASY_FUNCTION(profiler::colors::Amber);
 	m_manager->update();
 	ui.objectCount_label->setText("Object count: "+QString::number(m_manager->getObjectCount()));
-	JsonDatabase::Internal::WorkProgress progress = m_manager->getWorkProgress();
-	ui.progressBar->setValue(progress.getProgress()*100);
-	ui.progressTaskName_label->setText(QString::fromStdString(progress.getTaskText()));
-	ui.progressComment_label->setText(QString::fromStdString(progress.getComment()));
+	
+	
+}
+void MainWindow::onAsyncUpdateTimerFinished()
+{
+	bool managerIsBusy = m_manager->isBusy();
+	if (managerIsBusy)
+	{
+		JsonDatabase::Internal::WorkProgress progress = m_manager->getWorkProgress();
+		ui.progressBar->setValue(progress.getProgress() * 100);
+		ui.progressTaskName_label->setText(QString::fromStdString(progress.getTaskText()));
+		ui.progressComment_label->setText(QString::fromStdString(progress.getComment()));
+	}
 }
 
 void MainWindow::on_zipFormat_checkBox_stateChanged(int state)
@@ -398,26 +413,81 @@ void MainWindow::onDatabaseOutdated()
 }
 
 
-
+void MainWindow::onAsyncWorkStarted()
+{
+	m_asyncUpdateTimer.start(1);
+}
+void MainWindow::onAsyncWorkFinished()
+{
+	m_asyncUpdateTimer.stop();
+}
 void MainWindow::onSaveAllDone(bool success)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "success: "<<(success?"true":"false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
 void MainWindow::onSaveIndividualDone(bool success, JDObjectInterface* obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG  << obj->getObjectID().toString().c_str() << " "<<(success ? "true" : "false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
 void MainWindow::onLoadAllDone(bool success)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG  << (success ? "true" : "false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
 void MainWindow::onLoadIndividualDone(bool success, JDObjectInterface* obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << obj->getObjectID().toString().c_str() <<" "<< (success ? "true" : "false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
 
 void MainWindow::onPersonSave(Person* person)

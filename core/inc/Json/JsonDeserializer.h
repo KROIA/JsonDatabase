@@ -13,6 +13,10 @@ namespace JsonDatabase
 		JsonValue deserializeObject(const std::string& json);
 		JsonValue deserializeArray(const std::string& json);	
 
+		void deserializeValue(const std::string& json, JsonValue& valueOut);
+		void deserializeObject(const std::string& json, JsonValue& valueOut);
+		void deserializeArray(const std::string& json, JsonValue& valueOut);
+
 		/*
 			Returns 0 if the string is not a number
 			Returns 1 if the string is an integer
@@ -22,12 +26,12 @@ namespace JsonDatabase
 		static void nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut);
 	private:
 
-		static JsonValue deserializeValue_internal(const std::string& json, size_t& index);
-		static JsonValue deserializeObject_internal(const std::string& json, size_t& index);
-		static JsonValue deserializeArray_internal(const std::string& json, size_t& index);
+		static void deserializeValue_internal(const std::string& json, size_t& index, JsonValue &out);
+		static void deserializeObject_internal(const std::string& json, size_t& index, JsonValue& out);
+		static void deserializeArray_internal(const std::string& json, size_t& index, JsonValue& out);
 
-		static std::pair<std::string, JsonValue> deserializePair(const std::string& json, size_t& index);
-		static std::string deserializeString(const std::string& json, size_t& index);
+		static void deserializePair(const std::string& json, size_t& index, std::pair<std::string, JsonValue> &pairOut);
+		static void deserializeString(const std::string& json, size_t& index, std::string &strOut);
 		//static double deserializeNumber(const std::string& json, size_t& index, int &intValue, bool &isInt);
 		
 		static bool deserializeBool(const std::string& json, size_t& index);
@@ -35,7 +39,9 @@ namespace JsonDatabase
 		static void skipWhiteSpace(const std::string& jsonString, size_t& index);
 		
 		static void removeChars(const std::string& jsonString, std::string& jsonStringOut,
-			const std::vector<char>& chars);
+			const std::string &removingChars);
+
+		static void removeSpecificChars(const std::string& jsonString, std::string& jsonStringOut);
 
 		static std::string unescapeString(const std::string &str);
 		/*JsonValue parseValue(const std::string& jsonString);

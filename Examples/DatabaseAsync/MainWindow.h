@@ -19,6 +19,7 @@ signals:
 	void closeWindow();
 private slots:
 	void onTimerFinished();
+	void onAsyncUpdateTimerFinished();
 
 	void on_zipFormat_checkBox_stateChanged(int state);
 
@@ -50,6 +51,8 @@ private:
 	void onObjectOverrideChangeFromDatabase(const JsonDatabase::JDObjectContainer& overwritten);
 	void onDatabaseOutdated();
 
+	void onAsyncWorkStarted();
+	void onAsyncWorkFinished();
 	void onSaveAllDone(bool success);
 	void onSaveIndividualDone(bool success, JDObjectInterface*obj);
 	void onLoadAllDone(bool success);
@@ -59,6 +62,7 @@ private:
 
 	Ui::MainWindow ui;
 	QTimer m_timer;
+	QTimer m_asyncUpdateTimer;
 
 	JDManager *m_manager;
 	UIPerson* m_uiPersonEditor;

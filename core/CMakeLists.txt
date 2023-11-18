@@ -54,9 +54,12 @@ if(QT_ENABLE)
 endif()
 # end QT settings
 
+
+
+
 # External dependencies from the dependencies.cmake
 use_easy_profiler(EASY_PROFILER_DEPS)
-set(LIBRARY_DEPENDENCIES)
+
 
 
 include_directories(inc)

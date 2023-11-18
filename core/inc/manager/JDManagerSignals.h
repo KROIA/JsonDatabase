@@ -34,6 +34,7 @@ namespace JsonDatabase
             friend JDManagerObjectManager;
             friend JDManagerFileSystem;
             friend JDObjectLocker;
+            friend JDManagerAsyncWorker;
         
             JDManagerSignals(JDManager& manager, std::mutex& mtx);
         public:
@@ -101,6 +102,18 @@ namespace JsonDatabase
             // -----------------------------------------------------------------------------------------------
             //                              JDManager async callbacks
             // -----------------------------------------------------------------------------------------------
+
+            
+            /*
+                The onStartAsyncWork signal gets emited if the manager starts a async operations.
+            */
+                DECLARE_SIGNAL_CONNECT_DISCONNECT(onStartAsyncWork, )
+             
+            /*
+                The onEndAsyncWork signal gets emited if the manager ends a async operations.
+                This is emited if all async operations are done
+            */
+                DECLARE_SIGNAL_CONNECT_DISCONNECT(onEndAsyncWork, )
 
             /*
                 The loadObject signal gets emited if the manager has loaded the given object in async mode.
@@ -215,6 +228,9 @@ namespace JsonDatabase
 			{
                 bool success;
             };
+
+            Signal<> onStartAsyncWork;
+            Signal<> onEndAsyncWork;
             Signal<bool, JDObjectInterface*> onLoadObjectDone;
             Signal<bool> onLoadObjectsDone;
             Signal<bool, JDObjectInterface*> onSaveObjectDone;
@@ -230,6 +246,8 @@ namespace JsonDatabase
                 signal_objectOverrideChangeFromDatabase,
                 signal_databaseOutdated,
 
+                signal_onStartAsyncWork,
+                signal_onEndAsyncWork,
                 signal_onLoadObjectDone,
                 signal_onLoadObjectsDone,
                 signal_onSaveObjectDone,

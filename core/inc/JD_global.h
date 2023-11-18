@@ -30,3 +30,4 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #define JDM_UNIQUE_LOCK_P_M(mutex) JDUniqueMutexLock uniqueLock(mutex);
 
 //#define JD_USE_QJSON
+#define JD_ENABLE_MULTITHREADING

@@ -133,8 +133,13 @@ bool JDObjectInterface::equalData(const JsonValue& obj) const
 
     return equal;
 #else
-    JsonObject data1;
-    bool equal = obj.getObject(data1, s_tag_data);
+    bool equal = true;
+    const JsonObject& valueObject = std::get<JsonObject>(obj.getConstVariant());
+    auto it = valueObject.find(s_tag_data);
+    if(it == valueObject.end())
+		return false;
+
+    const JsonObject &data1 = valueObject.find(s_tag_data)->second.getObject();
     JsonObject data2;
 
     {
@@ -232,17 +237,17 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
     obj[s_tag_data] = data;
     return ret;
 #else
+    obj.reserve(3);
     obj[s_tag_objID] = getObjectID().get();
     //obj[s_tag_objVersion] = QJsonValue(m_version);
-    obj[s_tag_className] = className().c_str();
-    JsonObject data;
+    obj[s_tag_className] = className();
+    obj[s_tag_data] = JsonObject();
     bool ret;
     {
         JD_GENERAL_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
+        JsonObject& data = std::get<JsonObject>(obj[s_tag_data].getVariant());
         ret = save(data);
     }
-
-    obj[s_tag_data] = data;
     return ret;
 #endif
 }

@@ -12,7 +12,9 @@ namespace JsonDatabase
         std::string normalized;
         size_t index = 0;
         nornmalizeJsonString(json, normalized);
-        return deserializeValue_internal(normalized, index);
+        JsonValue valOut;
+        deserializeValue_internal(normalized, index, valOut);
+        return valOut;
     }
 
     JsonValue JsonDeserializer::deserializeObject(const std::string& json) 
@@ -21,7 +23,9 @@ namespace JsonDatabase
         std::string jsonString;
         size_t index = 0;
         nornmalizeJsonString(json, jsonString);
-        return deserializeObject_internal(jsonString, index);
+        JsonValue valOut;
+        deserializeObject_internal(jsonString, index, valOut);
+        return valOut;
         /*
         JsonObject object;
         size_t index = 1; // Skip the '{' character
@@ -39,7 +43,9 @@ namespace JsonDatabase
         std::string jsonString;
         size_t index = 0;
         nornmalizeJsonString(json, jsonString);
-        return deserializeArray_internal(jsonString, index);
+        JsonValue valOut;
+        deserializeArray_internal(jsonString, index, valOut);
+        return valOut;
         /*JsonArray array;
         size_t index = 1; // Skip the '[' character
         while (jsonString[index] != ']') {
@@ -49,67 +55,116 @@ namespace JsonDatabase
         }
         return JsonValue(array);*/
     }
+    void JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut)
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+        std::string normalized;
+        size_t index = 0;
+        nornmalizeJsonString(json, normalized);
+        deserializeValue_internal(normalized, index, valueOut);
+    }
+    void JsonDeserializer::deserializeObject(const std::string& json, JsonValue& valueOut)
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+        std::string jsonString;
+        size_t index = 0;
+        nornmalizeJsonString(json, jsonString);
+        deserializeObject_internal(jsonString, index, valueOut);
+    }
+    void JsonDeserializer::deserializeArray(const std::string& json, JsonValue& valueOut)
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+        std::string jsonString;
+        size_t index = 0;
+        nornmalizeJsonString(json, jsonString);
+        deserializeArray_internal(jsonString, index, valueOut);
+    }
 
-    JsonValue JsonDeserializer::deserializeValue_internal(const std::string& json, size_t& index)
+    void JsonDeserializer::deserializeValue_internal(const std::string& json, size_t& index, JsonValue &valOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         switch (json[index]) {
-        case '{':
-            return deserializeObject_internal(json, index);
-        case '[':
-            return deserializeArray_internal(json, index);
-        case '"':
-        {
-            JsonValue val(deserializeString(json, index));
-            //++index; // Skip the comma
-            return val;
-        }
-        case 't':
-        case 'f':
-            return JsonValue(deserializeBool(json, index));
-        case 'n':
-            index += 4; // Skip the "null" keyword
-            return JsonValue();
-        default:
-            int intValue = 0;
-            double doubleValue = 0;
-            
-            int result = deserializeNumber(json, intValue, doubleValue, index);
-            //++index; // Skip the comma
-            if (result == 1)
-                return JsonValue(intValue);
+            case '{':
+            {
+                deserializeObject_internal(json, index, valOut);
+                return;
+            }
+            case '[':
+            {
+                deserializeArray_internal(json, index, valOut);
+                return;
+            }
+            case '"':
+            {
+                valOut = JsonValue(std::string());
+                std::string &str = std::get<std::string>(valOut.getVariant());
+                deserializeString(json, index, str);
+                return;
+            }
+            case 't':
+            case 'f':
+            {
+                valOut = false;
+                bool& value = std::get<bool>(valOut.getVariant());
+                value = deserializeBool(json, index);
+                return;
+            }
+            case 'n':
+            {
+                index += 4; // Skip the "null" keyword
+                valOut = std::move(JsonValue());
+                return;
+            }
+            default:
+            {
+                int intValue = 0;
+                double doubleValue = 0;
 
-            return JsonValue(doubleValue);
+                int result = deserializeNumber(json, intValue, doubleValue, index);
+                if (result == 1)
+                {
+                    valOut = intValue;
+                    return;
+                }
+
+                valOut = doubleValue;
+                return;
+            }
         }
     }
 
-    JsonValue JsonDeserializer::deserializeObject_internal(const std::string& json, size_t& index) 
+    void JsonDeserializer::deserializeObject_internal(const std::string& json, size_t& index, JsonValue &valOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        JsonObject object;
+
+        valOut = JsonObject();
+        JsonObject &object = std::get<JsonObject>(valOut.getVariant());
         index++; // Skip the '{' character
         //skipWhiteSpace(json, index);
         while (json[index] != '}') {
-            auto [key, value] = deserializePair(json, index);
+            std::pair<std::string, JsonValue> pair;
+            deserializePair(json, index, pair);
             DEBUG_PRINT(value);
-            object[key] = value;
+            object.insert(std::move(pair));
             if (json[index] == '}')
                 break;
             index++; // Move to the next character or skip ',' or '}'
         }
         index++; // Skip the '}' character
-        return JsonValue(object);
     }
 
-    JsonValue JsonDeserializer::deserializeArray_internal(const std::string& json, size_t& index) 
+    void JsonDeserializer::deserializeArray_internal(const std::string& json, size_t& index, JsonValue &valOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        JsonArray array;
+        valOut = JsonArray();
+        JsonArray &array = std::get<JsonArray>(valOut.getVariant());
+        array.reserve(100000);
         index++; // Skip the '[' character
         while (json[index] != ']') {
-            auto value = deserializeValue_internal(json, index);
+            JsonValue value;
+            deserializeValue_internal(json, index, value);
             DEBUG_PRINT(value);
-            array.push_back(value);
+            array.emplace_back(value);
             // if (json[index] != ']')
             // {
             //     index++; // Move to the next character or skip ',' or ']'
@@ -120,23 +175,21 @@ namespace JsonDatabase
              index++; // Move to the next character or skip ',' or ']'
         }
         index++; // Skip the ']' character
-        return JsonValue(array);
+        /* {
+            JD_JSON_PROFILING_BLOCK("move array", JD_COLOR_STAGE_3);
+            valOut = std::move(array);
+        }*/
     }
 
-    std::pair<std::string, JsonValue> JsonDeserializer::deserializePair(const std::string& json, size_t& index) 
+    void JsonDeserializer::deserializePair(const std::string& json, size_t& index, std::pair<std::string, JsonValue>&pairOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
-        //index++; // Skip the opening double quote
-        std::string key = deserializeString(json, index);
-        //index++; // Skip the closing double quote
+        deserializeString(json, index, pairOut.first);
         index++; // Skip the colon ':'
-        JsonValue value = deserializeValue_internal(json, index);
-        //DEBUG_PRINT(value);
-        //index++; // Move to the next character or skip ',' or '}'
-        return { key, value };
+        deserializeValue_internal(json, index, pairOut.second);
     }
 
-    std::string JsonDeserializer::deserializeString(const std::string& json, size_t& index) 
+    void JsonDeserializer::deserializeString(const std::string& json, size_t& index, std::string& strOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
         index++; // Skip the opening double quote
@@ -157,37 +210,11 @@ namespace JsonDatabase
 
             lastCharWasNotEscape = currentChar != '\\';
         }
-        std::string str = unescapeString(json.substr(start, index - start));
+        
+
+        strOut = std::move(std::string(json.begin() + start, json.begin() + index));
         index++; // Skip the closing double quote
-        return str;
     }
-
-    /*double JsonDeserializer::deserializeNumber(const std::string& json, size_t& index, int& intValue, bool& isInt)
-    {
-
-        std::istringstream iss(json);
-        double result;
-        if (!(iss >> result)) {
-            // Handle invalid input
-            
-        }
-        size_t start = index;
-        while (json[index] != ',' && json[index] != '}' && json[index] != ']') {
-            index++;
-        }
-        std::string str = json.substr(start, index - start);
-        if(str.find(".") != std::string::npos)
-		{
-			isInt = false;
-			return std::stod(str);
-		}
-		else
-		{
-			isInt = true;
-			intValue = std::stoi(str);
-		}
-        return 0;
-    }*/
 
 
     int JsonDeserializer::deserializeNumber(const std::string& str, int& intValue, double& doubleValue, size_t& index)
@@ -201,8 +228,6 @@ namespace JsonDatabase
         {
             subStr = str.substr(index, found - index);
             index += found - index;
-            //std::cout << "The first non-alphabetic character is " << str[found1];
-            //std::cout << " at position " << found1 << '\n';
         }
         else
         {
@@ -213,75 +238,6 @@ namespace JsonDatabase
         {
             return 0;
         }
-
-        /*
-        
-        size_t firstDashPos = subStr.find("-");
-        size_t firstDotPos = subStr.find(".");
-
-
-        // "-" must be at the first position
-        // "." can't be at the first position
-        if ((firstDashPos != std::string::npos && firstDashPos != 0) ||
-            (firstDotPos != std::string::npos && (firstDotPos == 0 || firstDashPos == firstDotPos - 1)))
-        {
-            // ".56"; "5-";
-            return 0;
-        }
-
-        size_t firstEpos1 = subStr.find("e");
-        size_t firstEpos2 = subStr.find("E");
-        size_t firstEpos = std::min(firstEpos1, firstEpos2);
-        // if (firstEpos != std::string::npos)
-        // {
-        //     if (firstEpos < firstDashPos && firstDashPos != std::string::npos)
-        //     {
-        //         subStr = subStr.substr(0, firstEpos);
-        //     }
-        //     if (firstEpos < firstDotPos && firstDotPos != std::string::npos)
-        //     {
-        // 
-        //     }
-        // }
-
-
-        // shrink the string to contain only one "-" and "."
-        size_t secondDashPos = std::string::npos;
-        size_t secondDotPos = std::string::npos;
-        if (firstDashPos != std::string::npos)
-            secondDashPos = subStr.find("-", firstDashPos + 1);
-        if (firstDotPos != std::string::npos)
-            secondDotPos = subStr.find(".", firstDotPos + 1);
-
-        if (secondDashPos != std::string::npos ||
-            secondDotPos != std::string::npos)
-        {
-            // "0.65.0" --> "0.65";  "-0.65-.5" --> "-0.65"
-            size_t lower = std::min(secondDashPos, secondDotPos);
-            subStr = subStr.substr(0, lower);
-        }
-        // if(firstDashPos != std::string::npos && subStr.size())
-
-
-        // int dotCount = std::count(subStr.begin(),subStr.end(),'.');
-        
-         // Detects "0.", "0.a"
-        std::size_t dotP = subStr.find(".");
-        if (dotP != std::string::npos)
-        {
-            if (dotP == subStr.size() - 1)
-            {
-               // std::cout << "invalid dot format: \"" << subStr << "\" \"" << str << "\"\n";
-            }
-        }
-
-        std::size_t found2 = str.find_first_not_of("-.");
-        if (subStr.size())
-        {
-            // ---a5
-
-        }*/
-
         std::size_t dotP = subStr.find(".");
         std::istringstream iss(subStr);
         if (dotP == std::string::npos)
@@ -321,49 +277,79 @@ namespace JsonDatabase
     void JsonDeserializer::nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-		std::vector<char> chars = { '\n', '\t', '\r', ' '};
-		removeChars(jsonString, jsonStringOut, chars);
+		//removeChars(jsonString, jsonStringOut, " \n\t\r");
+        removeSpecificChars(jsonString, jsonStringOut);
     }
     void JsonDeserializer::removeChars(const std::string& jsonString, std::string& jsonStringOut,
-        const std::vector<char>& chars)
+        const std::string & removingChars)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
-        jsonStringOut.resize(jsonString.size(), '\0');
+        jsonStringOut.resize(jsonString.size()+1); // Resize without initializing characters
         size_t count = 0;
         bool isString = false;
         bool lastCharWasNotEscape = true;
 
-        /*if (jsonString.size() > 2)
+        for (auto currentChar : jsonString) // Test 2
         {
-            if (jsonString[0] == '\\' && jsonString[1] == '"')
-                isString = true;
-        }*/
-
-        for (size_t i = 0; i < jsonString.size(); ++i)
-        {
-            char currentChar = jsonString[i];
             bool currentCharIsStringKey = currentChar == '"' && lastCharWasNotEscape;
 
             if (currentCharIsStringKey)
             {
                 isString = !isString;
             }
-            
+
+            // If in string, ignore the remove chars command
             if (!isString)
             {
-                // If in string, ignore the remove chars command
-                for (size_t j = 0; j < chars.size(); ++j)
+                for (auto j : removingChars)
                 {
-                    if (currentChar == chars[j])
+                    if (currentChar == j)
                     {
                         goto skip;
                     }
                 }
             }
             jsonStringOut[count++] = currentChar;
+        skip:;
+            lastCharWasNotEscape = currentChar != '\\';
+        }
+        jsonStringOut[count] = '\0';
+    }
+    void JsonDeserializer::removeSpecificChars(const std::string& jsonString, std::string& jsonStringOut)
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
+        jsonStringOut.resize(jsonString.size()+1); // Resize without initializing characters
+        size_t count = 0;
+        bool isString = false;
+        bool lastCharWasNotEscape = true;
+       
+        for(auto currentChar : jsonString) 
+        {
+            bool currentCharIsStringKey = currentChar == '"' && lastCharWasNotEscape;
+       
+            if (currentCharIsStringKey)
+            {
+                isString = !isString;
+            }
+            
+            // If in string, ignore the remove chars command
+            if (!isString)
+            {
+                // Remove these characters from the string
+                switch (currentChar)
+                {
+                case ' ':
+                case '\n':
+                case '\t':
+                case '\r':
+                    goto skip;
+                }
+            }
+            jsonStringOut[count++] = currentChar;
             skip:;
             lastCharWasNotEscape = currentChar != '\\';
         }
+        jsonStringOut[count] = '\0';
     }
 
     std::string JsonDeserializer::unescapeString(const std::string& str)
@@ -420,138 +406,4 @@ namespace JsonDatabase
         return result;
 
     }
-	/*JsonValue JsonDeserializer::deserialize(const std::string& jsonString) {
-		position = 0; // Initialize the position
-		return parseValue(jsonString);
-	}
-
-
-    JsonValue JsonDeserializer::parseValue(const std::string& jsonString) {
-        skipWhiteSpace(jsonString);
-
-        char currentChar = jsonString[position];
-        if (currentChar == '{') {
-            return parseObject(jsonString);
-        }
-        else if (currentChar == '[') {
-            return parseArray(jsonString);
-        }
-        else if (currentChar == '"') {
-            return parseString(jsonString);
-        }
-        else if (currentChar == 't' || currentChar == 'f') {
-            return parseBoolean(jsonString);
-        }
-        else if (currentChar == 'n') {
-            return parseNull(jsonString);
-        }
-        else if (std::isdigit(currentChar) || currentChar == '-') {
-            return parseNumber(jsonString);
-        }
-        else {
-            // Throw error or handle invalid JSON
-            std::cerr << "Invalid JSON format!" << std::endl;
-            return JsonValue(); // Return a null JsonValue
-        }
-    }
-
-    void JsonDeserializer::skipWhiteSpace(const std::string& jsonString) {
-        while (position < jsonString.size() && std::isspace(jsonString[position])) {
-            position++;
-        }
-    }
-
-    JsonValue JsonDeserializer::parseObject(const std::string& jsonString) {
-        JsonValue object;
-        object.m_type = JsonValue::Type::Object;
-
-        size_t pos = jsonString.find('{');
-        if (pos == std::string::npos) {
-            // Invalid JSON object
-            std::cerr << "Invalid JSON object!" << std::endl;
-            return object;
-        }
-
-        size_t endPos = jsonString.find('}', pos + 1);
-        if (endPos == std::string::npos) {
-            // Invalid JSON object
-            std::cerr << "Invalid JSON object!" << std::endl;
-            return object;
-        }
-
-        std::string objectContent = jsonString.substr(pos + 1, endPos - pos - 1);
-        // Parse key-value pairs
-        // Implement your logic here for parsing key-value pairs inside the object
-
-        return object;
-    }
-
-    JsonValue JsonDeserializer::parseArray(const std::string& jsonString) {
-        JsonValue array;
-        array.m_type = JsonValue::Type::Array;
-
-        size_t pos = jsonString.find('[');
-        if (pos == std::string::npos) {
-            // Invalid JSON array
-            std::cerr << "Invalid JSON array!" << std::endl;
-            return array;
-        }
-
-        size_t endPos = jsonString.find(']', pos + 1);
-        if (endPos == std::string::npos) {
-            // Invalid JSON array
-            std::cerr << "Invalid JSON array!" << std::endl;
-            return array;
-        }
-
-        std::string arrayContent = jsonString.substr(pos + 1, endPos - pos - 1);
-        // Parse array elements
-        // Implement your logic here for parsing array elements
-
-        return array;
-    }
-
-    JsonValue JsonDeserializer::parseString(const std::string& jsonString) {
-        JsonValue stringValue;
-        stringValue.m_type = JsonValue::Type::String;
-
-        // Implement your logic here for parsing a string value
-
-        return stringValue;
-    }
-
-    JsonValue JsonDeserializer::parseBoolean(const std::string& jsonString) {
-        JsonValue boolValue;
-        boolValue.m_type = JsonValue::Type::Bool;
-
-        // Implement your logic here for parsing a boolean value
-
-        return boolValue;
-    }
-
-    JsonValue JsonDeserializer::parseNull(const std::string& jsonString) {
-        JsonValue nullValue;
-        nullValue.m_type = JsonValue::Type::Null;
-
-        // Implement your logic here for parsing a null value
-
-        return nullValue;
-    }
-
-    JsonValue JsonDeserializer::parseInt(const std::string& jsonString) {
-        JsonValue numberValue;
-        numberValue.m_type = JsonValue::Type::Int;
-
-        // Implement your logic here for parsing a numeric value
-
-        return numberValue;
-    }
-    JsonValue JsonDeserializer::parseDouble(const std::string& jsonString) {
-        JsonValue numberValue;
-        numberValue.m_type = JsonValue::Type::Double;
-
-        // Implement your logic here for parsing a numeric value
-
-        return numberValue;
-    }*/
 }

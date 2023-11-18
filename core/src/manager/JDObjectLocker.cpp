@@ -546,6 +546,7 @@ namespace JsonDatabase
 			obj[s_jsonKey_lockDate] = data.lockDate.c_str();
 			obj[s_jsonKey_lockTime] = data.lockTime.c_str();
 #else
+			obj.reserve(5);
 			obj[s_jsonKey_objectID] = data.objectID.get();
 			obj[s_jsonKey_owner] = data.owner;
 			obj[s_jsonKey_sessionID] = data.sessionID;

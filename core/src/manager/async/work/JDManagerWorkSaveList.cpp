@@ -1,6 +1,7 @@
 #include "manager/async/work/JDManagerWorkSaveList.h"
 #include "manager/JDManager.h"
 #include "utilities/JDUniqueMutexLock.h"
+#include "utilities/AsyncContextDrivenDeleter.h"
 
 namespace JsonDatabase
 {
@@ -24,8 +25,8 @@ namespace JsonDatabase
 		}
 		JDManagerAysncWorkSaveList::~JDManagerAysncWorkSaveList()
 		{
-			for (size_t i = 0; i < m_objects.size(); ++i)
-				delete m_objects[i];
+			// Delete all objects asynchroneously
+			AsyncContextDrivenDeleter asyncDeleter(m_objects);
 		}
 		bool JDManagerAysncWorkSaveList::hasSucceeded() const
 		{
@@ -33,7 +34,8 @@ namespace JsonDatabase
 		}
 		void JDManagerAysncWorkSaveList::process()
 		{
-			JDM_UNIQUE_LOCK_P;
+			JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+			//JDM_UNIQUE_LOCK_P;
 			m_success = m_manager.saveObjects_internal(m_objects, JDManager::s_fileLockTimeoutMs, &m_progress);
 		}
 		std::string JDManagerAysncWorkSaveList::getErrorMessage() const

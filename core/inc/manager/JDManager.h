@@ -212,6 +212,5 @@ class JSONDATABASE_EXPORT JDManager:
         static const unsigned int s_fileLockTimeoutMs;
 
 
-
 };
 }

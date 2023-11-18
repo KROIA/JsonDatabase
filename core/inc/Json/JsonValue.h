@@ -106,6 +106,7 @@ namespace JsonDatabase
 		bool getObject(JsonObject& valueOut, const std::string& key) const;
 
 		JsonVariantType &getVariant();
+		const JsonVariantType &getConstVariant() const;
 
 		std::string toString() const;
 		std::string serialize() const;

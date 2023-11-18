@@ -1,6 +1,7 @@
 #include "manager/async/JDManagerAsyncWorker.h"
 #include "manager/JDManager.h"
 
+
 namespace JsonDatabase
 {
     namespace Internal
@@ -58,6 +59,7 @@ namespace JsonDatabase
                 if (m_workList.size() == 0)
                     return;
             }
+            m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onStartAsyncWork, true);
             m_cv.notify_all();
         }
         void JDManagerAsyncWorker::start()
@@ -125,18 +127,23 @@ namespace JsonDatabase
                     JD_ASYNC_WORKER_PROFILING_BLOCK("JDManagerAsyncWorker::threadLoop::work", JD_COLOR_STAGE_1);
                     while (hasWork)
                     {
+                        //JD_ASYNC_WORKER_PROFILING_BLOCK("while", JD_COLOR_STAGE_1);
+                        //JD_ASYNC_WORKER_PROFILING_BLOCK("copy workList", JD_COLOR_STAGE_1);
                         std::vector<std::shared_ptr<JDManagerAysncWork>> workCPY;
                         {
                             JDM_UNIQUE_LOCK_M(m_workListMutex);
                             workCPY = m_workList;
                             m_workList.clear();
                         }
+                       // JD_ASYNC_WORKER_PROFILING_END_BLOCK;
                         processWork(workCPY);
+                        //JD_ASYNC_WORKER_PROFILING_BLOCK("check workList", JD_COLOR_STAGE_1);
                         {
-                            JDM_UNIQUE_LOCK_M(m_workListMutex);
+                            //JDM_UNIQUE_LOCK_M(m_workListMutex);
                             hasWork = !m_workList.empty();
                         }
                     }
+                    m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onEndAsyncWork, true);
                 }
             }
         }
@@ -153,6 +160,7 @@ namespace JsonDatabase
             JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             m_currentWork.store(work);
             work->process();
+            //JD_ASYNC_WORKER_PROFILING_BLOCK("After work", JD_COLOR_STAGE_3);
             {
                 JDM_UNIQUE_LOCK_M(m_mutexInternal);
 				m_workListDone.push_back(work);
