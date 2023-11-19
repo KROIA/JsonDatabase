@@ -22,14 +22,19 @@ namespace JsonDatabase
 		AsyncContextDrivenDeleter(T* objectToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
 			: m_deleterThread(nullptr)
-#endif
 			, m_objectsToDelete({ objectToDelete })
+#else
+			: m_objectsToDelete({ objectToDelete })
+#endif
+			
 		{ }
 		AsyncContextDrivenDeleter(const std::vector<T*> &objectsToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
 			: m_deleterThread(nullptr)
-#endif
 			, m_objectsToDelete(objectsToDelete)
+#else
+			: m_objectsToDelete(objectsToDelete)
+#endif
 		{ }
 
 		~AsyncContextDrivenDeleter()

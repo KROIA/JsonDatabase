@@ -25,6 +25,30 @@ namespace JsonDatabase
             ~JDManagerFileSystem();
             bool setup();
         public:
+            enum class Error
+            {
+                none = 0,
+
+                // File locking
+                fileLock_unableToCreateOrOpenLockFile = 1,
+                fileLock_unableToDeleteLockFile = 2,
+                fileLock_unableToLock = 3,
+                fileLock_alreadyLocked = 4,
+                fileLock_alreadyLockedForReading = 5,
+                fileLock_alreadyLockedForWriting = 6,
+                fileLock_alreadyUnlocked = 7,
+
+                // Json reading/writing
+                json_parseError = 30,
+
+                // File reading/writing
+                file_cantOpenFileForRead = 40,
+                file_cantOpenFileForWrite = 41,
+                file_invalidFileSize = 42,
+                file_cantReadFile = 43,
+                file_cantWriteFile = 44,
+                file_cantVerifyFileContents = 45,
+            };
 
         protected:
             static const std::string& getJsonFileEnding();
@@ -33,16 +57,18 @@ namespace JsonDatabase
                 const std::string& directory,
                 const std::string& fileName,
                 FileReadWriteLock::Access direction,
-                bool & wasLockedForWritingByOther) const;
+                bool & wasLockedForWritingByOther,
+                Error &errorOut) const;
             bool lockFile(
                 const std::string& directory,
                 const std::string& fileName,
                 FileReadWriteLock::Access direction,
                 bool& wasLockedForWritingByOther,
-                unsigned int timeoutMillis) const;
-            bool unlockFile() const;
-            bool isFileLockedByOther(const
-                std::string& directory,
+                unsigned int timeoutMillis,
+                Error& errorOut) const;
+            bool unlockFile(Error& errorOut) const;
+            bool isFileLockedByOther(
+                const std::string& directory,
                 const std::string& fileName,
                 FileReadWriteLock::Access accessType) const;
             
@@ -53,14 +79,16 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
             bool writeJsonFile(
                 const QJsonObject& json,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
 
 
             bool readJsonFile(
@@ -69,14 +97,16 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
             bool readJsonFile(
                 QJsonObject& objOut,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
             /*
             bool readFile(
                 QByteArray& fileDataOut,
@@ -99,14 +129,16 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
             bool writeJsonFile(
                 const JsonValue& json,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
 
 
             bool readJsonFile(
@@ -115,14 +147,16 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
             bool readJsonFile(
                 JsonValue& objOut,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool zipFormat,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
 
            /* bool readFile(
                 std::string& fileDataOut,
@@ -142,13 +176,15 @@ namespace JsonDatabase
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
             bool writeFile(
                 const QByteArray& fileData,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
-                bool lockedRead) const;
+                bool lockedRead,
+                Error& errorOut) const;
 
             bool makeDatabaseDirs() const;
             bool makeDatabaseFiles() const;
@@ -160,7 +196,7 @@ namespace JsonDatabase
 
             void update();
 
-            
+            const std::string& getErrorStr(Error err);
         private:
             JDManager& m_manager;
             std::mutex& m_mutex;

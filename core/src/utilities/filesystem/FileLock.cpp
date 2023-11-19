@@ -2,8 +2,10 @@
 #include "utilities/JDUniqueMutexLock.h"
 #include "utilities/JDUtilities.h"
 
+#ifdef JD_ENABLE_MULTITHREADING
 #include <thread>
-#include <iostream>
+#endif
+//#include <iostream>
 
 
 namespace JsonDatabase
@@ -96,9 +98,11 @@ namespace JsonDatabase
         case Error::alreadyLockedForReading:            { static const std::string msg = "FileLock::Error::alreadyLockedForReading"; return msg; };
         case Error::alreadyLockedForWriting:            { static const std::string msg = "FileLock::Error::alreadyLockedForWriting"; return msg; };
         case Error::alreadyUnlocked:                    { static const std::string msg = "FileLock::Error::alreadyUnlocked"; return msg; };
+        
+        case Error::lockTimeout:                        { static const std::string msg = "FileLock::Error::lockTimeout"; return msg; };
         }
         static std::string unknown;
-        unknown = "Unknown FileLock Error: " + std::to_string(err);
+        unknown = "Unknown FileLock Error: " + std::to_string((int)err);
         return unknown;
     }
 

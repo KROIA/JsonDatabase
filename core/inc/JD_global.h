@@ -29,5 +29,17 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #define JDM_UNIQUE_LOCK_M(MUT) std::unique_lock<std::mutex> lck(MUT);
 #define JDM_UNIQUE_LOCK_P_M(mutex) JDUniqueMutexLock uniqueLock(mutex);
 
+/*
+	Using the QT default Json library to parse objects.
+	If commented out, the Builtin by this library Json structure will be used.
+	QJson is slower.
+*/
 //#define JD_USE_QJSON
+
+/*
+	Enable multithreading for work that can be done in parallel.
+	Disabling this will make the library not single threaded.
+	The JsonManager still uses a thread to process the work
+
+*/
 #define JD_ENABLE_MULTITHREADING

@@ -51,7 +51,7 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 
 	//m_manager->getSignals().disconnect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
 	connect(&m_timer, &QTimer::timeout, this, &MainWindow::onTimerFinished);
-	m_timer.start(10);
+	m_timer.start(100);
 
 	connect(&m_asyncUpdateTimer, &QTimer::timeout, this, &MainWindow::onAsyncUpdateTimerFinished);
 	//m_timer.start(1);

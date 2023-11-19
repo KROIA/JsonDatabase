@@ -14,7 +14,6 @@
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
 
-#include "utilities/ThreadWorker.h"
 #include "utilities/Signal.h"
 
 

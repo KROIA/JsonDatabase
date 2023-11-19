@@ -44,7 +44,6 @@ namespace JsonDatabase
     }
     bool FileReadWriteLock::lock(Access direction, unsigned int timeoutMs, bool& wasLockedByOtherUserOut, FileLock::Error& err)
     {
-        
         if (m_locked)
         {
             err = FileLock::Error::alreadyLocked;
@@ -58,13 +57,18 @@ namespace JsonDatabase
         // Calculate the time point when the desired duration will be reached
         auto end = start + std::chrono::milliseconds(timeoutMs);
         wasLockedByOtherUserOut = false;
-        while (std::chrono::high_resolution_clock::now() < end && (err = lock_internal(direction, wasLockedByOtherUserOut)) != FileLock::Error::none)
+        bool timeout = false;
+        while ((timeout = (std::chrono::high_resolution_clock::now() < end)) && 
+               (err = lock_internal(direction, wasLockedByOtherUserOut)) != FileLock::Error::none)
         {
             JDFILE_FILE_LOCK_PROFILING_BLOCK("FileReadWriteLock::WaitForFreeLock", JD_COLOR_STAGE_5);
             // Sleep for a short while to avoid busy-waiting
             std::this_thread::yield();
-            //std::this_thread::sleep_for(std::chrono::microseconds(1)); // Adjust as needed
         }
+        if(timeout && err != FileLock::Error::none)
+        {
+            err = FileLock::Error::lockTimeout;
+		}
 #ifdef JD_DEBUG
         if (err != FileLock::Error::none)
         {

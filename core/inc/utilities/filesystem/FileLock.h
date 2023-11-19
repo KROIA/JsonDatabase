@@ -18,14 +18,17 @@ namespace JsonDatabase
     public:
         enum Error
         {
-            none,
-            unableToCreateOrOpenLockFile,
-            unableToDeleteLockFile,
-            unableToLock,
-            alreadyLocked,
-            alreadyLockedForReading,
-            alreadyLockedForWriting,
-            alreadyUnlocked
+            none = 0,
+
+            unableToCreateOrOpenLockFile = 1,
+            unableToDeleteLockFile = 2,
+            unableToLock = 3,
+            alreadyLocked = 4,
+            alreadyLockedForReading = 5,
+            alreadyLockedForWriting = 6,
+            alreadyUnlocked = 7,
+
+            lockTimeout = 20,
         };
         
 

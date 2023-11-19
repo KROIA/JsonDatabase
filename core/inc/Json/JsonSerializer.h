@@ -39,12 +39,12 @@ namespace JsonDatabase
 
 
 		//int m_indent = 0;
-		bool m_useTabs = true;
+		bool m_useTabs = false;
 		int m_tabSize = 4;
 
-		bool m_useNewLinesInObjects = true;
+		bool m_useNewLinesInObjects = false;
 		bool m_useNewLineAfterObject = true;
-		bool m_useSpaces = true;
+		bool m_useSpaces = false;
 
 		char m_indentChar = ' ';
 	};

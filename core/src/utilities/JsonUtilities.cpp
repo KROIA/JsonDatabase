@@ -92,7 +92,7 @@ namespace JsonDatabase
             else
 #endif
             {
-                jsonOut.resize(objs.size());
+                jsonOut.reserve(objs.size());
                 for (auto o : objs)
                 {
 #ifdef JD_USE_QJSON

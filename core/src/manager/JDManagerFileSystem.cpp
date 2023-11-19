@@ -16,6 +16,7 @@
 #include <QFile>
 #include <QDir>
 #include <QtEndian>
+#include <string>
 
 namespace JsonDatabase
 {
@@ -60,7 +61,8 @@ namespace JsonDatabase
             const std::string& directory,
             const std::string& fileName,
             FileReadWriteLock::Access direction,
-            bool& wasLockedForWritingByOther) const
+            bool& wasLockedForWritingByOther,
+            Error& errorOut) const
         {
             if (m_fileLock)
             {
@@ -69,6 +71,7 @@ namespace JsonDatabase
                     << fileName<<", "
                     << FileReadWriteLock::accessTypeToString(direction)
                     <<", bool) Lock already aquired\n");
+                errorOut = Error::fileLock_alreadyLocked;
                 return false;
             }
 
@@ -84,16 +87,10 @@ namespace JsonDatabase
                     << ", bool) Can't aquire lock for: " << directory << "\\" << fileName << "\n");
                 delete m_fileLock;
                 m_fileLock = nullptr;
+                errorOut = (Error)lockErr;
                 return false;
             }
-            if (lockErr != FileLock::Error::none)
-            {
-                JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory << ", "
-                    << fileName << ", "
-                    << FileReadWriteLock::accessTypeToString(direction)
-                    << ", bool) Lock error: " << FileLock::getErrorStr(lockErr) + "\n");
-            }
+            errorOut = Error::none;
             return true;
         }
         bool JDManagerFileSystem::lockFile(
@@ -101,7 +98,8 @@ namespace JsonDatabase
             const std::string& fileName,
             FileReadWriteLock::Access direction,
             bool& wasLockedForWritingByOther,
-            unsigned int timeoutMillis) const
+            unsigned int timeoutMillis,
+            Error& errorOut) const
         {
             if (m_fileLock)
             {
@@ -110,6 +108,7 @@ namespace JsonDatabase
                     << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
                     << ", bool, timeout="<< timeoutMillis<<"ms) Lock already aquired\n");
+                errorOut = Error::fileLock_alreadyLocked;
                 return false;
             }
 
@@ -121,22 +120,17 @@ namespace JsonDatabase
                     << directory << ", "
                     << fileName << ", "
                     << FileReadWriteLock::accessTypeToString(direction)
-                    << ", bool, timeout=" << timeoutMillis << "ms) Timeout while trying to aquire file lock for: " << directory << "\\" << fileName << "\n");
+                    << ", bool, timeout=" << timeoutMillis << "ms) Error while trying to aquire file lock for: " << directory << "\\" << fileName << "\n"
+                    << "Error: "<<FileLock::getErrorStr(lockErr));
                 delete m_fileLock;
                 m_fileLock = nullptr;
+                errorOut = (Error)lockErr;
                 return false;
             }
-            if (lockErr != FileLock::Error::none)
-            {
-                JD_CONSOLE("bool JDManagerFileSystem::lockFile("
-                    << directory << ", "
-                    << fileName << ", "
-                    << FileReadWriteLock::accessTypeToString(direction)
-                    << ", bool, timeout=" << timeoutMillis << "ms) Lock error: " << FileLock::getErrorStr(lockErr) + "\n");
-            }
+
             return true;
         }
-        bool JDManagerFileSystem::unlockFile() const
+        bool JDManagerFileSystem::unlockFile(Error& errorOut) const
         {
             //JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2); 
             //JD_GENERAL_PROFILING_FUNCTION_C(profiler::colors::Red);
@@ -145,6 +139,7 @@ namespace JsonDatabase
                 return true;
             FileLock::Error lockErr;
             m_fileLock->unlock(lockErr);
+            errorOut = (Error)lockErr;
             delete m_fileLock;
             m_fileLock = nullptr;
 
@@ -174,7 +169,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #else
         bool JDManagerFileSystem::writeJsonFile(
             const JsonArray& jsons,
@@ -182,7 +178,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -219,11 +216,11 @@ namespace JsonDatabase
                 StringZipper::compressString(data, fileData);
                 JD_GENERAL_PROFILING_END_BLOCK;
 
-                return writeFile(fileData, directory, fileName, s_jsonFileEnding, lockedRead);
+                return writeFile(fileData, directory, fileName, s_jsonFileEnding, lockedRead, errorOut);
             }
             else
             {
-                return writeFile(data, directory, fileName, s_jsonFileEnding, lockedRead);
+                return writeFile(data, directory, fileName, s_jsonFileEnding, lockedRead, errorOut);
             }
             m_fileWatcher.unpause();
             return false;
@@ -236,7 +233,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #else
         bool JDManagerFileSystem::writeJsonFile(
             const JsonValue& json,
@@ -244,7 +242,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -271,11 +270,11 @@ namespace JsonDatabase
                 StringZipper::compressString(data, fileData);
                 JD_GENERAL_PROFILING_END_BLOCK;
 
-                return writeFile(fileData, directory, fileName, s_jsonFileEnding, lockedRead);
+                return writeFile(fileData, directory, fileName, s_jsonFileEnding, lockedRead, errorOut);
             }
             else
             {
-                return writeFile(data, directory, fileName, s_jsonFileEnding, lockedRead);
+                return writeFile(data, directory, fileName, s_jsonFileEnding, lockedRead, errorOut);
             }
             return false;
         }
@@ -291,7 +290,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #else
         bool JDManagerFileSystem::readJsonFile(
             JsonArray& jsonsOut,
@@ -299,13 +299,14 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #endif
         {
             
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             QByteArray fileData;
-            if (!readFile(fileData, directory, fileName, fileEnding, lockedRead))
+            if (!readFile(fileData, directory, fileName, fileEnding, lockedRead, errorOut))
             {
                 return false;
             }
@@ -350,28 +351,8 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                 jsonDocument = QJsonDocument::fromJson(fileData);
 #else
-                std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-                std::string str = fileData.toStdString();
-                std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-                double time1 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
-
-                begin = std::chrono::steady_clock::now();
+                std::string str = std::move(fileData.toStdString());
                 deserializer.deserializeValue(str, deserialized);
-                end = std::chrono::steady_clock::now();
-                double time2 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
-
-
-                // std::cout << "Time difference = " << time1 << "[ms]" << std::endl;
-                // 
-                // begin = std::chrono::steady_clock::now();
-                // std::string str2(fileData.constData(), fileData.size());
-                // end = std::chrono::steady_clock::now();
-                // double time3 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
-                // 
-                // begin = std::chrono::steady_clock::now();
-                // deserialized = deserializer.deserializeValue(str2);
-                // end = std::chrono::steady_clock::now();
-                // double time4 = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
@@ -396,7 +377,6 @@ namespace JsonDatabase
                     }
                 }
 #else
-                // deserialized.getArray(jsonsOut); // Old slow version
                 {
                     JsonValue::JsonVariantType& variant = deserialized.getVariant();
                     jsonsOut = std::move(std::get<JsonArray>(variant));
@@ -427,7 +407,8 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #else
         bool JDManagerFileSystem::readJsonFile(
             JsonValue& objOut,
@@ -435,12 +416,13 @@ namespace JsonDatabase
             const std::string& fileName,
             const std::string& fileEnding,
             bool zipFormat,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             QByteArray fileData;
-            if (!readFile(fileData, directory, fileName, fileEnding, lockedRead))
+            if (!readFile(fileData, directory, fileName, fileEnding, lockedRead, errorOut))
             {
                 return false;
             }
@@ -493,6 +475,7 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
             if (jsonError.error != QJsonParseError::NoError)
             {
+                errorOut = Error::json_parseError;
                 JD_CONSOLE("bool JDManagerFileSystem::readJsonFile("
                     << "QJsonObject&, "
                     << directory << ", "
@@ -520,7 +503,7 @@ namespace JsonDatabase
                 return true;
             }
 #endif
-
+            errorOut = Error::json_parseError;
             return false;
         }
 
@@ -529,13 +512,14 @@ namespace JsonDatabase
             const std::string& directory,
             const std::string& fileName,
             const std::string& fileEnding,
-            bool lockedRead) const
+            bool lockedRead,
+            Error& errorOut) const
         {
             JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             if (lockedRead)
             {
                 bool lockedByOther = false;
-                if (!lockFile(directory, fileName, FileReadWriteLock::Access::read, lockedByOther))
+                if (!lockFile(directory, fileName, FileReadWriteLock::Access::read, lockedByOther, errorOut))
                 {
                     JD_CONSOLE("bool JDManagerFileSystem::readFile("
                         << "QByteArray&, "
@@ -570,8 +554,10 @@ namespace JsonDatabase
                     << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't open file: " << filePath.c_str() << "\n");
+                Error err;
                 if (lockedRead)
-                    unlockFile();
+                    unlockFile(err);
+                errorOut = Error::file_cantOpenFileForRead;
                 return false;
             }
             JDFILE_IO_PROFILING_END_BLOCK;
@@ -587,8 +573,10 @@ namespace JsonDatabase
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't get filesize of: " << filePath.c_str() << "\n");
                 JDFILE_IO_PROFILING_END_BLOCK;
+                Error err;
                 if (lockedRead)
-                    unlockFile();
+                    unlockFile(err);
+                errorOut = Error::file_invalidFileSize;
                 return false;
             }
             fileDataOut.resize(fileSize);
@@ -604,8 +592,9 @@ namespace JsonDatabase
 
             CloseHandle(fileHandle);
             JDFILE_IO_PROFILING_END_BLOCK;
+
             if (lockedRead)
-                unlockFile();
+                unlockFile(errorOut);
 
             if (!readResult) {
                 JD_CONSOLE("bool JDManagerFileSystem::readFile("
@@ -615,6 +604,8 @@ namespace JsonDatabase
                     << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Can't read file: " << filePath.c_str() << "\n");
+                errorOut = Error::file_cantReadFile;
+                return false;
             }
             return true;
         }
@@ -623,13 +614,14 @@ namespace JsonDatabase
             const std::string& directory,
             const std::string& fileName,
             const std::string& fileEnding,
-            bool lockedRead) const
+            bool lockedRead,
+            Error &errorOut) const
         {
             JDFILE_IO_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             if (lockedRead)
             {
                 bool lockedByOther = false;
-                if (!lockFile(directory, fileName, FileReadWriteLock::Access::write, lockedByOther))
+                if (!lockFile(directory, fileName, FileReadWriteLock::Access::write, lockedByOther, errorOut))
                 {
                     JD_CONSOLE("bool JDManagerFileSystem::writeFile("
                         << "QByteArray&, "
@@ -644,7 +636,7 @@ namespace JsonDatabase
 
             
             // Open the file for writing
-            JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_6);
+            JDFILE_IO_PROFILING_BLOCK("open file", JD_COLOR_STAGE_6);
             std::string filePath = directory + "\\" + fileName + fileEnding;
             HANDLE fileHandle = CreateFile(
                 filePath.c_str(),
@@ -655,9 +647,8 @@ namespace JsonDatabase
                 FILE_ATTRIBUTE_NORMAL,
                 nullptr
             );
-
+            JDFILE_IO_PROFILING_END_BLOCK;
             if (fileHandle == INVALID_HANDLE_VALUE) {
-                JDFILE_IO_PROFILING_END_BLOCK;
                 JD_CONSOLE("bool JDManagerFileSystem::writeFile("
                     << "QByteArray&, "
                     << directory << ", "
@@ -666,13 +657,14 @@ namespace JsonDatabase
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Could not open file " << filePath << " for writing\n");
                 // Error opening file
+                Error err;
                 if (lockedRead)
-                    unlockFile();
+                    unlockFile(err);
+                errorOut = Error::file_cantOpenFileForWrite;
                 return false;
             }
-            JDFILE_IO_PROFILING_END_BLOCK;
 
-            JDFILE_IO_PROFILING_NONSCOPED_BLOCK("write to file", JD_COLOR_STAGE_6);
+            JDFILE_IO_PROFILING_BLOCK("write to file", JD_COLOR_STAGE_6);
             // Write the content to the file
             DWORD bytesWritten;
             BOOL writeResult = WriteFile(
@@ -686,9 +678,6 @@ namespace JsonDatabase
 
             // Close the file handle
             CloseHandle(fileHandle);
-            JDFILE_IO_PROFILING_END_BLOCK;
-            if (lockedRead)
-                unlockFile();
 
             if (!writeResult) {
                 // Error writing to file
@@ -699,9 +688,43 @@ namespace JsonDatabase
                     << fileEnding << ", "
                     << "lockedRead=" << (lockedRead ? "true" : "false")
                     << ") Could not write to file " << filePath << "\n");
+                Error err;
+                if (lockedRead)
+                    unlockFile(err);
+                errorOut = Error::file_cantWriteFile;
                 return false;
             }
 
+            JDFILE_IO_PROFILING_END_BLOCK;
+
+            JDFILE_IO_PROFILING_BLOCK("Verify file content", JD_COLOR_STAGE_6);
+            // Verify file content
+            QByteArray readFileContent;
+            Error err1;
+            if (!readFile(readFileContent, directory, fileName, fileEnding, false, err1))
+            {
+                // Can't verify read
+                Error err;
+                if (lockedRead)
+                    unlockFile(err);
+                errorOut = Error::file_cantVerifyFileContents;
+                return false;
+            }
+
+            // Compare file content
+            if (readFileContent != fileData)
+            {
+				// File content is not the same
+                Error err;
+				if (lockedRead)
+					unlockFile(err);
+                errorOut = Error::file_cantVerifyFileContents;
+				return false;
+			}
+            JDFILE_IO_PROFILING_END_BLOCK;
+
+            if (lockedRead)
+                unlockFile(errorOut);
             return true;
         }
 
@@ -785,6 +808,33 @@ namespace JsonDatabase
                 m_manager.getSignals().databaseFileChanged.emitSignal();
                 m_fileWatcher.clearHasFileChanged();
             }
+        }
+
+
+        const std::string& JDManagerFileSystem::getErrorStr(Error err)
+        {
+            switch (err)
+            {
+            case Error::none: { static const std::string msg = "JDManagerFileSystem::Error::none"; return msg; };
+            case Error::fileLock_unableToCreateOrOpenLockFile: { static const std::string msg = "JDManagerFileSystem::Error::fileLock_unableToCreateOrOpenLockFile"; return msg; };
+            case Error::fileLock_unableToDeleteLockFile: { static const std::string msg = "JDManagerFileSystem::Error::fileLock_unableToDeleteLockFile"; return msg; };
+            case Error::fileLock_unableToLock: { static const std::string msg = "JDManagerFileSystem::Error::fileLock_unableToLock"; return msg; };
+            case Error::fileLock_alreadyLocked: { static const std::string msg = "JDManagerFileSystem::Error::fileLock_alreadyLocked"; return msg; };
+            case Error::fileLock_alreadyLockedForWriting: { static const std::string msg = "JDManagerFileSystem::Error::fileLock_alreadyLockedForWriting"; return msg; };
+            case Error::fileLock_alreadyUnlocked: { static const std::string msg = "JDManagerFileSystem::Error::fileLock_alreadyUnlocked"; return msg; };
+
+            case Error::json_parseError: { static const std::string msg = "JDManagerFileSystem::Error::json_parseError"; return msg; };
+
+            case Error::file_cantOpenFileForRead: { static const std::string msg = "JDManagerFileSystem::Error::file_cantOpenFileForRead"; return msg; };
+            case Error::file_cantOpenFileForWrite: { static const std::string msg = "JDManagerFileSystem::Error::file_cantOpenFileForWrite"; return msg; };
+            case Error::file_invalidFileSize: { static const std::string msg = "JDManagerFileSystem::Error::file_invalidFileSize"; return msg; };
+            case Error::file_cantReadFile: { static const std::string msg = "JDManagerFileSystem::Error::file_cantReadFile"; return msg; };
+            case Error::file_cantWriteFile: { static const std::string msg = "JDManagerFileSystem::Error::file_cantWriteFile"; return msg; };
+            case Error::file_cantVerifyFileContents: { static const std::string msg = "JDManagerFileSystem::Error::file_cantVerifyFileContents"; return msg; };
+            }
+            static std::string unknown;
+            unknown = "Unknown JDManagerFileSystem Error: " + std::to_string((int)err);
+            return unknown;
         }
     }
 }
