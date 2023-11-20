@@ -43,10 +43,6 @@ class JSONDATABASE_EXPORT JDManager:
     friend class Internal::JDManagerAysncWorkSaveList;
 
     public:
-        static void startProfiler();
-        static void stopProfiler(const std::string profileFilePath);
-
-
         JDManager(const std::string &databasePath,
                   const std::string &databaseName,
                   const std::string &sessionID,

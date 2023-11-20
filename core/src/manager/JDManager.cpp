@@ -32,19 +32,6 @@ namespace JsonDatabase
     const unsigned int JDManager::s_fileLockTimeoutMs = 1000;
 
 
-    void JDManager::startProfiler()
-    {
-#ifdef JD_PROFILING
-        EASY_PROFILER_ENABLE;
-#endif
-    }
-    void JDManager::stopProfiler(const std::string profileFilePath)
-    {
-#ifdef JD_PROFILING
-        profiler::dumpBlocksToFile(profileFilePath.c_str());
-#endif
-    }
-
     JDManager::JDManager(const std::string& databasePath,
         const std::string& databaseName,
         const std::string& sessionID,

@@ -10,13 +10,13 @@ int main(int argc, char* argv[])
 {
 	
 	QApplication a(argc, argv);
-	JDManager::startProfiler();
+	Profiler::startProfiler();
 	bool ret;
 	{
 		UIWrapper wrapper;
 		ret = a.exec();
 	}
-	JDManager::stopProfiler("profiler.prof");
+	Profiler::stopProfiler("profiler.prof");
 	
 	return ret;
 }
