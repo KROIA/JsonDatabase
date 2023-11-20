@@ -6,7 +6,7 @@
 
 namespace JsonDatabase
 {
-        // Define a Signal class
+    // Define a Signal class
     template<typename... Args>
     class Signal
     {

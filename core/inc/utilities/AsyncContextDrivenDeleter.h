@@ -15,62 +15,65 @@
 
 namespace JsonDatabase
 {
-	template<class T>
-	class AsyncContextDrivenDeleter
+	namespace Internal
 	{
-	public:
-		AsyncContextDrivenDeleter(T* objectToDelete)
+		template<class T>
+		class AsyncContextDrivenDeleter
+		{
+		public:
+			AsyncContextDrivenDeleter(T* objectToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
-			: m_deleterThread(nullptr)
-			, m_objectsToDelete({ objectToDelete })
+				: m_deleterThread(nullptr)
+				, m_objectsToDelete({ objectToDelete })
 #else
-			: m_objectsToDelete({ objectToDelete })
+				: m_objectsToDelete({ objectToDelete })
 #endif
-			
-		{ }
-		AsyncContextDrivenDeleter(const std::vector<T*> &objectsToDelete)
+
+			{ }
+			AsyncContextDrivenDeleter(const std::vector<T*>& objectsToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
-			: m_deleterThread(nullptr)
-			, m_objectsToDelete(objectsToDelete)
+				: m_deleterThread(nullptr)
+				, m_objectsToDelete(objectsToDelete)
 #else
-			: m_objectsToDelete(objectsToDelete)
+				: m_objectsToDelete(objectsToDelete)
 #endif
-		{ }
+			{ }
 
-		~AsyncContextDrivenDeleter()
-		{
-			
+			~AsyncContextDrivenDeleter()
+			{
+
 #ifdef JD_ENABLE_MULTITHREADING
-			m_deleterThread = new std::thread(&AsyncContextDrivenDeleter::deleteObjects, m_objectsToDelete);
-			m_deleterThread->detach();
-			// thread memory is not freed until the program ends
+				m_deleterThread = new std::thread(&AsyncContextDrivenDeleter::deleteObjects, m_objectsToDelete);
+				m_deleterThread->detach();
+				// thread memory is not freed until the program ends
 #else
-			deleteObjects(m_objectsToDelete);
+				deleteObjects(m_objectsToDelete);
 #endif
-		}
+			}
 
-		void addObjectsToDelete(T* objectToDelete)
-		{
-			m_objectsToDelete.push_back(objectToDelete);
-		}
-		void addObjectsToDelete(const std::vector<T*>& objectsToDelete)
-		{
-			m_objectsToDelete.insert(m_objectsToDelete.end(), objectsToDelete.begin(), objectsToDelete.end());
-		}
+			void addObjectsToDelete(T* objectToDelete)
+			{
+				m_objectsToDelete.push_back(objectToDelete);
+			}
+			void addObjectsToDelete(const std::vector<T*>& objectsToDelete)
+			{
+				m_objectsToDelete.insert(m_objectsToDelete.end(), objectsToDelete.begin(), objectsToDelete.end());
+			}
 
 
 
-	private:
+		private:
 
-		static void deleteObjects(std::vector<T*> objectsToDelete)
-		{
-			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-			for(size_t i = 0; i < objectsToDelete.size(); ++i)
-				delete objectsToDelete[i];
-		}
-		std::vector<T*> m_objectsToDelete;
+			static void deleteObjects(std::vector<T*> objectsToDelete)
+			{
+				JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+				for (size_t i = 0; i < objectsToDelete.size(); ++i)
+					delete objectsToDelete[i];
+			}
+			std::vector<T*> m_objectsToDelete;
 #ifdef JD_ENABLE_MULTITHREADING
-		std::thread* m_deleterThread;
+			std::thread* m_deleterThread;
 #endif
-	};
+		};
+	}
 }

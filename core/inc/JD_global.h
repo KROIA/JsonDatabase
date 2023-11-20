@@ -25,9 +25,9 @@ typedef std::chrono::system_clock::time_point TimePoint;
 
 
 #define JDM_UNIQUE_LOCK std::unique_lock<std::mutex> lck(m_mutex);
-#define JDM_UNIQUE_LOCK_P JDUniqueMutexLock uniqueLock(m_mutex);
+#define JDM_UNIQUE_LOCK_P Internal::JDUniqueMutexLock uniqueLock(m_mutex);
 #define JDM_UNIQUE_LOCK_M(MUT) std::unique_lock<std::mutex> lck(MUT);
-#define JDM_UNIQUE_LOCK_P_M(mutex) JDUniqueMutexLock uniqueLock(mutex);
+#define JDM_UNIQUE_LOCK_P_M(mutex) Internal::JDUniqueMutexLock uniqueLock(mutex);
 
 /*
 	Using the QT default Json library to parse objects.

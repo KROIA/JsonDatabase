@@ -6,32 +6,35 @@
 
 namespace JsonDatabase
 {
-    class JSONDATABASE_EXPORT JDObjectRegistry 
+    namespace Internal
     {
-        JDObjectRegistry();
-    public:
-        enum Error
+        class JSONDATABASE_EXPORT JDObjectRegistry
         {
-            none,
-            emptyClassName,
-            typeAlreadyRegistered,
-            objIsNullptr
-        };
+            JDObjectRegistry();
+        public:
+            enum Error
+            {
+                none,
+                emptyClassName,
+                typeAlreadyRegistered,
+                objIsNullptr
+            };
 
 
-        static JDObjectRegistry& getInstance();
+            static JDObjectRegistry& getInstance();
 
-        
-        static Error registerType(JDObjectInterface* obj);
-        static const std::map<std::string, JDObjectInterface*>& getRegisteredTypes();
+
+            static Error registerType(JDObjectInterface* obj);
+            static const std::map<std::string, JDObjectInterface*>& getRegisteredTypes();
 #ifdef JD_USE_QJSON
-        static JDObjectInterface* getObjectDefinition(const QJsonObject& json);
+            static JDObjectInterface* getObjectDefinition(const QJsonObject& json);
 #else
-        static JDObjectInterface* getObjectDefinition(const JsonValue& json);
+            static JDObjectInterface* getObjectDefinition(const JsonValue& json);
 #endif
-        static JDObjectInterface* getObjectDefinition(const std::string& className);
+            static JDObjectInterface* getObjectDefinition(const std::string& className);
 
-    private:
-        std::map<std::string, JDObjectInterface*> m_registry;
-    };
+        private:
+            std::map<std::string, JDObjectInterface*> m_registry;
+        };
+    }
 }

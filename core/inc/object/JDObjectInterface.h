@@ -22,8 +22,6 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 {
         friend JDManager;
         friend Internal::JsonUtilities;
-       // friend Internal::JDManagerAysncWorkSaveList;
-       // friend Internal::JDManagerAysncWorkSaveSingle;
     public:
 
 
@@ -53,8 +51,6 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     protected:
         void setObjectID(const JDObjectID &id);
 
-       // void setVersion(int version);
-       // void setVersion(const QJsonObject& obj);
 #ifdef JD_USE_QJSON
         bool equalData(const QJsonObject &obj) const;
         bool loadInternal(const QJsonObject &obj);
@@ -66,7 +62,6 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         bool saveInternal(JsonObject& obj);
         bool getSaveData(JsonObject& obj) const;
 #endif
-        //void incrementVersionValue();
 
 
     class JSONDATABASE_EXPORT AutoObjectAddToRegistry
@@ -79,12 +74,10 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     private:
 
         JDObjectID m_objID;
-        //int m_version; // ObjectVersion
 
     public:
 #ifdef JD_USE_QJSON
         static const QString s_tag_objID;
-    //    static const QString s_tag_objVersion;
         static const QString s_tag_className;
         static const QString s_tag_data;
 #else

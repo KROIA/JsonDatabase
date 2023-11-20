@@ -538,7 +538,7 @@ void collisionChecker() {
    // watcher->startWatching();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS+1) {
         
-        std::vector<std::string>  files = FileReadWriteLock::getFileNamesInDirectory("database", ".clk");
+        std::vector<std::string>  files = Internal::FileReadWriteLock::getFileNamesInDirectory("database", ".clk");
         size_t wCount = 0;
         size_t rCount = 0;
         for (const std::string& file : files)
@@ -558,22 +558,22 @@ void collisionChecker() {
             // Check the access type
             size_t pos2 = file.find_last_of("-");
             std::string accessType = file.substr(pos + 1, pos2 - pos - 1);
-            FileReadWriteLock::Access access = FileReadWriteLock::stringToAccessType(accessType);
+            Internal::FileReadWriteLock::Access access = Internal::FileReadWriteLock::stringToAccessType(accessType);
             switch (access)
             {
-            case FileReadWriteLock::Access::readWrite:
-            case FileReadWriteLock::Access::write:
+            case Internal::FileReadWriteLock::Access::readWrite:
+            case Internal::FileReadWriteLock::Access::write:
             {
                 // Already locked for writing by a other process
                 ++wCount;
                 break;
             }
-            case FileReadWriteLock::Access::read:
+            case Internal::FileReadWriteLock::Access::read:
             {
                 ++rCount;
                 break;
             }
-            case FileReadWriteLock::Access::unknown:
+            case Internal::FileReadWriteLock::Access::unknown:
             {
                 int a = 0;
 

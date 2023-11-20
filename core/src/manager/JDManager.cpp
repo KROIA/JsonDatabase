@@ -19,7 +19,7 @@
 
 namespace JsonDatabase
 {
-
+    using namespace Internal;
     
     const QString JDManager::s_timeFormat = "hh:mm:ss.zzz";
     const QString JDManager::s_dateFormat = "dd.MM.yyyy";
@@ -60,7 +60,6 @@ namespace JsonDatabase
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
         , m_signals(*this, m_mutex)
-        //, m_asyncWorker(*this, m_mutex)
     {
         
     }
@@ -74,16 +73,12 @@ namespace JsonDatabase
         , m_useZipFormat(other.m_useZipFormat)
         , m_signleEntryUpdateLock(false)
         , m_signals(*this, m_mutex)
-        //, m_asyncWorker(*this, m_mutex)
     {
 
     }
 JDManager::~JDManager()
 {
     JDObjectLocker::Error lockerError;
-    //JDObjectLocker::stop
-    //JDObjectLocker::unlockAllObjs(lockerError);
-    //m_asyncWorker.stop();
     JDManagerAsyncWorker::stop();
     JDManagerFileSystem::getDatabaseFileWatcher().stop();
 }
@@ -99,7 +94,6 @@ bool JDManager::setup()
     {
         // Unhandled error
     }
-    //m_asyncWorker.setup();
     JDManagerAsyncWorker::setup();
     return success;
 }
@@ -154,7 +148,6 @@ bool JDManager::loadObject(JDObjectInterface* obj)
 void JDManager::loadObjectAsync(JDObjectInterface* obj)
 {
     JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkLoadSingleObject>(*this, m_mutex, obj));
-    //m_asyncWorker.addWork(std::make_shared<Internal::JDManagerAysncWorkLoadSingleObject>(*this, m_mutex, obj));
 }
 bool JDManager::loadObjects(int mode)
 {
@@ -176,7 +169,7 @@ void JDManager::saveObjectAsync(JDObjectInterface* obj)
 }
 bool JDManager::saveObjects()
 {
-    //JDM_UNIQUE_LOCK_P;
+    JDM_UNIQUE_LOCK_P;
     std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
     return saveObjects_internal(objs, s_fileLockTimeoutMs, nullptr);
 }
@@ -185,15 +178,6 @@ void JDManager::saveObjectsAsync()
     std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
     JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs));
 }
-/*bool JDManager::saveObjects(const std::vector<JDObjectInterface*>& objList)
-{
-    JDM_UNIQUE_LOCK_P;
-    return saveObjects_internal(objList);
-}*/
-
-
-
-
 
 bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgress* progress)
 {
