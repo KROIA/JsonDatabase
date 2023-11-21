@@ -8,7 +8,7 @@ namespace JsonDatabase
         EASY_PROFILER_ENABLE;
 #endif
     }
-    void Profiler::stopProfiler(const std::string profileFilePath)
+    void Profiler::stopProfiler(const std::string &profileFilePath)
     {
 #ifdef JD_PROFILING
         profiler::dumpBlocksToFile(profileFilePath.c_str());

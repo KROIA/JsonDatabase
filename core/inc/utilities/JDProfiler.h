@@ -1,5 +1,6 @@
 #pragma once
 #include "JD_base.h"
+#include <string>
 
 namespace JsonDatabase
 {
@@ -7,6 +8,6 @@ namespace JsonDatabase
 	{
 		public:
 		static void startProfiler();
-		static void stopProfiler(const std::string profileFilePath);
+		static void stopProfiler(const std::string &profileFilePath);
 	};
 }
