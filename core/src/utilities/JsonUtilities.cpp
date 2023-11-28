@@ -1,10 +1,14 @@
 #include "utilities/JsonUtilities.h"
+#include "utilities/JDObjectIDDomain.h"
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
 #include "manager/async/WorkProgress.h"
 
 #include <QJsonDocument>
 
+#ifdef JD_ENABLE_MULTITHREADING
+#include <thread>
+#endif
 
 
 namespace JsonDatabase
@@ -12,20 +16,20 @@ namespace JsonDatabase
 	namespace Internal
 	{
 #ifdef JD_USE_QJSON
-        bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut)
+        bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut)
 #else
-        bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, JsonArray& jsonOut)
+        bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
 #endif
         {
             return getJsonArray(objs, jsonOut, nullptr, 0.0);
         }
 #ifdef JD_USE_QJSON
-        bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs, 
+        bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs, 
                                          std::vector<QJsonObject>& jsonOut, 
                                          WorkProgress* progress,
                                          double deltaProgress)
 #else
-        bool JsonUtilities::getJsonArray(const std::vector<JDObjectInterface*>& objs,
+        bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs,
             JsonArray& jsonOut,
             WorkProgress* progress,
             double deltaProgress)
@@ -109,7 +113,7 @@ namespace JsonDatabase
             return success;
         }
 #ifdef JD_USE_QJSON
-        bool JsonUtilities::serializeObject(JDObjectInterface* obj, std::string& serializedOut)
+        bool JsonUtilities::serializeObject(JDObject obj, std::string& serializedOut)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
             if (!obj) return false;
@@ -130,7 +134,7 @@ namespace JsonDatabase
             serializedOut = bytes.constData();
             return true;
         }
-        bool JsonUtilities::deserializeJson(const QJsonObject& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut)
+        bool JsonUtilities::deserializeJson(const QJsonObject& json, JDObject objOriginal, JDObject& objOut)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (objOriginal)
@@ -149,7 +153,7 @@ namespace JsonDatabase
             }
             else
             {
-                JDObjectInterface* clone = JDObjectRegistry::getObjectDefinition(json);
+                JDObject clone = JDObjectRegistry::getObjectDefinition(json);
                 if (!clone)
                 {
                     std::string className;
@@ -170,9 +174,9 @@ namespace JsonDatabase
 #endif
 
 #ifdef JD_USE_QJSON
-        bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool& hasChangedOut)
+        bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObject obj, bool& hasChangedOut)
 #else
-		bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObjectInterface* obj, bool& hasChangedOut)
+		bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObject obj, bool& hasChangedOut)
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
@@ -186,9 +190,9 @@ namespace JsonDatabase
             return true;
         }
 #ifdef JD_USE_QJSON
-        bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj)
+        bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObject obj)
 #else
-        bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObjectInterface* obj)
+        bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObject obj)
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
@@ -201,7 +205,7 @@ namespace JsonDatabase
         }
 
 #ifndef JD_USE_QJSON
-        bool JsonUtilities::serializeObject(JDObjectInterface* obj, std::string& serializedOut)
+        bool JsonUtilities::serializeObject(JDObject obj, std::string& serializedOut)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
             if (!obj) return false;
@@ -213,15 +217,27 @@ namespace JsonDatabase
             serializedOut = JsonValue(data).serialize();
             return true;
         }
-        bool JsonUtilities::deserializeJson(const JsonValue& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut)
+        bool JsonUtilities::deserializeJson(
+            const JsonValue& json, 
+            JDObject objOriginal, 
+            JDObject& objOut,
+            JDObjectIDDomain& idDomain)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (objOriginal)
             {
-                JDObjectID ID;
-                int id;
-                if(json.getInt(id, JDObjectInterface::s_tag_objID))
-					ID = id;
+                JDObjectIDptr ID;
+                JDObjectID::IDType id;
+                if (json.getInt(id, JDObjectInterface::s_tag_objID))
+                {
+                    //ID = id;
+                    ID = idDomain.getExistingID(id);
+                    if (!ID)
+                    {
+                        JD_CONSOLE_FUNCTION("Can't get existing id: "<<id);
+						return false;
+                    }
+                }
                 else
                 {
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \"" 
@@ -241,7 +257,7 @@ namespace JsonDatabase
             }
             else
             {
-                JDObjectInterface* clone = JDObjectRegistry::getObjectDefinition(json);
+                JDObject clone = JDObjectRegistry::getObjectDefinition(json);
                 if (!clone)
                 {
                     std::string className;
@@ -258,10 +274,19 @@ namespace JsonDatabase
                     return false;
                 }
 
-                JDObjectID ID;
-                int id;
+                JDObjectIDptr ID;
+                JDObjectID::IDType id;
                 if (json.getInt(id, JDObjectInterface::s_tag_objID))
-                    ID = id;
+                {
+                    //ID = id;
+                    bool success;
+                    ID = idDomain.getNewID(id, success);
+                    if(!success)
+					{
+						JD_CONSOLE_FUNCTION("Can't generate new id: "<<id);
+						return false;
+					}
+                }
                 else
                 {
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""

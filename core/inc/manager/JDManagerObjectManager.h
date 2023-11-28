@@ -21,14 +21,14 @@ namespace JsonDatabase
         public:
 
             
-            bool addObject(JDObjectInterface* obj);
-            bool addObject(const std::vector<JDObjectInterface*>& objList);
+            bool addObject(const JDObject & obj);
+            bool addObject(const std::vector<const JDObject &>& objList);
 
-            JDObjectInterface* replaceObject(JDObjectInterface* obj);
-            std::vector<JDObjectInterface*> replaceObjects(const std::vector<JDObjectInterface*>& objList);
+            const JDObject & replaceObject(const JDObject & obj);
+            std::vector<const JDObject &> replaceObjects(const std::vector<const JDObject &>& objList);
            
-            bool removeObject(JDObjectInterface* obj);
-            bool removeObjects(const std::vector<JDObjectInterface*>& objList);
+            bool removeObject(const JDObject & obj);
+            bool removeObjects(const std::vector<const JDObject &>& objList);
             template<typename T>
             bool removeObjects();
             template<typename T>
@@ -39,29 +39,29 @@ namespace JsonDatabase
             size_t getObjectCount() const;
             size_t getObjectCount() const;
             
-            bool exists(JDObjectInterface* obj) const;
-            bool exists(const JDObjectID &id) const;
+            bool exists(const JDObject & obj) const;
+            bool exists(const JDObjectIDptr&id) const;
 
             template<typename T>
-            T* getObject(const JDObjectID &id);
-            JDObjectInterface* getObject(const JDObjectID &id);
+            T* getObject(const JDObjectIDptr&id);
+            const JDObject & getObject(const JDObjectIDptr&id);
             template<typename T>
             std::vector<T*> getObjects() const;
-            const std::vector<JDObjectInterface*>& getObjects() const;
+            const std::vector<const JDObject &>& getObjects() const;
 
             void clearObjects();
         protected:
 
-            bool addObject_internal(JDObjectInterface* obj);
-            bool addObject_internal(const std::vector<JDObjectInterface*>& objs);
-            JDObjectInterface* replaceObject_internal(JDObjectInterface* obj);
-            void replaceObject_internal(const std::vector<JDObjectInterface*>& objs);
-            bool removeObject_internal(JDObjectInterface* obj);
-            bool removeObject_internal(const std::vector<JDObjectInterface*>& objs);
-            bool exists_internal(JDObjectInterface* obj) const;
-            bool exists_internal(const JDObjectID &id) const;
-            JDObjectInterface* getObject_internal(const JDObjectID &id);
-            const std::vector<JDObjectInterface*>& getObjects_internal() const;
+            bool addObject_internal(const JDObject & obj);
+            bool addObject_internal(const std::vector<const JDObject &>& objs);
+            const JDObject & replaceObject_internal(const JDObject & obj);
+            void replaceObject_internal(const std::vector<const JDObject &>& objs);
+            bool removeObject_internal(const JDObject & obj);
+            bool removeObject_internal(const std::vector<const JDObject &>& objs);
+            bool exists_internal(const JDObject & obj) const;
+            bool exists_internal(const JDObjectIDptr&id) const;
+            const JDObject & getObject_internal(const JDObjectIDptr&id);
+            const std::vector<const JDObject &>& getObjects_internal() const;
             void clearObjects_internal();
 
             void update();
@@ -114,9 +114,9 @@ namespace JsonDatabase
         }
 
         template<typename T>
-        T* JDManagerObjectManager::getObject(const JDObjectID &id)
+        T* JDManagerObjectManager::getObject(const JDObjectIDptr&id)
         {
-            JDObjectInterface* obj = getObject(id);
+            const JDObject & obj = getObject(id);
             T* casted = dynamic_cast<T*>(obj);
             return casted;
         }

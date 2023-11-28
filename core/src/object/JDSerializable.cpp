@@ -96,17 +96,17 @@ bool JDSerializable::getJsonValue(const JsonObject& obj, int& value, const std::
     }
     return false;
 }
-
+/*
 #ifdef JD_USE_QJSON
-bool JDSerializable::getJsonValue(const QJsonObject& obj, JDObjectID& value, const QString& key)
+bool JDSerializable::getJsonValue(const QJsonObject& obj, JDObjectID::IDType& value, const QString& key)
 #else
-bool JDSerializable::getJsonValue(const JsonObject& obj, JDObjectID& value, const std::string& key)
+bool JDSerializable::getJsonValue(const JsonObject& obj, JDObjectID::IDType& value, const std::string& key)
 #endif
 {
     if (obj.contains(key))
     {
 #ifdef JD_USE_QJSON
-        value = obj[key].toInt(value.get());
+        value = obj[key].toInt(value);
 #else
         value = obj.find(key)->second.getInt();
 #endif
@@ -114,7 +114,7 @@ bool JDSerializable::getJsonValue(const JsonObject& obj, JDObjectID& value, cons
     }
     return false;
 }
-
+*/
 #ifdef JD_USE_QJSON
 bool JDSerializable::getJsonValue(const QJsonObject &obj, double &value, const QString &key)
 #else

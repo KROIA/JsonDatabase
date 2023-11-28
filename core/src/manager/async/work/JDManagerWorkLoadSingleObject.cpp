@@ -16,7 +16,7 @@ namespace JsonDatabase
 		{
 			if (object)
 			{
-				m_progress.setTaskName("Lade Objekt: " + m_object->getObjectID().toString());
+				m_progress.setTaskName("Lade Objekt: " + m_object->getObjectID()->toString());
 			}
 		}
 		JDManagerAysncWorkLoadSingleObject::~JDManagerAysncWorkLoadSingleObject()

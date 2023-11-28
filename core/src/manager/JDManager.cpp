@@ -46,6 +46,7 @@ namespace JsonDatabase
         , m_user(user)
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
+        , m_idDomain(databaseName)
         , m_signals(*this, m_mutex)
     {
         
@@ -55,10 +56,13 @@ namespace JsonDatabase
         , JDManagerFileSystem(*this, m_mutex)
         , JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
+        , m_databasePath(other.m_databasePath)
+        , m_databaseName(other.m_databaseName)
         , m_sessionID(other.m_sessionID)
         , m_user(other.m_user)
         , m_useZipFormat(other.m_useZipFormat)
         , m_signleEntryUpdateLock(false)
+        , m_idDomain(other.m_databaseName)
         , m_signals(*this, m_mutex)
     {
 
@@ -180,7 +184,7 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
     }
 
     bool success = true;
-    const JDObjectID &id = obj->getObjectID();
+    const JDObjectIDptr &id = obj->getObjectID();
 
     if (progress) progress->setComment("Reading database file");
 #ifdef JD_USE_QJSON
@@ -275,16 +279,16 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         if (progress) progress->setComment("Matching objects with json data");
         for (size_t i = 0; i < jsons->size(); ++i)
         {
-            JDObjectID ID;
+            //JDObjectID ID;
+            JDObjectID::IDType id;
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("Get object ID from json", JD_COLOR_STAGE_3);
 #ifdef JD_USE_QJSON
-            if (!JDSerializable::getJsonValue((*jsons)[i], ID, JDObjectInterface::s_tag_objID))
+            if (!JDSerializable::getJsonValue((*jsons)[i], id, JDObjectInterface::s_tag_objID))
 #else
-            int id;
+            
             if (!(*jsons)[i].getInt(id, JDObjectInterface::s_tag_objID))        
 #endif
             {
-                JD_GENERAL_PROFILING_END_BLOCK;
 #ifdef JD_USE_QJSON
                 JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode) 
                     << "\") Object with no ID found: " 
@@ -298,13 +302,11 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 #endif
                 success = false;
             }
-            else
-            {
-                JD_GENERAL_PROFILING_END_BLOCK;
-            }
+            JD_GENERAL_PROFILING_END_BLOCK;
             
 #ifndef JD_USE_QJSON
-            ID = id;
+            JDObjectIDptr ID = m_idDomain.getExistingID(id);
+
 #endif
             Pair p{.objOriginal= getObject_internal(ID), .obj=nullptr, .json=(*jsons)[i]};
             if (p.objOriginal)
@@ -380,7 +382,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
             // Loads the existing objects and creates a new object instance if the data has changed
             for (Pair& pair : pairs)
             {
-                success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj);
+                success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj, m_idDomain);
                 if (modeRemovedObjects) loadedObjects[pair.objOriginal] = pair.objOriginal;
                 if (pair.objOriginal != pair.obj)
                 {
@@ -413,7 +415,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         
             for (Pair& pair : newObjectPairs)
             {
-                success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj);
+                success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj, m_idDomain);
                 if (modeRemovedObjects) loadedObjects[pair.obj] = pair.obj;
                 // Add the new generated object to the database
                 //addObject_internal(pair.obj);
@@ -514,7 +516,7 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
     }
 
     if (progress) progress->setComment("Serializing object");
-    JDObjectID ID = obj->getObjectID();
+    JDObjectIDptr ID = obj->getObjectID();
     
 #ifdef JD_USE_QJSON
     std::vector<QJsonObject> jsons;

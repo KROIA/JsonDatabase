@@ -45,7 +45,7 @@ namespace JsonDatabase
         }
 
 #ifdef JD_USE_QJSON
-        JDObjectInterface* JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
+        JDObject JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
         {
             std::string className;
             if (JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))

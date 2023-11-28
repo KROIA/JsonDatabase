@@ -15,6 +15,7 @@
 #include "object/JDObjectRegistry.h"
 
 #include "utilities/Signal.h"
+#include "utilities/JDObjectIDDomain.h"
 
 
 #include <string>
@@ -191,6 +192,7 @@ class JSONDATABASE_EXPORT JDManager:
         // Prevent multiple updates at the same time
         bool m_signleEntryUpdateLock;
 
+        JDObjectIDDomain m_idDomain;
         
         Internal::JDManagerSignals m_signals;
         //Internal::JDManagerAsyncWorker m_asyncWorker;

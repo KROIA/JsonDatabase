@@ -8,7 +8,11 @@ namespace JsonDatabase
     class JDManager;
     class JDSerializable;
     class JDObjectInterface;
+    class JDObject;
+
     class JDObjectID;
+    class JDObjectIDDomainInterface;
+    class JDObjectIDDomain;
 
     class JDObjectContainer;
 

@@ -31,7 +31,7 @@ JDObjectInterface::JDObjectInterface()
 {
 
 }
-JDObjectInterface::JDObjectInterface(const JDObjectID& id)
+JDObjectInterface::JDObjectInterface(const JDObjectIDptr& id)
     : m_objID(id)
 {
 
@@ -58,30 +58,28 @@ std::vector<JDObjectInterface*> JDObjectInterface::reinstantiate(const std::vect
 	return ret;
 }
 #ifdef JD_USE_QJSON
-size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectID &objID)
+size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr&objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        JDObjectID id;
+        int id;
         if (JDSerializable::getJsonValue(jsons[i], id, s_tag_objID))
         {
-            if (id == objID)
+            if (id == objID->get())
                 return i;
         }
     }
     return std::string::npos;
 }
 #else
-size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectID& objID)
+size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        JDObjectID ID;
         int id;
         if (jsons[i].getInt(id, s_tag_objID))
         {
-            ID = id;
-            if (ID == objID)
+            if (id == objID->get())
                 return i;
         }
     }
@@ -89,11 +87,11 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
 }
 #endif
 
-const JDObjectID &JDObjectInterface::getObjectID() const
+const JDObjectIDptr JDObjectInterface::getObjectID() const
 {
     return m_objID;
 }
-void JDObjectInterface::setObjectID(const JDObjectID& id)
+void JDObjectInterface::setObjectID(const JDObjectIDptr& id)
 {
     m_objID = id;
 }
@@ -172,14 +170,14 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
         JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
         success &= load(data);
     }
-#ifdef JD_USE_QJSON
+/*#ifdef JD_USE_QJSON
     setObjectID(obj.getInt(s_tag_objID));
 #else
     int id;
     if (!obj.getInt(id, s_tag_objID))
         return false;
     setObjectID(id);
-#endif
+#endif*/
     return success;
 #endif
 }

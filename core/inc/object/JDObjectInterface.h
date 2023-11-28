@@ -4,6 +4,7 @@
 #include "JDDeclaration.h"
 #include "JDSerializable.h"
 #include "JDObjectID.h"
+#include <memory>
 
 #ifdef JD_USE_QJSON
 #include <QJsonObject>
@@ -17,39 +18,42 @@
 namespace JsonDatabase
 {
     
+using JDObject = std::shared_ptr<JDObjectInterface>;
 
 class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 {
         friend JDManager;
         friend Internal::JsonUtilities;
+
+        JDObjectInterface();
+        JDObjectInterface(const JDObjectIDptr& id);
     public:
 
 
-        JDObjectInterface();
-        JDObjectInterface(const JDObjectID &id);
+        
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
         // Creates a copy of the original object as a new instance
         static std::vector<JDObjectInterface*> reinstantiate(const std::vector<JDObjectInterface*> &objList);
 #ifdef JD_USE_QJSON
-        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectID &objID);
+        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr&objID);
 #else
-        static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectID& objID);
+        static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID);
 #endif
 
 
-        virtual JDObjectInterface* clone() const = 0;
+        virtual JDObject clone() const = 0;
 #ifdef JD_USE_QJSON
-        virtual JDObjectInterface* clone(const QJsonObject &obj, const JDObjectID &uniqueID) const = 0;
+        virtual JDObject clone(const QJsonObject &obj, const JDObjectID &uniqueID) const = 0;
 #else
-        virtual JDObjectInterface* clone(const JsonValue& obj, const JDObjectID& uniqueID) const = 0;
+        virtual JDObjectInterface* clone(const JsonValue& obj, const JDObjectIDptr& uniqueID) const = 0;
 #endif
         virtual const std::string& className() const = 0;
 
-        const JDObjectID& getObjectID() const;
+        const JDObjectIDptr getObjectID() const;
     protected:
-        void setObjectID(const JDObjectID &id);
+        void setObjectID(const JDObjectIDptr&id);
 
 #ifdef JD_USE_QJSON
         bool equalData(const QJsonObject &obj) const;
@@ -73,7 +77,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
     private:
 
-        JDObjectID m_objID;
+        JDObjectIDptr m_objID;
 
     public:
 #ifdef JD_USE_QJSON
@@ -109,16 +113,16 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     classNameVal(const classNameVal &other); 
 
 #define JD_OBJECT_DECL_CONSTRUCTOR_ID(classNameVal) \
-    classNameVal(const JsonDatabase::JDObjectID &id); 
+    classNameVal(const JsonDatabase::JDObjectIDptr &id); 
 
 #ifdef JD_USE_QJSON
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* clone() const override; \
-    classNameVal* clone(const QJsonObject &reader, const JsonDatabase::JDObjectID &uniqueID) const override; 
+    classNameVal* clone(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override; 
 #else
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* clone() const override; \
-    classNameVal* clone(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectID &uniqueID) const override;
+    classNameVal* clone(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override;
 #endif
 
 #define JD_OBJECT_DECL_CLASSNAME(classNameVal) \
@@ -138,7 +142,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
 
 #define JD_OBJECT_IMPL_CONSTRUCTOR_ID(classNameVal) \
-    classNameVal::classNameVal(const JsonDatabase::JDObjectID &id) \
+    classNameVal::classNameVal(const JsonDatabase::JDObjectIDptr &id) \
         : JDObjectInterface(id) \
     {} 
 
@@ -150,7 +154,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         c->setObjectID(this->getObjectID()); \
         return c; \
     } \
-    classNameVal* classNameVal::clone(const QJsonObject &reader, const JsonDatabase::JDObjectID &uniqueID) const\
+    classNameVal* classNameVal::clone(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
     { \
         classNameVal *obj = new classNameVal(uniqueID); \
         obj->loadInternal(reader); \
@@ -164,7 +168,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         c->setObjectID(this->getObjectID()); \
         return c; \
     } \
-    classNameVal* classNameVal::clone(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectID &uniqueID) const\
+    classNameVal* classNameVal::clone(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
     { \
         classNameVal *obj = new classNameVal(uniqueID); \
         obj->loadInternal(reader); \

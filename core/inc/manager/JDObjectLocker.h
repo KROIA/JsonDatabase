@@ -52,7 +52,7 @@ namespace JsonDatabase
 			
 			struct LockData
 			{
-				JDObjectID objectID;
+				JDObjectID::IDType objectID;
 				std::string owner;
 				std::string sessionID;
 				std::string lockDate;
@@ -103,7 +103,7 @@ namespace JsonDatabase
 			std::string getTableFileFilePath() const;
 
 			bool getObjectLockDataFromID(const std::vector<ObjectLockData>& locks,
-				const JDObjectID& targetID,
+				const JDObjectIDptr& targetID,
 				ObjectLockData& lockOut,
 				size_t& index) const;
 

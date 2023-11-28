@@ -3,6 +3,9 @@
 #include <limits> // For std::numeric_limits
 #include <omp.h>
 
+#ifdef JD_ENABLE_MULTITHREADING
+#include <thread>
+#endif
 
 namespace JsonDatabase
 {

@@ -1,14 +1,29 @@
 #include "object/JDObjectID.h"
+#include "utilities/JDObjectIDDomain.h"
 
 
 namespace JsonDatabase
 {
+    const JDObjectID::IDType JDObjectID::invalidID = 0; // Invalid ID
 
     // Constructors
-    JDObjectID::JDObjectID() 
+    JDObjectID::JDObjectID(const IDType& id, 
+                           State state,
+                           std::shared_ptr<JDObjectIDDomainInterface> domain)
+        : m_id(id)
+        , m_isValid(state)
+        , m_domainInterface(domain)
     {
-        m_id = 0;
+        if (id == invalidID)
+            m_isValid = State::Invalid;
     }
+   /* JDObjectID::JDObjectID()
+        : m_id(invalidID)
+        , m_isValid(State::Invalid)
+        , m_domainInterface(nullptr)
+    {
+
+    }*/
     /*JDObjectID::JDObjectID(const QString& id) {
         // Implement constructor from QString
         // Convert QString to unsigned int and store it in m_id
@@ -21,20 +36,29 @@ namespace JsonDatabase
         m_id = std::stoi(id);
     }*/
 
-    JDObjectID::JDObjectID(const IDType &id) 
+    /*JDObjectID::JDObjectID(const IDType& id)
         : m_id(id) 
+        , m_isValid(true)
+        , m_domainInterface(other.m_domainInterface
     {
+        if(id == invalidID)
+			m_isValid = false;
         // Implement constructor from unsigned int directly initializing m_id
     }
-
+*/
+   /*
     JDObjectID::JDObjectID(const JDObjectID& other) 
         : m_id(other.m_id) 
+        , m_isValid(other.m_isValid)
+        , m_domainInterface(other.m_domainInterface)
     {
         // Implement copy constructor
     }
 
     JDObjectID::JDObjectID(const JDObjectID&& other) noexcept 
-        : m_id(std::move(other.m_id)) 
+        : m_id(std::move(other.m_id))
+        , m_isValid(std::move(other.m_isValid))
+        , m_domainInterface(std::move(other.m_domainInterface))
     {
         // Implement move constructor
     }
@@ -43,18 +67,22 @@ namespace JsonDatabase
     JDObjectID& JDObjectID::operator=(const JDObjectID& other) {
         // Implement assignment operator
         m_id = other.m_id;
+        m_isValid = other.m_isValid;
         return *this;
     }
+    */
 
     // Comparison operators
     bool JDObjectID::operator==(const JDObjectID& other) const {
         // Implement ==
-        return m_id == other.m_id;
+        return m_id == other.m_id && 
+               m_isValid == other.m_isValid;
     }
 
     bool JDObjectID::operator!=(const JDObjectID& other) const {
         // Implement !=
-        return m_id != other.m_id;
+        return m_id != other.m_id || 
+               m_isValid != other.m_isValid;
     }
 
     bool JDObjectID::operator<(const JDObjectID& other) const {
@@ -78,18 +106,9 @@ namespace JsonDatabase
     }
 
     // Utility functions
-    bool JDObjectID::isValid() const {
-        // Implement isValid() - Return true if the ID is valid (specific condition based on your requirement)
-        // Example: return m_id > 0;
-        // This function checks if the ID is valid according to your specific rules
-        return m_id > 0;
-    }
-
-    bool JDObjectID::isNull() const {
-        // Implement isNull() - Return true if the ID is null (specific condition based on your requirement)
-        // Example: return m_id == 0;
-        // This function checks if the ID represents null according to your specific rules
-        return m_id == 0;
+    bool JDObjectID::isValid() const 
+    {
+        return m_isValid == State::Valid;
     }
 
     const JDObjectID::IDType& JDObjectID::get() const {
@@ -107,8 +126,20 @@ namespace JsonDatabase
         return QString::number(m_id);
     }
 
+    bool JDObjectID::unregister()
+    {
+        if (m_domainInterface)
+		{
+            JDObjectIDptr ptr = JDObjectIDptr(this);
+			m_domainInterface->unregisterID(ptr);
+			m_domainInterface.reset();
+			return true;
+		}
+		return false;
+    }
+
     // Static functions
-    JDObjectID JDObjectID::nullID() {
+   /* JDObjectID JDObjectID::nullID() {
         // Implement nullID() - Return a JDObjectID representing null (specific value based on your requirement)
         // Example: return JDObjectID(0);
         // This function returns a predefined null JDObjectID according to your specific rules
@@ -120,7 +151,7 @@ namespace JsonDatabase
         // Example: return JDObjectID(some_logic_to_generate_id);
         // This function generates a new JDObjectID according to your specific rules
         return JDObjectID(1);
-    }
+    }*/
 
 
     // Overloading << operator for std::cout
