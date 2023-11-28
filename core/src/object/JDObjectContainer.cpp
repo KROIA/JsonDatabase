@@ -21,14 +21,13 @@ namespace JsonDatabase
             return m_objectVector[index];
         return nullptr;
     }
-    bool JDObjectContainer::operator[](JDObject &obj)
+    size_t JDObjectContainer::operator[](JDObject &obj)
     {
-        auto it = m_objectPtrMap.find(obj);
-        if (it != m_objectPtrMap.end())
-        {
-            return it->second.get() != nullptr;
-        }
-        return false;
+        for(size_t i=0; i<m_objectVector.size(); ++i)
+		{
+			if(m_objectVector[i].get() == obj.get())
+				return i;
+		}
     }
 
     void JDObjectContainer::reserve(size_t size)
@@ -48,7 +47,7 @@ namespace JsonDatabase
             return false;
         m_objectVector.emplace_back(obj);
         m_objectMap[id->get()] = obj;
-        m_objectPtrMap[obj] = obj;
+        m_objectPtrMap[obj.get()] = obj;
         return true;
     }
     bool JDObjectContainer::addObject(const std::vector<JDObject>& objs)
@@ -58,22 +57,23 @@ namespace JsonDatabase
         //m_objectVector.insert(m_objectVector.end(), objs.begin(), objs.end());
         for (auto it = objs.begin(); it != objs.end(); ++it)
         {
-            if (!(*it).get())
+            JDObject obj = *it;
+            if (!obj.get())
             {
                 success = false;
                 continue;
             }
                
-			auto it2 = m_objectPtrMap.find(*it);
+			auto it2 = m_objectPtrMap.find(obj.get());
 			if (it2 != m_objectPtrMap.end())
 			{
 				success = false;
 				continue;
 			}
-			JDObjectIDptr id = (*it)->getObjectID();
-			m_objectMap[id->get()] = *it;
-            m_objectVector.emplace_back(*it);
-            m_objectPtrMap[*it] = *it;
+			JDObjectIDptr id = obj->getObjectID();
+			m_objectMap[id->get()] = obj;
+            m_objectVector.emplace_back(obj);
+            m_objectPtrMap[obj.get()] = obj;
 		}
         return success;
     }
@@ -89,8 +89,8 @@ namespace JsonDatabase
 			*it2 = replacement;
             JDObject& old = it->second;
 			it->second = replacement;
-            m_objectPtrMap.erase(old);
-            m_objectPtrMap[replacement] = replacement;
+            m_objectPtrMap.erase(old.get());
+            m_objectPtrMap[replacement.get()] = replacement;
 			return old;
 		}
 		return nullptr;
@@ -104,7 +104,7 @@ namespace JsonDatabase
 
             m_objectVector.erase(it2);
             m_objectMap.erase(it);
-            m_objectPtrMap.erase(it->second);
+            m_objectPtrMap.erase(it->second.get());
             return true;
         }
         return false;
@@ -114,7 +114,7 @@ namespace JsonDatabase
         if(!obj)
 			return false;
         
-        auto it = m_objectPtrMap.find(obj);
+        auto it = m_objectPtrMap.find(obj.get());
         if (it == m_objectPtrMap.end())
             return false;
 
