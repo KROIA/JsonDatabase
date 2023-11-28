@@ -15,7 +15,7 @@
 #include "object/JDObjectRegistry.h"
 
 #include "utilities/Signal.h"
-#include "utilities/JDObjectIDDomain.h"
+
 
 
 #include <string>
@@ -73,8 +73,8 @@ class JSONDATABASE_EXPORT JDManager:
         /*
             Overrides the data of the object with the data from the database file.
         */
-        bool loadObject(JDObjectInterface* obj);
-        void loadObjectAsync(JDObjectInterface* obj);
+        bool loadObject(const JDObject &obj);
+        void loadObjectAsync(const JDObject &obj);
 
 
         enum LoadMode
@@ -116,7 +116,7 @@ class JSONDATABASE_EXPORT JDManager:
             Saves the object to the database file.
             If the object is not in the database file, it will be added.
         */
-        bool saveObject(JDObjectInterface *obj);
+        bool saveObject(const JDObject &obj);
 
         /*
             Saves the object to the database file asynchronously.
@@ -129,7 +129,7 @@ class JSONDATABASE_EXPORT JDManager:
                 databaseOutdated if the database has changed before the save could be completed
                 in this case the object is not saved. Try load the database first.
         */
-        void saveObjectAsync(JDObjectInterface *obj);
+        void saveObjectAsync(const JDObject &obj);
 
         /*
             Saves all objects which are in this database instance to the database file.
@@ -169,11 +169,11 @@ class JSONDATABASE_EXPORT JDManager:
 
     private:
         
-        bool loadObject_internal(JDObjectInterface* obj, Internal::WorkProgress* progress);
+        bool loadObject_internal(const JDObject &obj, Internal::WorkProgress* progress);
         bool loadObjects_internal(int mode, Internal::WorkProgress* progress);
-        bool saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis, Internal::WorkProgress* progress);
+        bool saveObject_internal(const JDObject &obj, unsigned int timeoutMillis, Internal::WorkProgress* progress);
         bool saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress);
-        bool saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress);
+        bool saveObjects_internal(const std::vector<JDObject> & objList, unsigned int timeoutMillis, Internal::WorkProgress* progress);
 
         void onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> work);
         void onAsyncWorkError(std::shared_ptr<Internal::JDManagerAysncWork> work);
@@ -192,7 +192,7 @@ class JSONDATABASE_EXPORT JDManager:
         // Prevent multiple updates at the same time
         bool m_signleEntryUpdateLock;
 
-        JDObjectIDDomain m_idDomain;
+        
         
         Internal::JDManagerSignals m_signals;
         //Internal::JDManagerAsyncWorker m_asyncWorker;

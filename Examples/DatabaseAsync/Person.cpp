@@ -132,10 +132,10 @@ bool Person::save(JsonObject& obj) const
 
 
 
-std::vector<JDObjectInterface*> createPersons(unsigned int startID)
+std::vector<JDObject> createPersons(unsigned int startID)
 {
     unsigned int counter = startID;
-    return std::vector<JDObjectInterface*>
+    return std::vector<JDObject>
     {
         new Person(counter++,"Sam", "Richards", "Male", "27", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4"),
         new Person(counter++,"Alisa", "Reed", "Female", "29", "a.reed@randatmail.com", "898-8602-81", "Primary", "Archeologist", "0", "6858", "Single", "0"),

@@ -16,11 +16,11 @@ namespace JsonDatabase
     const std::string JDObjectInterface::s_tag_data = "Data";
 #endif
 
-JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObjectInterface* obj)
+JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObject obj)
 {
     addToRegistry(obj);
 }
-int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObjectInterface* obj)
+int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 {
     return Internal::JDObjectRegistry::registerType(obj);
 }
@@ -31,11 +31,11 @@ JDObjectInterface::JDObjectInterface()
 {
 
 }
-JDObjectInterface::JDObjectInterface(const JDObjectIDptr& id)
+/*JDObjectInterface::JDObjectInterface(const JDObjectIDptr& id)
     : m_objID(id)
 {
 
-}
+}*/
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
     : m_objID(other.m_objID)
 {
@@ -46,17 +46,18 @@ JDObjectInterface::~JDObjectInterface()
 
 }
 
-std::vector<JDObjectInterface*> JDObjectInterface::reinstantiate(const std::vector<JDObjectInterface*>& objList)
+/*/
+std::vector<JDObject> JDObjectInterface::reinstantiate(const std::vector<JDObject>& objList)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    std::vector<JDObjectInterface*> ret;
+    std::vector<JDObject> ret;
 	ret.reserve(objList.size());
     for (auto it = objList.begin(); it != objList.end(); ++it)
     {
 		ret.push_back((*it)->clone());
 	}
 	return ret;
-}
+}*/
 #ifdef JD_USE_QJSON
 size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr&objID)
 {

@@ -36,7 +36,7 @@ namespace JsonDatabase
         const std::string& databaseName,
         const std::string& sessionID,
         const std::string& user)
-        : JDManagerObjectManager(m_mutex)
+        : JDManagerObjectManager(databaseName, m_mutex)
         , JDManagerFileSystem(*this, m_mutex)
         , JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
@@ -46,13 +46,12 @@ namespace JsonDatabase
         , m_user(user)
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
-        , m_idDomain(databaseName)
         , m_signals(*this, m_mutex)
     {
         
     }
     JDManager::JDManager(const JDManager &other)
-        : JDManagerObjectManager(m_mutex)
+        : JDManagerObjectManager(other.m_databaseName, m_mutex)
         , JDManagerFileSystem(*this, m_mutex)
         , JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
@@ -62,7 +61,6 @@ namespace JsonDatabase
         , m_user(other.m_user)
         , m_useZipFormat(other.m_useZipFormat)
         , m_signleEntryUpdateLock(false)
-        , m_idDomain(other.m_databaseName)
         , m_signals(*this, m_mutex)
     {
 
@@ -131,12 +129,12 @@ bool JDManager::isZipFormatEnabled() const
     return m_useZipFormat;
 }
 
-bool JDManager::loadObject(JDObjectInterface* obj)
+bool JDManager::loadObject(const JDObject &obj)
 {
     JDM_UNIQUE_LOCK_P;
     return loadObject_internal(obj, nullptr);
 }
-void JDManager::loadObjectAsync(JDObjectInterface* obj)
+void JDManager::loadObjectAsync(const JDObject &obj)
 {
     JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkLoadSingleObject>(*this, m_mutex, obj));
 }
@@ -149,28 +147,28 @@ void JDManager::loadObjectsAsync(int mode)
 {
     JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkLoadAllObjects>(*this, m_mutex, mode));
 }
-bool JDManager::saveObject(JDObjectInterface* obj)
+bool JDManager::saveObject(const JDObject &obj)
 {
     JDM_UNIQUE_LOCK_P;
     return saveObject_internal(obj, s_fileLockTimeoutMs, nullptr);
 }
-void JDManager::saveObjectAsync(JDObjectInterface* obj)
+void JDManager::saveObjectAsync(const JDObject &obj)
 {
     JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveSingle>(*this, m_mutex, obj));
 }
 bool JDManager::saveObjects()
 {
     JDM_UNIQUE_LOCK_P;
-    std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
+    std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
     return saveObjects_internal(objs, s_fileLockTimeoutMs, nullptr);
 }
 void JDManager::saveObjectsAsync()
 {
-    std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
+    std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
     JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs));
 }
 
-bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgress* progress)
+bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (!JDManagerObjectManager::exists_internal(obj))
@@ -205,7 +203,7 @@ bool JDManager::loadObject_internal(JDObjectInterface* obj, Internal::WorkProgre
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, id);
     if (index == std::string::npos)
     {
-        JD_CONSOLE("bool JDManager::loadObject_internal(JDObjectInterface*) Object with ID: " << id << " not found");
+        JD_CONSOLE("bool JDManager::loadObject_internal(JDObject) Object with ID: " << id << " not found");
         return false;
     }
 #ifdef JD_USE_QJSON
@@ -261,8 +259,8 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
     struct Pair
     {
-        JDObjectInterface* objOriginal;
-        JDObjectInterface* obj;
+        JDObject objOriginal;
+        JDObject obj;
 #ifdef JD_USE_QJSON
         QJsonObject &json;
 #else
@@ -305,7 +303,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
             JD_GENERAL_PROFILING_END_BLOCK;
             
 #ifndef JD_USE_QJSON
-            JDObjectIDptr ID = m_idDomain.getExistingID(id);
+            JDObjectIDptr ID = JDManagerObjectManager::m_idDomain.getExistingID(id);
 
 #endif
             Pair p{.objOriginal= getObject_internal(ID), .obj=nullptr, .json=(*jsons)[i]};
@@ -332,13 +330,13 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     const bool hasObjectAddedToDatabase = m_signals.objectAddedToDatabase.signal.getSlotCount();
     const bool hasObjectRemovedFromDatabase = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
 
-    std::vector<JDObjectInterface*> overridingObjs;
-    std::vector<JDObjectInterface*> newObjs;
-    std::vector<JDObjectInterface*> removedObjs;
-    std::vector<JDObjectInterface*> replaceObjs;
+    std::vector<JDObject> overridingObjs;
+    std::vector<JDObject> newObjs;
+    std::vector<JDObject> removedObjs;
+    std::vector<JDObject> replaceObjs;
     std::vector<JDObjectPair> pairsForSignal;
 
-    std::unordered_map<JDObjectInterface*, JDObjectInterface*> loadedObjects;
+    std::unordered_map<JDObject, JDObject> loadedObjects;
     if (modeRemovedObjects) loadedObjects.reserve(jsons->size());
 
     if (modeChangedObjects && pairs.size() > 0)
@@ -382,7 +380,12 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
             // Loads the existing objects and creates a new object instance if the data has changed
             for (Pair& pair : pairs)
             {
-                success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj, m_idDomain);
+                success &= Internal::JsonUtilities::deserializeJson(
+                    pair.json, 
+                    pair.objOriginal, 
+                    pair.obj, 
+                    JDManagerObjectManager::m_idDomain,
+                    *this);
                 if (modeRemovedObjects) loadedObjects[pair.objOriginal] = pair.objOriginal;
                 if (pair.objOriginal != pair.obj)
                 {
@@ -415,7 +418,12 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         
             for (Pair& pair : newObjectPairs)
             {
-                success &= Internal::JsonUtilities::deserializeJson(pair.json, pair.objOriginal, pair.obj, m_idDomain);
+                success &= Internal::JsonUtilities::deserializeJson(
+                    pair.json,
+                    pair.objOriginal, 
+                    pair.obj, 
+                    JDManagerObjectManager::m_idDomain,
+                    *this);
                 if (modeRemovedObjects) loadedObjects[pair.obj] = pair.obj;
                 // Add the new generated object to the database
                 //addObject_internal(pair.obj);
@@ -443,7 +451,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     {
         JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
         if (progress) progress->setComment("Searching for erased objects");
-        std::vector<JDObjectInterface*> allObjs = getObjects_internal();
+        std::vector<JDObject> allObjs = getObjects_internal();
         double dProgress = subProgress / (allObjs.size()+1);
         
         removedObjs.reserve(allObjs.size());
@@ -494,7 +502,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     }
     return success;
 }
-bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeoutMillis, Internal::WorkProgress* progress)
+bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (!obj)
@@ -570,10 +578,10 @@ bool JDManager::saveObject_internal(JDObjectInterface* obj, unsigned int timeout
 }
 bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
-    std::vector<JDObjectInterface*> objs = JDManagerObjectManager::getObjects();
+    std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
     return saveObjects_internal(objs, timeoutMillis, progress);
 }
-bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
+bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if(objList.size() == 0)
@@ -591,7 +599,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObjectInterface*>& objL
     }
     if (!hasLock)
     {
-        JD_CONSOLE("bool JDManager::saveObjects_internal(vector<JDObjectInterface*>&, timeout=" << timeoutMillis << "ms) Can't lock database\n");
+        JD_CONSOLE("bool JDManager::saveObjects_internal(vector<JDObject>&, timeout=" << timeoutMillis << "ms) Can't lock database\n");
         return false;
     }
     bool success = true;

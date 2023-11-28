@@ -13,18 +13,18 @@ namespace JsonDatabase
 			JDManagerAysncWorkLoadSingleObject(
 				JDManager& manager,
 				std::mutex& mtx,
-				JDObjectInterface* object);
+				const JDObject& object);
 			~JDManagerAysncWorkLoadSingleObject();
 
 			bool hasSucceeded() const override;
-			JDObjectInterface * getObject() const;
+			const JDObject& getObject() const;
 			void process() override;
 			std::string getErrorMessage() const override;
 			WorkType getWorkType() const override;
 
 
 		private:
-			JDObjectInterface* m_object;
+			JDObject m_object;
 			bool m_success;
 		};
 	}

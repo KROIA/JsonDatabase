@@ -14,7 +14,7 @@ namespace JsonDatabase
 			JDManagerAysncWorkSaveList(
 				JDManager& manager,
 				std::mutex& mtx,
-				const std::vector<JDObjectInterface*>& objects);
+				const std::vector<JDObject>& objects);
 			~JDManagerAysncWorkSaveList();
 
 			bool hasSucceeded() const override;
@@ -24,7 +24,7 @@ namespace JsonDatabase
 
 
 		private:
-			std::vector<JDObjectInterface*> m_objects;
+			std::vector<JDObject> m_objects;
 			bool m_success;
 		};
 	}

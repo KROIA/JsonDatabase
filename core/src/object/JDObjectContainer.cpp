@@ -109,7 +109,7 @@ namespace JsonDatabase
         }
         return false;
     }
-    bool JDObjectContainer::removeObject(JDObject&obj)
+    bool JDObjectContainer::removeObject(const JDObject& obj)
     {
         if(!obj)
 			return false;
@@ -133,7 +133,7 @@ namespace JsonDatabase
             return true;
 
         for (auto& obj : objs) {
-            auto it = m_objectPtrMap.find(obj);
+            auto it = m_objectPtrMap.find(obj.get());
             if (it == m_objectPtrMap.end())
                 continue;
 
@@ -147,10 +147,19 @@ namespace JsonDatabase
         return true;
     }
 
-    JDObject JDObjectContainer::getObjectByID(const JDObjectIDptr &id) 
+    const JDObject &JDObjectContainer::getObjectByID(const JDObjectIDptr &id) 
     {
         auto it = m_objectMap.find(id->get());
         if (it != m_objectMap.end()) 
+        {
+            return it->second;
+        }
+        return nullptr;
+    }
+    const JDObject& JDObjectContainer::getObjectByID(const JDObjectID::IDType& id)
+    {
+        auto it = m_objectMap.find(id);
+        if (it != m_objectMap.end())
         {
             return it->second;
         }
@@ -165,7 +174,7 @@ namespace JsonDatabase
     {
         return m_objectMap;
     }
-    const std::unordered_map<JDObject, JDObject>& JDObjectContainer::getAllObjectsPtrMap() const
+    const std::unordered_map<JDObjectInterface*, JDObject>& JDObjectContainer::getAllObjectsPtrMap() const
     {
         return m_objectPtrMap;
     }
@@ -184,7 +193,7 @@ namespace JsonDatabase
     {
         if (!obj.get())
 			return false;
-        return m_objectPtrMap.find(obj) != m_objectPtrMap.end();
+        return m_objectPtrMap.find(obj.get()) != m_objectPtrMap.end();
         /*auto it = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
         if(it != m_objectVector.end())
 		{

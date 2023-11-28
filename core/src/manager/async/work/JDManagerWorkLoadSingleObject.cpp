@@ -9,7 +9,7 @@ namespace JsonDatabase
 		JDManagerAysncWorkLoadSingleObject::JDManagerAysncWorkLoadSingleObject(
 			JDManager& manager,
 			std::mutex& mtx,
-			JDObjectInterface* object)
+			const JDObject& object)
 			: JDManagerAysncWork(manager, mtx)
 			, m_object(object)
 			, m_success(false)
@@ -27,7 +27,7 @@ namespace JsonDatabase
 		{ 
 			return m_success; 
 		}
-		JDObjectInterface* JDManagerAysncWorkLoadSingleObject::getObject() const
+		const JDObject &JDManagerAysncWorkLoadSingleObject::getObject() const
 		{
 			return m_object;
 		}

@@ -39,7 +39,7 @@ private:
 	// catch the close event
 	void closeEvent(QCloseEvent* event) override;
 
-	JDObjectInterface *getSelectedObject();
+	JDObject getSelectedObject();
 	Person *getSelectedPerson();
 
 	// Signals from the manager
@@ -54,9 +54,9 @@ private:
 	void onAsyncWorkStarted();
 	void onAsyncWorkFinished();
 	void onSaveAllDone(bool success);
-	void onSaveIndividualDone(bool success, JDObjectInterface*obj);
+	void onSaveIndividualDone(bool success, JDObject obj);
 	void onLoadAllDone(bool success);
-	void onLoadIndividualDone(bool success, JDObjectInterface*obj);
+	void onLoadIndividualDone(bool success, JDObject obj);
 
 
 

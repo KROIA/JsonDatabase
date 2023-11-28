@@ -138,7 +138,7 @@ void MainWindow::on_deleteObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	
-	JDObjectInterface* p = getSelectedObject();
+	JDObject p = getSelectedObject();
 	if (p)
 	{
 		DEBUG << p->getObjectID().toString().c_str() << "\n";
@@ -197,7 +197,7 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
-	JDObjectInterface* obj = getSelectedObject();
+	JDObject obj = getSelectedObject();
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
 	if (m_manager->unlockObject(obj, lastError))
 	{
@@ -216,9 +216,9 @@ void MainWindow::on_test_pushButton_clicked()
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
 
-	std::vector<JDObjectInterface*> objects;
-	std::unordered_map<JsonDatabase::JDObjectID::IDType, JDObjectInterface*> map1;
-	std::unordered_map<JDObjectInterface*, JDObjectInterface*> map2;
+	std::vector<JDObject> objects;
+	std::unordered_map<JsonDatabase::JDObjectID::IDType, JDObject> map1;
+	std::unordered_map<JDObject, JDObject> map2;
 
 	auto added = m_manager->getObjects();
 
@@ -234,21 +234,21 @@ void MainWindow::on_test_pushButton_clicked()
 	auto end = std::chrono::high_resolution_clock::now();
 	// mesure duration using chrono
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::vector<JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::vector<JDObject> fill time: " << duration.count() << " microseconds\n";
 
 	// mesure start time using chrono 
 	start = std::chrono::high_resolution_clock::now();
 	map1.reserve(added.size());
 	for (auto& obj : added)
 	{
-		map1[obj->getObjectID().get()] = obj;
+		map1[obj->getObjectID()->get()] = obj;
 	}
 
 	// mesure end time using chrono
 	end = std::chrono::high_resolution_clock::now();
 	// mesure duration using chrono
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObject> fill time: " << duration.count() << " microseconds\n";
 
 	// mesure start time using chrono 
 	start = std::chrono::high_resolution_clock::now();
@@ -262,7 +262,7 @@ void MainWindow::on_test_pushButton_clicked()
 	end = std::chrono::high_resolution_clock::now();
 	// mesure duration using chrono
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<JDObjectInterface*, JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<JDObject, JDObject> fill time: " << duration.count() << " microseconds\n";
 
 
 	size_t iterations = 10;
@@ -280,7 +280,7 @@ void MainWindow::on_test_pushButton_clicked()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::vector<JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::vector<JDObject> search time: " << duration.count() << " microseconds\n";
 
 	start = std::chrono::high_resolution_clock::now();
 	for (size_t i = 0; i < iterations; ++i)
@@ -296,7 +296,7 @@ void MainWindow::on_test_pushButton_clicked()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObject> search time: " << duration.count() << " microseconds\n";
 
 	start = std::chrono::high_resolution_clock::now();
 	for (size_t i = 0; i < iterations; ++i)
@@ -312,7 +312,7 @@ void MainWindow::on_test_pushButton_clicked()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<JDObjectInterface*, JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<JDObject, JDObject> search time: " << duration.count() << " microseconds\n";
 
 }
 void MainWindow::closeEvent(QCloseEvent* event)
@@ -324,7 +324,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
 }
 
 
-JDObjectInterface* MainWindow::getSelectedObject()
+JDObject MainWindow::getSelectedObject()
 {
 	return m_manager->getObject(ui.id_lineEdit->text().toInt());
 }
@@ -438,7 +438,7 @@ void MainWindow::onSaveAllDone(bool success)
 		ui.progressComment_label->setText("");
 	}
 }
-void MainWindow::onSaveIndividualDone(bool success, JDObjectInterface* obj)
+void MainWindow::onSaveIndividualDone(bool success, JDObject obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG  << obj->getObjectID().toString().c_str() << " "<<(success ? "true" : "false") << "\n";
@@ -472,7 +472,7 @@ void MainWindow::onLoadAllDone(bool success)
 		ui.progressComment_label->setText("");
 	}
 }
-void MainWindow::onLoadIndividualDone(bool success, JDObjectInterface* obj)
+void MainWindow::onLoadIndividualDone(bool success, JDObject obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << obj->getObjectID().toString().c_str() <<" "<< (success ? "true" : "false") << "\n";

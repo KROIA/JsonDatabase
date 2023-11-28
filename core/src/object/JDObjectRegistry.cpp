@@ -14,7 +14,7 @@ namespace JsonDatabase
             return instance;
         }
 
-        JDObjectRegistry::Error JDObjectRegistry::registerType(JDObjectInterface* obj) {
+        JDObjectRegistry::Error JDObjectRegistry::registerType(const JDObject& obj) {
             Error error = Error::none;
             JDObjectRegistry& instance = getInstance();
 
@@ -37,7 +37,7 @@ namespace JsonDatabase
                     return error;
                 }
 
-                instance.m_registry.insert(std::pair<std::string, JDObjectInterface*>(className, obj));
+                instance.m_registry.insert(std::pair<std::string, JDObject>(className, obj));
             }
             else
                 error = Error::objIsNullptr;
@@ -45,36 +45,41 @@ namespace JsonDatabase
         }
 
 #ifdef JD_USE_QJSON
-        JDObject JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
+        const JDObject& JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
         {
             std::string className;
             if (JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
             {
                 return getObjectDefinition(className);
             }
-            return nullptr;
+            static const JDObject nullObj = nullptr;
+            return nullObj;
         }
 #else
-        JDObjectInterface* JDObjectRegistry::getObjectDefinition(const JsonValue& json)
+        const JDObject& JDObjectRegistry::getObjectDefinition(const JsonValue& json)
         {
             std::string className;
             if (json.getString(className, JDObjectInterface::s_tag_className))
             {
                 return getObjectDefinition(className);
             }
-            return nullptr;
+            static const JDObject nullObj = nullptr;
+            return nullObj;
         }
 #endif
-        JDObjectInterface* JDObjectRegistry::getObjectDefinition(const std::string& className)
+        const JDObject& JDObjectRegistry::getObjectDefinition(const std::string& className)
         {
-            const std::map<std::string, JDObjectInterface*>& registry = getRegisteredTypes();
+            const std::map<std::string, JDObject>& registry = getRegisteredTypes();
             auto it = registry.find(className);
             if (it == registry.end())
-                return nullptr;
+            {
+                static const JDObject nullObj = nullptr;
+                return nullObj;
+            }
             return it->second;
         }
 
-        const std::map<std::string, JDObjectInterface*>& JDObjectRegistry::getRegisteredTypes()
+        const std::map<std::string, JDObject>& JDObjectRegistry::getRegisteredTypes()
         {
             return getInstance().m_registry;
         }

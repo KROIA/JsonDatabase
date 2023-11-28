@@ -9,7 +9,7 @@ namespace JsonDatabase
 		JDManagerAysncWorkSaveSingle::JDManagerAysncWorkSaveSingle(
 			JDManager& manager,
 			std::mutex& mtx,
-			JDObjectInterface* object)
+			const JDObject& object)
 			: JDManagerAysncWork(manager, mtx)
 			, m_object(nullptr)
 			, m_success(false)
@@ -17,13 +17,15 @@ namespace JsonDatabase
 			if (object)
 			{
 				//object->incrementVersionValue();
-				m_object = object->clone();
+
+				m_object = manager.createClone(object.get());
+				//m_object = object->clone();
 				m_progress.setTaskName("Speichere Objekt: " + m_object->getObjectID()->toString());
 			}
 		}
 		JDManagerAysncWorkSaveSingle::~JDManagerAysncWorkSaveSingle()
 		{
-			delete m_object;
+			//delete m_object;
 		}
 		bool JDManagerAysncWorkSaveSingle::hasSucceeded() const
 		{

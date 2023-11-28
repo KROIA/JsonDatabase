@@ -57,4 +57,4 @@ private:
 
 
 
-extern std::vector<JDObjectInterface*> createPersons(unsigned int startID);
+extern std::vector<JDObject> createPersons(unsigned int startID);

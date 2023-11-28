@@ -8,7 +8,10 @@ namespace JsonDatabase
     class JDManager;
     class JDSerializable;
     class JDObjectInterface;
-    class JDObject;
+
+    typedef std::shared_ptr<JDObjectInterface> JDObject;
+    // Pair of JDObjectInterface objects which have the same ID
+    typedef std::pair<JDObject, JDObject> JDObjectPair;
 
     class JDObjectID;
     class JDObjectIDDomainInterface;
@@ -16,9 +19,7 @@ namespace JsonDatabase
 
     class JDObjectContainer;
 
-    // Pair of JDObjectInterface objects which have the same ID
-    typedef std::pair<JDObjectInterface*, JDObjectInterface*> JDObjectPair;
-
+    
     
     namespace Internal
     {

@@ -10,7 +10,7 @@ namespace JsonDatabase
 		JDManagerAysncWorkSaveList::JDManagerAysncWorkSaveList(
 			JDManager& manager,
 			std::mutex& mtx,
-			const std::vector<JDObjectInterface*>& objects)
+			const std::vector<JDObject>& objects)
 			: JDManagerAysncWork(manager, mtx)
 			, m_success(false)
 		{
@@ -18,7 +18,8 @@ namespace JsonDatabase
 			for (size_t i = 0; i < objects.size(); ++i)
 			{
 				//objects[i]->incrementVersionValue();
-				m_objects[i] = objects[i]->clone();
+				m_objects[i] = manager.createClone(objects[i].get());
+				//m_objects[i] = objects[i]->clone();
 			}
 				
 			m_progress.setTaskName("Speichere "+ std::to_string(m_objects.size())+ " Objekte");

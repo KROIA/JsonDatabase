@@ -120,7 +120,7 @@ namespace JsonDatabase
                 The first parameter is the success state of the load operation.
                 The second parameter is the object that was loaded.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone, bool, JDObjectInterface*)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone, bool, JDObject)
             //void connect_onLoadObjectDone_slot(const Signal<bool, JDObjectInterface*>::SlotFunction& slotFunction, bool onlyOnce);
 
             /*
@@ -134,7 +134,7 @@ namespace JsonDatabase
                 The first parameter is the success state of the save operation.
                 The second parameter is the object that was saved.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone, bool, JDObjectInterface*)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone, bool, JDObject)
 
             /*
                 The saveObjects signal gets emited if the manager has saved all objects in async mode.
@@ -151,8 +151,8 @@ namespace JsonDatabase
 
                 ContainerSignal(const std::string& name);
                 void reserve(size_t size);
-                void addObjs(const std::vector<JDObjectInterface*>& objs);
-                void addObj(JDObjectInterface* obj);
+                void addObjs(const std::vector<JDObject>& objs);
+                void addObj(JDObject obj);
                 void clear();
                 void emitSignalIfNotEmpty();
 
@@ -213,7 +213,7 @@ namespace JsonDatabase
             struct AsyncLoadObjectData
             {
                 bool success;
-                JDObjectInterface* object;
+                JDObject object;
             };
             struct AsyncLoadObjectsData
             {
@@ -222,7 +222,7 @@ namespace JsonDatabase
             struct AsyncSaveObjectData
             {
 				bool success;
-                JDObjectInterface* object;
+                JDObject object;
 			};
             struct AsyncSaveObjectsData
 			{
@@ -231,9 +231,9 @@ namespace JsonDatabase
 
             Signal<> onStartAsyncWork;
             Signal<> onEndAsyncWork;
-            Signal<bool, JDObjectInterface*> onLoadObjectDone;
+            Signal<bool, JDObject> onLoadObjectDone;
             Signal<bool> onLoadObjectsDone;
-            Signal<bool, JDObjectInterface*> onSaveObjectDone;
+            Signal<bool, JDObject> onSaveObjectDone;
             Signal<bool> onSaveObjectsDone;
 
             enum Signals
@@ -262,7 +262,7 @@ namespace JsonDatabase
             
 
             void addToQueue(Signals signal, bool onlyOnce);
-            void addToQueue(Signals signal, bool success, JDObjectInterface*obj, bool onlyOnce);
+            void addToQueue(Signals signal, bool success, const JDObject& obj, bool onlyOnce);
             void addToQueue(Signals signal, bool success, bool onlyOnce);
             void emitQueue();
 

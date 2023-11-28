@@ -50,9 +50,9 @@ namespace JsonDatabase
 
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onStartAsyncWork,)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onEndAsyncWork,)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone,  bool, JDObjectInterface*)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone,  bool, JDObject)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectsDone, bool)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone,  bool, JDObjectInterface*)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone,  bool, JDObject)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectsDone, bool)
 
         /*
@@ -68,12 +68,12 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK;
             container.reserve(size);
         }
-        void JDManagerSignals::ContainerSignal::addObjs(const std::vector<JDObjectInterface*>& objs)
+        void JDManagerSignals::ContainerSignal::addObjs(const std::vector<JDObject>& objs)
         {
             JDM_UNIQUE_LOCK;
             container.addObject(objs);
         }
-        void JDManagerSignals::ContainerSignal::addObj(JDObjectInterface* obj)
+        void JDManagerSignals::ContainerSignal::addObj(JDObject obj)
         {
             JDM_UNIQUE_LOCK;
             container.addObject(obj);
@@ -182,7 +182,7 @@ namespace JsonDatabase
             sig.signal = signal;
             m_signalQueue.push_back(sig);
         }
-        void JDManagerSignals::addToQueue(Signals signal, bool success, JDObjectInterface* obj, bool onlyOnce)
+        void JDManagerSignals::addToQueue(Signals signal, bool success, const JDObject& obj, bool onlyOnce)
         {
             JDM_UNIQUE_LOCK_P_M(m_signalsMutex);
             if (onlyOnce)

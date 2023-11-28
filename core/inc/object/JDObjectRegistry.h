@@ -24,17 +24,17 @@ namespace JsonDatabase
             static JDObjectRegistry& getInstance();
 
 
-            static Error registerType(JDObjectInterface* obj);
-            static const std::map<std::string, JDObjectInterface*>& getRegisteredTypes();
+            static Error registerType(const JDObject& obj);
+            static const std::map<std::string, JDObject>& getRegisteredTypes();
 #ifdef JD_USE_QJSON
-            static JDObjectInterface* getObjectDefinition(const QJsonObject& json);
+            static const JDObject& getObjectDefinition(const QJsonObject& json);
 #else
-            static JDObjectInterface* getObjectDefinition(const JsonValue& json);
+            static const JDObject& getObjectDefinition(const JsonValue& json);
 #endif
-            static JDObjectInterface* getObjectDefinition(const std::string& className);
+            static const JDObject& getObjectDefinition(const std::string& className);
 
         private:
-            std::map<std::string, JDObjectInterface*> m_registry;
+            std::map<std::string, JDObject> m_registry;
         };
     }
 }

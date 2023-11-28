@@ -23,13 +23,14 @@ namespace JsonDatabase
         bool addObject(const std::vector<JDObject>& objs);
         JDObject replaceObject(const JDObject& replacement); // Returns the old object
         bool removeObject(const JDObjectIDptr &id);
-        bool removeObject(JDObject &obj);
+        bool removeObject(const JDObject &obj);
         bool removeObject(const std::vector<JDObject>& objs);
 
-        JDObject getObjectByID(const JDObjectIDptr &id);
+        const JDObject &getObjectByID(const JDObjectIDptr &id);
+        const JDObject &getObjectByID(const JDObjectID::IDType &id);
         const std::vector<JDObject>& getAllObjects() const;
         const std::unordered_map<JDObjectID::IDType, JDObject>& getAllObjectsIDMap() const;
-        const std::unordered_map<JDObject, JDObject>& getAllObjectsPtrMap() const;
+        const std::unordered_map<JDObjectInterface*, JDObject>& getAllObjectsPtrMap() const;
 
         bool exists(const JDObjectIDptr &id) const;
         bool exists(const JDObject& obj) const;

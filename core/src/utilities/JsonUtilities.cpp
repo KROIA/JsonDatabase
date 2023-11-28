@@ -3,6 +3,7 @@
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
 #include "manager/async/WorkProgress.h"
+#include "manager/JDManager.h"
 
 #include <QJsonDocument>
 
@@ -134,15 +135,17 @@ namespace JsonDatabase
             serializedOut = bytes.constData();
             return true;
         }
-        bool JsonUtilities::deserializeJson(const QJsonObject& json, JDObject objOriginal, JDObject& objOut)
+        bool JsonUtilities::deserializeJson(const QJsonObject& json, JDObject objOriginal, JDObject& objOut, JDObjectIDDomain& idDomain)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (objOriginal)
             {
                 JDObjectID ID;
+                JDObjectID::IDType id;
                 JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
                 if (objOriginal->equalData(json))
                 {
+                    ID = idDomain.getExistingID(id);
                     objOut = objOriginal;
                    // objOriginal->setVersion(json); // Update version value from loaded object
                 }
@@ -221,7 +224,8 @@ namespace JsonDatabase
             const JsonValue& json, 
             JDObject objOriginal, 
             JDObject& objOut,
-            JDObjectIDDomain& idDomain)
+            JDObjectIDDomain& idDomain,
+            JDManager& manager)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (objOriginal)
@@ -252,7 +256,8 @@ namespace JsonDatabase
                 }
                 else
                 {
-                    objOut = objOriginal->clone(json, ID);
+                    objOut = manager.createClone(objOriginal.get(), json, ID);
+                   // objOut = objOriginal->clone(json, ID);
                 }
             }
             else
@@ -294,7 +299,8 @@ namespace JsonDatabase
                         << "Object: " << json);
                     return false;
                 }
-                objOut = clone->clone(json, ID);
+                objOut = manager.createClone(objOriginal.get(), json, ID);
+                // objOut = clone->clone(json, ID);
             }
             return true;
         }
