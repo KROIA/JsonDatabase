@@ -27,7 +27,8 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 
 
 JDObjectInterface::JDObjectInterface()
-    : m_objID(0)
+    : m_objID(nullptr)
+    , m_onDelete("onDelete")
 {
 
 }
@@ -38,12 +39,23 @@ JDObjectInterface::JDObjectInterface()
 }*/
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
     : m_objID(other.m_objID)
+    , m_onDelete("onDelete")
 {
 
 }
 JDObjectInterface::~JDObjectInterface()
 {
-
+    m_onDelete.emitSignal(this);
+#ifdef JD_DEBUG
+    if (JDObjectID::isValid(m_objID))
+    {
+        JD_CONSOLE("Delete object with ID: " << m_objID->get());
+    }
+    else
+    {
+        JD_CONSOLE("Delete object with ID: invalid");
+    }
+#endif
 }
 
 /*/
@@ -87,6 +99,33 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
     return std::string::npos;
 }
 #endif
+
+bool JDObjectInterface::loadFrom(const JDObject& source)
+{
+    bool success = true;
+#ifdef JD_USE_QJSON
+    QJsonObject data;
+#else
+    JsonObject data;
+#endif
+    success &= source->save(data);
+    if (success)
+        success &= load(data);
+    return success;
+}
+bool JDObjectInterface::loadFrom(const JDObjectInterface* source)
+{
+    bool success = true;
+#ifdef JD_USE_QJSON
+    QJsonObject data;
+#else
+    JsonObject data;
+#endif
+    success &= source->save(data);
+    if (success)
+        success &= load(data);
+    return success;
+}
 
 const JDObjectIDptr JDObjectInterface::getObjectID() const
 {
@@ -199,7 +238,7 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
 #ifdef JD_USE_QJSON
-    obj[s_tag_objID] = getObjectID().get();
+    obj[s_tag_objID] = getObjectID()->get();
     obj[s_tag_className] = className().c_str();
     QJsonObject data;
     bool ret;
@@ -212,7 +251,7 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
     return ret;
 #else
     obj.reserve(3);
-    obj[s_tag_objID] = getObjectID().get();
+    obj[s_tag_objID] = getObjectID()->get();
     obj[s_tag_className] = className();
     obj[s_tag_data] = JsonObject();
     bool ret;

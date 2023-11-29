@@ -28,6 +28,7 @@ namespace JsonDatabase
 		{
 			// Delete all objects asynchroneously
 			AsyncContextDrivenDeleter asyncDeleter(m_objects);
+			m_objects.clear();
 		}
 		bool JDManagerAysncWorkSaveList::hasSucceeded() const
 		{

@@ -40,6 +40,8 @@ namespace JsonDatabase
 		JDObjectID(const JDObjectID& other) = delete;
 		JDObjectID(const JDObjectID&& other) = delete;
 
+		static bool isValid(const JDObjectIDptr& id);
+
 		JDObjectID& operator=(const JDObjectID& other) = delete;
 
 		bool operator==(const JDObjectID& other) const;
@@ -54,7 +56,9 @@ namespace JsonDatabase
 		const IDType& get() const;
 
 		std::string toString() const;
+		static std::string toString(const IDType& id);
 		QString toQString() const;
+		static QString toQString(const IDType& id);
 
 		bool unregister();
 

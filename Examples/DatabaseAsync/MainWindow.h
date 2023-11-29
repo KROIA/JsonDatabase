@@ -34,13 +34,13 @@ private slots:
 	void on_unlockObject_pushButton_clicked();
 	void on_test_pushButton_clicked();
 
-	void onPersonSave(Person* person);
+	void onPersonSave(JDderivedObject<Person> person);
 private:
 	// catch the close event
 	void closeEvent(QCloseEvent* event) override;
 
 	JDObject getSelectedObject();
-	Person *getSelectedPerson();
+	JDderivedObject<Person>getSelectedPerson();
 
 	// Signals from the manager
 	void onDatabaseFileChanged();

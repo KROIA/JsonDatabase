@@ -43,12 +43,12 @@ namespace JsonDatabase
 		public:
 			
 
-			bool lockObject(JDObjectInterface* obj, Error& err) const;
-			bool unlockObject(JDObjectInterface* obj, Error& err) const;
+			bool lockObject(const JDObject & obj, Error& err) const;
+			bool unlockObject(const JDObject & obj, Error& err) const;
 			bool unlockAllObjs(Error& err) const;
-			bool isObjectLocked(JDObjectInterface* obj, Error& err) const;
-			bool isObjectLockedByMe(JDObjectInterface* obj, Error& err) const;
-			bool isObjectLockedByOther(JDObjectInterface* obj, Error& err) const;
+			bool isObjectLocked(const JDObject & obj, Error& err) const;
+			bool isObjectLockedByMe(const JDObject & obj, Error& err) const;
+			bool isObjectLockedByOther(const JDObject & obj, Error& err) const;
 			
 			struct LockData
 			{
@@ -73,8 +73,8 @@ namespace JsonDatabase
 			{
 			public:
 				ObjectLockData();
-				ObjectLockData(JDObjectInterface* obj, const JDManager &manager);
-				void setObject(JDObjectInterface* obj, const JDManager& manager);
+				ObjectLockData(const JDObject & obj, const JDManager &manager);
+				void setObject(const JDObject & obj, const JDManager& manager);
 #ifdef JD_USE_QJSON
 				bool load(const QJsonObject& obj) override;
 				bool save(QJsonObject& obj) const override;
@@ -90,7 +90,7 @@ namespace JsonDatabase
 				std::string toString() const;
 
 				LockData data;
-				JDObjectInterface* obj;
+				JDObject obj;
 			};
 
 			

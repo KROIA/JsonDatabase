@@ -84,9 +84,9 @@ namespace JsonDatabase
 			return success;
 		}
 
-		bool JDObjectLocker::lockObject(JDObjectInterface* obj, Error& err) const
+		bool JDObjectLocker::lockObject(const JDObject & obj, Error& err) const
 		{
-			if (!obj)
+			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
@@ -169,9 +169,9 @@ namespace JsonDatabase
 			err = Error::none;
 			return true;
 		}
-		bool JDObjectLocker::unlockObject(JDObjectInterface* obj, Error& err) const
+		bool JDObjectLocker::unlockObject(const JDObject & obj, Error& err) const
 		{
-			if (!obj)
+			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
@@ -249,9 +249,9 @@ namespace JsonDatabase
 			err = Error::none;
 			return true;
 		}
-		bool JDObjectLocker::isObjectLocked(JDObjectInterface* obj, Error& err) const
+		bool JDObjectLocker::isObjectLocked(const JDObject & obj, Error& err) const
 		{
-			if (!obj)
+			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
@@ -276,9 +276,9 @@ namespace JsonDatabase
 			}
 			return false;
 		}
-		bool JDObjectLocker::isObjectLockedByMe(JDObjectInterface* obj, Error& err) const
+		bool JDObjectLocker::isObjectLockedByMe(const JDObject & obj, Error& err) const
 		{
-			if (!obj)
+			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
@@ -309,9 +309,9 @@ namespace JsonDatabase
 			}
 			return false;
 		}
-		bool JDObjectLocker::isObjectLockedByOther(JDObjectInterface* obj, Error& err) const
+		bool JDObjectLocker::isObjectLockedByOther(const JDObject & obj, Error& err) const
 		{
-			if (!obj)
+			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
@@ -493,15 +493,15 @@ namespace JsonDatabase
 		{
 			
 		}
-		JDObjectLocker::ObjectLockData::ObjectLockData(JDObjectInterface* obj, const JDManager& manager)
+		JDObjectLocker::ObjectLockData::ObjectLockData(const JDObject & obj, const JDManager& manager)
 			: obj(nullptr)
 		{
 			setObject(obj, manager);
 		}
-		void JDObjectLocker::ObjectLockData::setObject(JDObjectInterface* obj, const JDManager& manager)
+		void JDObjectLocker::ObjectLockData::setObject(const JDObject & obj, const JDManager& manager)
 		{
 			this->obj = obj;
-			if (!this->obj)
+			if (!this->obj.get())
 				return;
 			data.objectID = this->obj->getObjectID()->get();
 			data.owner = manager.getUser();
@@ -635,7 +635,7 @@ namespace JsonDatabase
 						return false;
 					}
 					QJsonObject lock = value.toObject();
-					if (!ObjectLockData::isValid(lock))
+					if (!obj.get()ectLockData::isValid(lock))
 					{
 						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString().toStdString().c_str() << " is has missing or corrupt data\n");
 						err = Error::corruptTableData;

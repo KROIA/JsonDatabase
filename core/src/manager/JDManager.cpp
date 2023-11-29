@@ -301,16 +301,17 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
                 success = false;
             }
             JD_GENERAL_PROFILING_END_BLOCK;
-            
-#ifndef JD_USE_QJSON
+
             JDObjectIDptr ID = JDManagerObjectManager::m_idDomain.getExistingID(id);
 
-#endif
-            Pair p{.objOriginal= getObject_internal(ID), .obj=nullptr, .json=(*jsons)[i]};
+            Pair p{.objOriginal = nullptr, .obj=nullptr, .json=(*jsons)[i]};
+            if(JDManagerObjectManager::objectIDIsValid(ID))
+				p.objOriginal = getObject_internal(ID);
             if (p.objOriginal)
                 pairs.emplace_back(p);
             else
                 newObjectPairs.emplace_back(p);
+
         }
         if (progress) progress->addProgress(0.03);
     }
@@ -483,22 +484,31 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         }
 		else
 		{
-            replaceObject_internal(replaceObjs);
-            if (hasChangeFromDatabaseSlots && pairsForSignal.size())
-                m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
+            if (pairsForSignal.size())
+            {
+                replaceObject_internal(replaceObjs);
+                if (hasChangeFromDatabaseSlots)
+                    m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
+            }
 		}
     }
     if (modeRemovedObjects)
     {
-        removeObject_internal(removedObjs);
-        if (hasObjectRemovedFromDatabase && removedObjs.size())
-            m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
+        if (removedObjs.size())
+        {
+            removeObject_internal(removedObjs);
+            if (hasObjectRemovedFromDatabase)
+                m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
+        }
     }
     if (modeNewObjects)
     {
-        addObject_internal(newObjs);
-        if (hasObjectAddedToDatabase && newObjs.size())
-            m_signals.objectAddedToDatabase.addObjs(newObjs);
+        if (newObjs.size())
+        {
+            addObject_internal(newObjs);
+            if (hasObjectAddedToDatabase)
+                m_signals.objectAddedToDatabase.addObjs(newObjs);
+        }
     }
     return success;
 }

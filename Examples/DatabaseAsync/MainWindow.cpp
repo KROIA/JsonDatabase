@@ -97,7 +97,7 @@ void MainWindow::on_generatePersons_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
-	m_manager->addObject(createPersons(m_manager->getObjectCount()));
+	m_manager->addObject(createPersons());
 }
 void MainWindow::on_loadDatabase_pushButton_clicked()
 {
@@ -127,12 +127,13 @@ void MainWindow::on_addObject_pushButton_clicked()
 		DEBUG << "id is empty\n";
 		return;
 	}
-	Person* p = new Person(id, "Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4");
-	DEBUG <<p->getObjectID().toString().c_str();
+	JDderivedObject<Person> p(new Person("Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4"));
+	
 	if (!m_manager->addObject(p))
 	{
 		DEBUG << "Can't add object to database\n";
 	}
+	DEBUG << p->getObjectID()->toString().c_str() << "\n";
 }
 void MainWindow::on_deleteObject_pushButton_clicked()
 {
@@ -141,9 +142,11 @@ void MainWindow::on_deleteObject_pushButton_clicked()
 	JDObject p = getSelectedObject();
 	if (p)
 	{
-		DEBUG << p->getObjectID().toString().c_str() << "\n";
-		m_manager->removeObject(p);
-		delete p;
+		DEBUG << p->getObjectID()->toString().c_str() << "\n";
+		//m_manager->removeObject(p);
+		JDObjectInterface* obj = p.get();
+		p.reset();
+		delete obj;
 	}
 	else
 	{
@@ -153,7 +156,7 @@ void MainWindow::on_deleteObject_pushButton_clicked()
 void MainWindow::on_editObject_pushButton_clicked()
 {
 	bool editMode = false;
-	Person* p = getSelectedPerson();
+	JDderivedObject<Person> p = getSelectedPerson();
 	/*if (m_manager->lockObject(p))
 	{
 		editMode = true;
@@ -172,23 +175,23 @@ void MainWindow::on_editObject_pushButton_clicked()
 	if (lastError != JsonDatabase::Internal::JDObjectLocker::Error::none)
 		editMode = false;
 	//}
-	m_uiPersonEditor->setPerson(getSelectedPerson(), editMode);
+	m_uiPersonEditor->setPerson(p, editMode);
 }
 
 void MainWindow::on_lockObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
-	JDObjectInterface *obj = getSelectedObject();
+	JDObject obj = getSelectedObject();
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
 	if (m_manager->lockObject(obj, lastError))
 	{
-		DEBUG << "locked: " << obj->getObjectID().toString().c_str() << "\n";
+		DEBUG << "locked: " << obj->getObjectID()->toString().c_str() << "\n";
 	}
 	else
 	{
 		if(obj)
-			DEBUG << "Can't lock: " << obj->getObjectID().toString().c_str() << "\n";
+			DEBUG << "Can't lock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't lock object, nullptr\n";
 	}
@@ -201,12 +204,12 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
 	if (m_manager->unlockObject(obj, lastError))
 	{
-		DEBUG << "unlocked: " << obj->getObjectID().toString().c_str() << "\n";
+		DEBUG << "unlocked: " << obj->getObjectID()->toString().c_str() << "\n";
 	}
 	else
 	{
 		if (obj)
-			DEBUG << "Can't unlock: " << obj->getObjectID().toString().c_str() << "\n";
+			DEBUG << "Can't unlock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't unlock object, nullptr\n";
 	}
@@ -287,7 +290,7 @@ void MainWindow::on_test_pushButton_clicked()
 	{
 		for (auto& obj : added)
 		{
-			auto it = map1.find(obj->getObjectID().get());
+			auto it = map1.find(obj->getObjectID()->get());
 			if (it != map1.end())
 			{
 				//DEBUG_SIMPLE << "found\n";
@@ -328,9 +331,10 @@ JDObject MainWindow::getSelectedObject()
 {
 	return m_manager->getObject(ui.id_lineEdit->text().toInt());
 }
-Person* MainWindow::getSelectedPerson()
+JDderivedObject<Person> MainWindow::getSelectedPerson()
 {
-	return dynamic_cast<Person*>(getSelectedObject());
+	JDObject obj = getSelectedObject();
+	return std::dynamic_pointer_cast<Person>(obj);
 }
 void MainWindow::onDatabaseFileChanged()
 {
@@ -349,13 +353,13 @@ void MainWindow::onLockedObjectsChanged()
 	std::string text;
 	for (auto& id : locked)
 	{
-		Person *p = m_manager->getObject<Person>(id.objectID);
-		if (p)
+		auto p = m_manager->getObject<Person>(id.objectID);
+		if (p.get())
 		{
-			text += "\"" + id.objectID.toString() + "\" object locked by \"" + id.owner + "\"\n";
+			text += "\"" + JDObjectID::toString(id.objectID) + "\" object locked by \"" + id.owner + "\"\n";
 		}
 		else
-			text += "\"" + id.objectID.toString() + "\" object not found\n";
+			text += "\"" + JDObjectID::toString(id.objectID) + "\" object not found\n";
 	}
 	ui.lockedObjects_label->setText(QString::fromStdString(text));
 }
@@ -367,8 +371,8 @@ void MainWindow::onObjectRemovedFromDatabase(const JsonDatabase::JDObjectContain
 	buffer.reserve(removed.size() * 32);
 	for (auto& obj : removed)
 	{
-		buffer += "  " + obj->getObjectID().toString() + "\n";
-		delete obj;
+		buffer += "  " + obj->getObjectID()->toString() + "\n";
+		//delete obj.get();
 	}
 	DEBUG_SIMPLE << buffer.c_str();
 }
@@ -380,7 +384,7 @@ void MainWindow::onObjectAddedToDatabase(const JsonDatabase::JDObjectContainer& 
 	buffer.reserve(added.size() * 32);
 	for (auto& obj : added)
 	{
-		buffer += "  " + obj->getObjectID().toString() + "\n";
+		buffer += "  " + obj->getObjectID()->toString() + "\n";
 	}
 	DEBUG_SIMPLE << buffer.c_str();
 }
@@ -390,7 +394,7 @@ void MainWindow::onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDO
 	DEBUG;
 	for (auto& obj : changedPairs)
 	{
-		DEBUG_SIMPLE << "  " << obj.first->getObjectID().toString().c_str() << "\n";
+		DEBUG_SIMPLE << "  " << obj.first->getObjectID()->toString().c_str() << "\n";
 	}
 }
 void MainWindow::onObjectOverrideChangeFromDatabase(const JsonDatabase::JDObjectContainer& overwritten)
@@ -401,7 +405,7 @@ void MainWindow::onObjectOverrideChangeFromDatabase(const JsonDatabase::JDObject
 	buffer.reserve(overwritten.size() * 32);
 	for (auto& obj : overwritten)
 	{
-		buffer += "  " + obj->getObjectID().toString() + "\n";
+		buffer += "  " + obj->getObjectID()->toString() + "\n";
 	}
 	DEBUG_SIMPLE << buffer.c_str();
 }
@@ -441,7 +445,7 @@ void MainWindow::onSaveAllDone(bool success)
 void MainWindow::onSaveIndividualDone(bool success, JDObject obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	DEBUG  << obj->getObjectID().toString().c_str() << " "<<(success ? "true" : "false") << "\n";
+	DEBUG  << obj->getObjectID()->toString().c_str() << " "<<(success ? "true" : "false") << "\n";
 	if (success)
 	{
 		ui.progressBar->setValue(100);
@@ -475,7 +479,7 @@ void MainWindow::onLoadAllDone(bool success)
 void MainWindow::onLoadIndividualDone(bool success, JDObject obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	DEBUG << obj->getObjectID().toString().c_str() <<" "<< (success ? "true" : "false") << "\n";
+	DEBUG << obj->getObjectID()->toString().c_str() <<" "<< (success ? "true" : "false") << "\n";
 	if (success)
 	{
 		ui.progressBar->setValue(100);
@@ -490,7 +494,7 @@ void MainWindow::onLoadIndividualDone(bool success, JDObject obj)
 	}
 }
 
-void MainWindow::onPersonSave(Person* person)
+void MainWindow::onPersonSave(JDderivedObject<Person> person)
 {
 	if (person)
 		m_manager->saveObjectAsync(person);

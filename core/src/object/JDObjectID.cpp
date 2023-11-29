@@ -17,6 +17,13 @@ namespace JsonDatabase
         if (id == invalidID)
             m_isValid = State::Invalid;
     }
+
+    bool JDObjectID::isValid(const JDObjectIDptr& id)
+    {
+        if (!id.get())
+            return false;
+        return id->isValid();
+    }
    /* JDObjectID::JDObjectID()
         : m_id(invalidID)
         , m_isValid(State::Invalid)
@@ -118,12 +125,22 @@ namespace JsonDatabase
 
     std::string JDObjectID::toString() const {
         // Implement toString() - Convert m_id to a string and return it
-        return std::to_string(m_id);
+        return toString(m_id);
     }
 
     QString JDObjectID::toQString() const {
         // Implement toQString() - Convert m_id to a QString and return it
-        return QString::number(m_id);
+        return toQString(m_id);
+    }
+
+    std::string JDObjectID::toString(const IDType& id)
+    {
+        return std::to_string(id);
+    }
+
+    QString JDObjectID::toQString(const IDType& id)
+    {
+        return QString::number(id);
     }
 
     bool JDObjectID::unregister()

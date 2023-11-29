@@ -180,6 +180,8 @@ class JSONDATABASE_EXPORT JDManager:
 
         void onObjectLockerFileChanged();
 
+        
+
         std::string m_databasePath;
         std::string m_databaseName;
         std::string m_sessionID;

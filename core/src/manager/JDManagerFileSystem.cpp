@@ -379,7 +379,8 @@ namespace JsonDatabase
 #else
                 {
                     JsonValue::JsonVariantType& variant = deserialized.getVariant();
-                    jsonsOut = std::move(std::get<JsonArray>(variant));
+                    JsonArray & jsonArray = (std::get<JsonArray>(variant));
+                    jsonsOut = jsonArray;
                 }
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;

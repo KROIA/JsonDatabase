@@ -26,11 +26,12 @@ namespace JsonDatabase
         bool removeObject(const JDObject &obj);
         bool removeObject(const std::vector<JDObject>& objs);
 
-        const JDObject &getObjectByID(const JDObjectIDptr &id);
-        const JDObject &getObjectByID(const JDObjectID::IDType &id);
-        const std::vector<JDObject>& getAllObjects() const;
-        const std::unordered_map<JDObjectID::IDType, JDObject>& getAllObjectsIDMap() const;
-        const std::unordered_map<JDObjectInterface*, JDObject>& getAllObjectsPtrMap() const;
+        JDObject getObjectByID(const JDObjectIDptr &id);
+        JDObject getObjectByID(const JDObjectID::IDType &id);
+        JDObject getObjectByPtr(const JDObjectInterface *obj);
+        std::vector<JDObject> getAllObjects() const;
+        std::unordered_map<JDObjectID::IDType, JDObject> getAllObjectsIDMap() const;
+        std::unordered_map<const JDObjectInterface*, JDObject> getAllObjectsPtrMap() const;
 
         bool exists(const JDObjectIDptr &id) const;
         bool exists(const JDObject& obj) const;
@@ -46,6 +47,6 @@ namespace JsonDatabase
     private:
         std::vector<JDObject> m_objectVector;
         std::unordered_map<JDObjectID::IDType, JDObject> m_objectMap;
-        std::unordered_map<JDObjectInterface*, JDObject> m_objectPtrMap;
+        std::unordered_map<const JDObjectInterface*, JDObject> m_objectPtrMap;
     };
 }

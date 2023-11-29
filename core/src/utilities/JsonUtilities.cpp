@@ -299,7 +299,7 @@ namespace JsonDatabase
                         << "Object: " << json);
                     return false;
                 }
-                objOut = manager.createClone(objOriginal.get(), json, ID);
+                objOut = manager.createClone(clone.get(), json, ID);
                 // objOut = clone->clone(json, ID);
             }
             return true;

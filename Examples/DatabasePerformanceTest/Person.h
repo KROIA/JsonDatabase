@@ -43,14 +43,14 @@ public:
 
 
 
-        instanceCounter++;
-        setObjectID(instanceCounter);
+        //instanceCounter++;
+        //setObjectID(instanceCounter);
     }
     Person()
         : JDObjectInterface()
     {
-        instanceCounter++;
-        setObjectID(instanceCounter);
+       // instanceCounter++;
+       // setObjectID(instanceCounter);
     }
     ~Person()
     {
@@ -131,7 +131,7 @@ private:
     std::string martialStatus;
 
 
-    static size_t instanceCounter;
+    //static size_t instanceCounter;
 };
 
 JD_OBJECT_IMPL(Person);
@@ -139,12 +139,12 @@ JD_OBJECT_IMPL(Person);
 Person::Person(const Person& other)
     : JDObjectInterface(other)
 {
-    instanceCounter++;
+    //instanceCounter++;
     *this = other;
 }
 
 
-size_t Person::instanceCounter = 0;
+//size_t Person::instanceCounter = 0;
 
 
 std::vector<JDObjectInterface*> createPersons()

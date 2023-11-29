@@ -111,12 +111,14 @@ namespace JsonDatabase
     }
     bool JDObjectContainer::removeObject(const JDObject& obj)
     {
-        if(!obj)
+        if(!obj.get())
 			return false;
         
         auto it = m_objectPtrMap.find(obj.get());
         if (it == m_objectPtrMap.end())
             return false;
+
+        m_objectPtrMap.erase(it);
 
         JDObjectIDptr id = obj->getObjectID();
         auto it2 = m_objectMap.find(id->get());
@@ -125,11 +127,13 @@ namespace JsonDatabase
         auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
         m_objectVector.erase(it3);
 
+        
+
         return true;
     }
     bool JDObjectContainer::removeObject(const std::vector<JDObject>& objs)
     {
-        if (!objs.size() == 0)
+        if (objs.size() == 0)
             return true;
 
         for (auto& obj : objs) {
@@ -147,7 +151,7 @@ namespace JsonDatabase
         return true;
     }
 
-    const JDObject &JDObjectContainer::getObjectByID(const JDObjectIDptr &id) 
+    JDObject JDObjectContainer::getObjectByID(const JDObjectIDptr &id) 
     {
         auto it = m_objectMap.find(id->get());
         if (it != m_objectMap.end()) 
@@ -156,7 +160,7 @@ namespace JsonDatabase
         }
         return nullptr;
     }
-    const JDObject& JDObjectContainer::getObjectByID(const JDObjectID::IDType& id)
+    JDObject JDObjectContainer::getObjectByID(const JDObjectID::IDType& id)
     {
         auto it = m_objectMap.find(id);
         if (it != m_objectMap.end())
@@ -165,16 +169,25 @@ namespace JsonDatabase
         }
         return nullptr;
     }
+    JDObject JDObjectContainer::getObjectByPtr(const JDObjectInterface* obj)
+    {
+        auto it = m_objectPtrMap.find(obj);
+        if (it != m_objectPtrMap.end())
+        {
+			return it->second;
+		}
+		return nullptr;
+    }
 
-    const std::vector<JDObject>& JDObjectContainer::getAllObjects() const 
+    std::vector<JDObject> JDObjectContainer::getAllObjects() const 
     {
         return m_objectVector;
     }
-    const std::unordered_map<JDObjectID::IDType, JDObject>& JDObjectContainer::getAllObjectsIDMap() const
+    std::unordered_map<JDObjectID::IDType, JDObject> JDObjectContainer::getAllObjectsIDMap() const
     {
         return m_objectMap;
     }
-    const std::unordered_map<JDObjectInterface*, JDObject>& JDObjectContainer::getAllObjectsPtrMap() const
+    std::unordered_map<const JDObjectInterface*, JDObject> JDObjectContainer::getAllObjectsPtrMap() const
     {
         return m_objectPtrMap;
     }
