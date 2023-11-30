@@ -10,8 +10,7 @@
 
 namespace JsonDatabase
 {
-	using JDObjectIDptr = std::shared_ptr<JDObjectID>;
-
+	
 	class JSONDATABASE_EXPORT JDObjectID
 	{
 		friend JDObjectIDDomain;

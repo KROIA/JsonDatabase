@@ -121,12 +121,6 @@ void MainWindow::on_saveDatabase_pushButton_clicked()
 void MainWindow::on_addObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	JsonDatabase::JDObjectID::IDType id = ui.id_lineEdit->text().toInt();
-	if (id > 0)
-	{
-		DEBUG << "id is empty\n";
-		return;
-	}
 	JDderivedObject<Person> p(new Person("Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4"));
 	
 	if (!m_manager->addObject(p))

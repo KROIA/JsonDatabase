@@ -20,29 +20,16 @@ namespace JsonDatabase
 {
     
     
-    // Create a template alias for derived classes of Object
-    template<typename T>
-    using JDderivedObject = std::enable_if_t<std::is_base_of<JDObjectInterface, T>::value, std::shared_ptr<T>>;
-
+    
     
 class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 {
         friend JDManager;
         friend Internal::JDManagerObjectManager;
         friend Internal::JsonUtilities;
+        friend Internal::JDObjectManager;
 
         friend class AutoObjectAddToRegistry;
-
-        
-
-
-        virtual JDObjectInterface* clone_internal() const = 0;
-#ifdef JD_USE_QJSON
-        virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectIDptr& uniqueID) const = 0;
-#else
-        virtual JDObjectInterface* clone_internal(const JsonValue& obj, const JDObjectIDptr& uniqueID) const = 0;
-#endif
-
 
     public:
         JDObjectInterface();
@@ -55,7 +42,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         // Creates a copy of the original object as a new instance
         //static std::vector<JDObject> reinstantiate(const std::vector<JDObject> &objList);
 #ifdef JD_USE_QJSON
-        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr&objID);
+        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr& objID);
 #else
         static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID);
 #endif
@@ -64,14 +51,14 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         bool loadFrom(const JDObject& source);
         bool loadFrom(const JDObjectInterface* source);
 
-
+        bool isManaged() const;
 
 
         virtual const std::string& className() const = 0;
 
-        const JDObjectIDptr getObjectID() const;
+        JDObjectIDptr getObjectID() const;
     protected:
-        void setObjectID(const JDObjectIDptr&id);
+        //void setObjectID(const JDObjectIDptr&id);
 
 #ifdef JD_USE_QJSON
         bool equalData(const QJsonObject &obj) const;
@@ -95,7 +82,19 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
     private:
 
-        JDObjectIDptr m_objID;
+        void setManager(Internal::JDObjectManager* manager);
+
+        virtual JDObjectInterface* clone_internal() const = 0;
+#ifdef JD_USE_QJSON
+        virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectIDptr& uniqueID) const = 0;
+#else
+        virtual JDObjectInterface* clone_internal(const JsonValue& obj, const JDObjectIDptr& uniqueID) const = 0;
+#endif
+
+
+
+        Internal::JDObjectManager* m_manager;
+        //JDObjectIDptr m_objID;
         //Signal<const JDObjectInterface*> m_onDelete;
 
     public:

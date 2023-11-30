@@ -8,6 +8,12 @@
 #include <vector>
 #include <mutex>
 
+#ifdef JD_USE_QJSON
+#include <QJsonObject>
+#else
+#include <json/JsonValue.h>
+#endif
+
 namespace JsonDatabase
 {
     namespace Internal
@@ -78,20 +84,26 @@ namespace JsonDatabase
 
             bool objectIDIsValid(const JDObjectIDptr& id) const;
             bool objectIDIsValid(const JDObject& obj) const;
-            void checkObjectIDAndFix_internal(const JDObject& obj);
-            void newObjectInstantiated_internal(const JDObject& obj);
+            //void checkObjectIDAndFix_internal(const JDObject& obj);
+            //void newObjectInstantiated_internal(const JDObject& obj);
+            bool packAndAddObject_internal(const JDObject& obj);
+            bool packAndAddObject_internal(const std::vector<JDObject> &objs);
 
-            bool addObject_internal(const JDObject& obj);
-            bool addObject_internal(const std::vector<JDObject>& objs);
+            //bool addObject_internal(JDObjectManager *obj);
+            //bool addObject_internal(const std::vector<JDObjectManager*>& objs);
             JDObject replaceObject_internal(const JDObject& obj);
             void replaceObject_internal(const std::vector<JDObject>& objs);
             bool removeObject_internal(const JDObject& obj);
             bool removeObject_internal(const std::vector<JDObject>& objs);
             bool exists_internal(const JDObject& obj) const;
             bool exists_internal(const JDObjectIDptr& id) const;
+
             JDObject getObject_internal(const JDObjectIDptr& id);
             JDObject getObject_internal(const JDObjectID::IDType& id);
             std::vector<JDObject> getObjects_internal() const;
+            JDObjectManager* getObjectManager_internal(const JDObjectIDptr& id);
+            JDObjectManager* getObjectManager_internal(const JDObjectID::IDType& id);
+            std::vector<JDObjectManager*> getObjectManagers_internal() const;
             void clearObjects_internal();
 
             //void onObjectGotDeleted(const JDObjectInterface* obj);

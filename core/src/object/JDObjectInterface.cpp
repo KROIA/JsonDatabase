@@ -1,7 +1,10 @@
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
-#include <QVariant>
+#include "object/JDObjectManager.h"
 
+#ifdef JD_USE_QJSON
+#include <QVariant>
+#endif
 
 namespace JsonDatabase
 {
@@ -27,7 +30,8 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 
 
 JDObjectInterface::JDObjectInterface()
-    : m_objID(nullptr)
+    : m_manager(nullptr)
+    //, m_objID(nullptr)
   //  , m_onDelete("onDelete")
 {
 
@@ -38,7 +42,8 @@ JDObjectInterface::JDObjectInterface()
 
 }*/
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
-    : m_objID(other.m_objID)
+    : m_manager(nullptr)
+  //  , m_objID(other.m_objID)
    // , m_onDelete("onDelete")
 {
 
@@ -47,9 +52,9 @@ JDObjectInterface::~JDObjectInterface()
 {
  //   m_onDelete.emitSignal(this);
 #ifdef JD_DEBUG
-    if (JDObjectID::isValid(m_objID))
+    if (JDObjectID::isValid(getObjectID()))
     {
-        JD_CONSOLE("Delete object with ID: " << m_objID->get());
+        JD_CONSOLE("Delete object with ID: " << getObjectID()->get());
     }
     else
     {
@@ -127,14 +132,21 @@ bool JDObjectInterface::loadFrom(const JDObjectInterface* source)
     return success;
 }
 
-const JDObjectIDptr JDObjectInterface::getObjectID() const
+bool JDObjectInterface::isManaged() const
 {
-    return m_objID;
+	return m_manager != nullptr;
 }
-void JDObjectInterface::setObjectID(const JDObjectIDptr& id)
+
+JDObjectIDptr JDObjectInterface::getObjectID() const
+{
+    if(m_manager)
+        return m_manager->getID();
+    return nullptr;
+}
+/*void JDObjectInterface::setObjectID(const JDObjectIDptr& id)
 {
     m_objID = id;
-}
+}*/
 
 #ifdef JD_USE_QJSON
 bool JDObjectInterface::equalData(const QJsonObject& obj) const
@@ -262,5 +274,11 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
     }
     return ret;
 #endif
+}
+
+
+void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
+{
+	m_manager = manager;
 }
 }

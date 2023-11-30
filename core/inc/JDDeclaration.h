@@ -12,12 +12,19 @@ namespace JsonDatabase
     typedef std::shared_ptr<JDObjectInterface> JDObject;
     // Pair of JDObjectInterface objects which have the same ID
     typedef std::pair<JDObject, JDObject> JDObjectPair;
+    // Create a template alias for derived classes of Object
+    template<typename T>
+    using JDderivedObject = std::enable_if_t<std::is_base_of<JDObjectInterface, T>::value, std::shared_ptr<T>>;
+
 
     class JDObjectID;
+    using JDObjectIDptr = std::shared_ptr<JDObjectID>;
+
+
     class JDObjectIDDomainInterface;
     class JDObjectIDDomain;
 
-    class JDObjectContainer;
+    
 
     
     
@@ -33,6 +40,19 @@ namespace JsonDatabase
         class JDManagerSignals;
         class JDObjectLocker;
 
+        class JDObjectContainer;
+        class JDObjectManager;
+        enum Lockstate
+        {
+            locked,
+            unlocked
+        };
+        enum ChangeState
+        {
+			changed,
+			unchanged
+		};
+
         class JDManagerAsyncWorker;
         class JDManagerAysncWork;
         class WorkProgress;
@@ -43,6 +63,8 @@ namespace JsonDatabase
             saveSingleObject,
             saveAllObjects
         };
+
+
 
         class JDManagerAysncWorkLoadAllObjects;
         class JDManagerAysncWorkLoadSingleObject;
