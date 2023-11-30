@@ -159,23 +159,23 @@ namespace JsonDatabase
         bool JDManagerObjectManager::addObject_internal(const JDObject & obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+            //obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             return m_objs.addObject(obj);
         }
         bool JDManagerObjectManager::addObject_internal(const std::vector<JDObject>& objs)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            for(auto obj : objs)
-                obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+            //for(auto obj : objs)
+            //    obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             return m_objs.addObject(objs);
         }
         JDObject JDManagerObjectManager::replaceObject_internal(const JDObject & obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+            //obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             JDObject replacedObj = m_objs.replaceObject(obj);
-            if(replacedObj.get())
-                replacedObj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+            //if(replacedObj.get())
+            //    replacedObj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             return replacedObj;
         }
         void JDManagerObjectManager::replaceObject_internal(const std::vector<JDObject>& objs)
@@ -183,23 +183,23 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             for (size_t i = 0; i < objs.size(); ++i)
             {
-                objs[i]->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+                //objs[i]->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
                 JDObject replacedObj = m_objs.replaceObject(objs[i]);
-                if (replacedObj.get())
-                    replacedObj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+                //if (replacedObj.get())
+                //    replacedObj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             }
         }
         bool JDManagerObjectManager::removeObject_internal(const JDObject & obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            obj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+            //obj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             return m_objs.removeObject(obj);
         }
         bool JDManagerObjectManager::removeObject_internal(const std::vector<JDObject>& objs)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            for (auto obj : objs)
-				obj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
+            //for (auto obj : objs)
+			//	obj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             return m_objs.removeObject(objs);
         }
         bool JDManagerObjectManager::exists_internal(const JDObject & obj) const
@@ -232,14 +232,14 @@ namespace JsonDatabase
             m_objs.clear();
         }
 
-        void JDManagerObjectManager::onObjectGotDeleted(const JDObjectInterface* obj)
+        /*void JDManagerObjectManager::onObjectGotDeleted(const JDObjectInterface* obj)
         {
             JDObject sharedObj = m_objs.getObjectByPtr(obj);
             bool success = false;
             if(sharedObj.get())
                 success = removeObject(sharedObj);
             sharedObj.reset();
-        }
+        }*/
 
         void JDManagerObjectManager::update()
         {

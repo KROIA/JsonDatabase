@@ -26,14 +26,14 @@ int main(int argc, char *argv[])
     //manager.addObjectDefinition<A>();
     //manager.addObjectDefinition<B>();
     //manager.addObjectDefinition<C>();
-    A* a1 = new A(0);
-    A* a2 = new A(1);
+    JDObject a1(new A());
+    JDObject a2(new A());
 
-    B* b1 = new B(2);
-    B* b2 = new B(3);
+    JDObject b1(new B());
+    JDObject b2(new B());
 
-    C* c1 = new C(4);
-    C* c2 = new C(5);
+    JDObject c1(new C());
+    JDObject c2(new C());
 
     manager.getSignals().connect_onSaveObjectsDone_slot(&onSaveCallback);
 
@@ -64,8 +64,8 @@ int main(int argc, char *argv[])
     //manager2.addObjectDefinition<C>();
     manager2.loadObjects();
     qDebug() << "Objects loaded: " << manager2.getObjectCount();
-    std::vector<JDObjectInterface*> objs1 = manager.getObjects();
-    std::vector<JDObjectInterface*> objs2 = manager2.getObjects();
+    std::vector<JDObject> objs1 = manager.getObjects();
+    std::vector<JDObject> objs2 = manager2.getObjects();
 
     return a.exec();
 }

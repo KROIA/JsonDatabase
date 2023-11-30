@@ -28,7 +28,7 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 
 JDObjectInterface::JDObjectInterface()
     : m_objID(nullptr)
-    , m_onDelete("onDelete")
+  //  , m_onDelete("onDelete")
 {
 
 }
@@ -39,13 +39,13 @@ JDObjectInterface::JDObjectInterface()
 }*/
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
     : m_objID(other.m_objID)
-    , m_onDelete("onDelete")
+   // , m_onDelete("onDelete")
 {
 
 }
 JDObjectInterface::~JDObjectInterface()
 {
-    m_onDelete.emitSignal(this);
+ //   m_onDelete.emitSignal(this);
 #ifdef JD_DEBUG
     if (JDObjectID::isValid(m_objID))
     {
@@ -189,7 +189,7 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     
 #ifdef JD_USE_QJSON
-    if(!obj.contains(s_tag_objID)
+    if(!obj.contains(s_tag_objID))
         return false;
     QJsonObject data;
     bool success = getJsonValue(obj, data, s_tag_data);
@@ -198,7 +198,7 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
         JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
         success &= load(data);
     }
-    setObjectID(obj[s_tag_objID].toInt());
+    //setObjectID(obj[s_tag_objID].toInt());
     return success;
 #else
     if (!obj.contains(s_tag_objID))

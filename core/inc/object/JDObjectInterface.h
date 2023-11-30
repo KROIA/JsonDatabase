@@ -38,7 +38,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 
         virtual JDObjectInterface* clone_internal() const = 0;
 #ifdef JD_USE_QJSON
-        virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectID& uniqueID) const = 0;
+        virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectIDptr& uniqueID) const = 0;
 #else
         virtual JDObjectInterface* clone_internal(const JsonValue& obj, const JDObjectIDptr& uniqueID) const = 0;
 #endif
@@ -96,7 +96,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     private:
 
         JDObjectIDptr m_objID;
-        Signal<const JDObjectInterface*> m_onDelete;
+        //Signal<const JDObjectInterface*> m_onDelete;
 
     public:
 #ifdef JD_USE_QJSON
@@ -177,7 +177,8 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     } \
     classNameVal* classNameVal::clone_internal(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
     { \
-        classNameVal* obj = new classNameVal(uniqueID); \
+        classNameVal* obj = new classNameVal(); \
+        obj->setObjectID(uniqueID); \
         obj->loadInternal(reader); \
         return obj; \
     } 

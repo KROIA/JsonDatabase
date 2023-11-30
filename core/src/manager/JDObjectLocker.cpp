@@ -635,7 +635,7 @@ namespace JsonDatabase
 						return false;
 					}
 					QJsonObject lock = value.toObject();
-					if (!obj.get()ectLockData::isValid(lock))
+					if (!ObjectLockData::isValid(lock))
 					{
 						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString().toStdString().c_str() << " is has missing or corrupt data\n");
 						err = Error::corruptTableData;

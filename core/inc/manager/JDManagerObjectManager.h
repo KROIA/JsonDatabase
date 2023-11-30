@@ -27,20 +27,20 @@ namespace JsonDatabase
             std::shared_ptr<T> createInstance(Args&&... args);
 
             template<typename T>
-            std::shared_ptr<T> createClone(const T* source);
+            std::shared_ptr<T> createClone(const std::shared_ptr<T> &source);
 
             template<typename T>
 #ifdef JD_USE_QJSON
-            std::shared_ptr<T> createClone(const T* source, const QJsonObject& data);
+            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data);
 #else
-            std::shared_ptr<T> createClone(const T* source, const JsonValue& data);
+            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data);
 #endif
 
             template<typename T>
 #ifdef JD_USE_QJSON
-            std::shared_ptr<T> createClone(const T* source, const QJsonObject& data, const JDObjectIDptr &id);
+            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr &id);
 #else
-            std::shared_ptr<T> createClone(const T* source, const JsonValue& data, const JDObjectIDptr& id);
+            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id);
 #endif
             
             bool addObject(JDObject obj);
@@ -95,7 +95,7 @@ namespace JsonDatabase
             std::vector<JDObject> getObjects_internal() const;
             void clearObjects_internal();
 
-            void onObjectGotDeleted(const JDObjectInterface* obj);
+            //void onObjectGotDeleted(const JDObjectInterface* obj);
 
             void update();
 
@@ -122,7 +122,7 @@ namespace JsonDatabase
         }
 
         template<typename T>
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const T* source)
+        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source)
         {
             T* cloned = dynamic_cast<T*>(source->clone_internal());
 			std::shared_ptr<T> clone(cloned);
@@ -134,9 +134,9 @@ namespace JsonDatabase
         
         template<typename T>
 #ifdef JD_USE_QJSON
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const T* source, const QJsonObject& data)
+        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data)
 #else
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const T* source, const JsonValue& data)
+        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data)
 #endif
         {
             T* cloned = dynamic_cast<T*>(source->clone_internal(data));
@@ -149,9 +149,9 @@ namespace JsonDatabase
         }
         template<typename T>
 #ifdef JD_USE_QJSON
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const T* source, const QJsonObject& data, const JDObjectIDptr& id)
+        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr& id)
 #else
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const T* source, const JsonValue& data, const JDObjectIDptr& id)
+        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id)
 #endif
         {
             T* cloned = dynamic_cast<T*>(source->clone_internal(data, id));

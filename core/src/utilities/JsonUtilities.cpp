@@ -135,45 +135,6 @@ namespace JsonDatabase
             serializedOut = bytes.constData();
             return true;
         }
-        bool JsonUtilities::deserializeJson(const QJsonObject& json, JDObject objOriginal, JDObject& objOut, JDObjectIDDomain& idDomain)
-        {
-            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
-            if (objOriginal)
-            {
-                JDObjectID ID;
-                JDObjectID::IDType id;
-                JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
-                if (objOriginal->equalData(json))
-                {
-                    ID = idDomain.getExistingID(id);
-                    objOut = objOriginal;
-                   // objOriginal->setVersion(json); // Update version value from loaded object
-                }
-                else
-                {
-                    objOut = objOriginal->clone(json, ID);
-                }
-            }
-            else
-            {
-                JDObject clone = JDObjectRegistry::getObjectDefinition(json);
-                if (!clone)
-                {
-                    std::string className;
-                    JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className);
-
-                    JD_CONSOLE_FUNCTION("Objecttype: " << className.c_str() << " is not known by this database. "
-                        "Call: addObjectDefinition<" << className.c_str() << ">(); first\n");
-                    return false;
-                }
-
-                JDObjectID ID;
-                JDSerializable::getJsonValue(json, ID, JDObjectInterface::s_tag_objID);
-
-                objOut = clone->clone(json, ID);
-            }
-            return true;
-        }
 #endif
 
 #ifdef JD_USE_QJSON
@@ -220,19 +181,30 @@ namespace JsonDatabase
             serializedOut = JsonValue(data).serialize();
             return true;
         }
+#endif
+
+#ifndef JD_USE_QJSON
         bool JsonUtilities::deserializeJson(
             const JsonValue& json, 
             JDObject objOriginal, 
             JDObject& objOut,
             JDObjectIDDomain& idDomain,
             JDManager& manager)
+#else
+        bool JsonUtilities::deserializeJson(const QJsonObject& json, JDObject objOriginal,
+            JDObject& objOut, JDObjectIDDomain& idDomain, JDManager& manager)
+#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
             if (objOriginal)
             {
                 JDObjectIDptr ID;
                 JDObjectID::IDType id;
+#ifndef JD_USE_QJSON
                 if (json.getInt(id, JDObjectInterface::s_tag_objID))
+#else
+                if (JDSerializable::getJsonValue(json, id, JDObjectInterface::s_tag_objID))
+#endif
                 {
                     //ID = id;
                     ID = idDomain.getExistingID(id);
@@ -244,9 +216,14 @@ namespace JsonDatabase
                 }
                 else
                 {
+#ifndef JD_USE_QJSON
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \"" 
                     						<< JDObjectInterface::s_tag_objID << "\" is missed\n" 
                     						<< "Object: " << json);
+#else
+                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
+                        << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
+#endif
                     return false;
                 }
                 if (objOriginal->equalData(json))
@@ -266,11 +243,20 @@ namespace JsonDatabase
                 if (!clone)
                 {
                     std::string className;
+#ifndef JD_USE_QJSON
                     if (!json.getString(className, JDObjectInterface::s_tag_className))
+#else
+                    if(!JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
+#endif
                     {
+#ifndef JD_USE_QJSON
                         JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                             <<JDObjectInterface::s_tag_className<< "\" is missed\n" 
                             <<"Object: "<<json);
+#else
+                        JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
+                            << JDObjectInterface::s_tag_className.toStdString() << "\" is missed\n");
+#endif
                         return false;
                     }
 
@@ -281,7 +267,11 @@ namespace JsonDatabase
 
                 JDObjectIDptr ID;
                 JDObjectID::IDType id;
+#ifndef JD_USE_QJSON
                 if (json.getInt(id, JDObjectInterface::s_tag_objID))
+#else
+                if(JDSerializable::getJsonValue(json, id, JDObjectInterface::s_tag_objID))
+#endif
                 {
                     //ID = id;
                     bool success;
@@ -294,9 +284,14 @@ namespace JsonDatabase
                 }
                 else
                 {
+#ifndef JD_USE_QJSON
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID << "\" is missed\n"
                         << "Object: " << json);
+#else
+                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
+                        << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
+#endif
                     return false;
                 }
                 objOut = manager.createClone(clone.get(), json, ID);
@@ -305,6 +300,5 @@ namespace JsonDatabase
             return true;
         }
 
-#endif
 	}
 }

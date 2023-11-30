@@ -49,11 +49,11 @@ JDManager* manager5 = nullptr;
 
 using namespace JsonDatabase;
 
-std::vector<JDObjectInterface*> globalTable;
+std::vector<JDObject> globalTable;
 
-bool compareTables(const std::vector<JDObjectInterface*>& t1, const std::vector<JDObjectInterface*>& t2);
-bool lockRandomPerson(JDManager *manager, JDObjectInterface*& obj);
-bool unlockPerson(JDManager* manager, JDObjectInterface*& obj);
+bool compareTables(const std::vector<JDObject>& t1, const std::vector<JDObject>& t2);
+bool lockRandomPerson(JDManager *manager, JDObject& obj);
+bool unlockPerson(JDManager* manager, JDObject& obj);
 
 int main(int argc, char* argv[])
 {
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     globalTable = createPersons();
 
 #ifdef CONCURENT_TEST
-    JDManager::startProfiler();
+    JsonDatabase::Profiler::startProfiler();
 
     manager1 = new JDManager("database", "Persons", "sessionID1", "USER 1");
     manager2 = new JDManager("database", "Persons", "sessionID2", "USER 2");
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
     manager4->enableZipFormat(USE_ZIP_FORMAT);
     manager5->enableZipFormat(USE_ZIP_FORMAT);
 
-    JDObjectInterface::reinstantiate(globalTable);
+    
 
     manager1->addObject(globalTable);
     manager2->addObject(globalTable);
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
     qDebug() << "Tables equal: " << compareTables(createPersons(), manager.getObjects());
 
 #endif
-    JDManager::stopProfiler("Profile.prof");
+    JsonDatabase::Profiler::stopProfiler("Profile.prof");
     
 
     return a.exec();
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 
 
 
-bool compareTables(const std::vector<JDObjectInterface*>& t1, const std::vector<JDObjectInterface*>& t2)
+bool compareTables(const std::vector<JDObject>& t1, const std::vector<JDObject>& t2)
 {
     if (t1.size() != t2.size())
         return false;
@@ -178,12 +178,12 @@ bool compareTables(const std::vector<JDObjectInterface*>& t1, const std::vector<
     size_t matchCount = 0;
     for (size_t i = 0; i < t1.size(); ++i)
     {
-        Person* p1 = dynamic_cast<Person*>(t1[i]);
+        Person* p1 = dynamic_cast<Person*>(t1[i].get());
         if (!p1)
             return false;
         for (size_t j = 0; j < t2.size(); ++j)
         {
-            Person* p2 = dynamic_cast<Person*>(t2[j]);
+            Person* p2 = dynamic_cast<Person*>(t2[j].get());
             if (!p2)
                 return false;
 
@@ -199,14 +199,14 @@ bool compareTables(const std::vector<JDObjectInterface*>& t1, const std::vector<
 
     return true;
 }
-bool lockRandomPerson(JDManager* manager, JDObjectInterface*& obj)
+bool lockRandomPerson(JDManager* manager, JDObject& obj)
 {
     mutex.lock();
     if (obj == nullptr)
     {
         //int randomIndex = rand() % globalTable.size();
         int randomIndex = 100;
-        JDObjectInterface* target = globalTable[randomIndex];
+        JDObject target = globalTable[randomIndex];
         JsonDatabase::Internal::JDObjectLocker::Error lastError;
         if (manager->lockObject(target, lastError))
         {
@@ -218,7 +218,7 @@ bool lockRandomPerson(JDManager* manager, JDObjectInterface*& obj)
     mutex.unlock();
     return false;
 }
-bool unlockPerson(JDManager* manager, JDObjectInterface*& obj)
+bool unlockPerson(JDManager* manager, JDObject& obj)
 {
     mutex.lock();
     if (obj != nullptr)
@@ -249,7 +249,7 @@ void threadFunction1() {
     EASY_THREAD("Thread 1");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
-    JDObjectInterface* lockedPerson = nullptr;
+    JDObject lockedPerson = nullptr;
 
     
 
@@ -264,7 +264,7 @@ void threadFunction1() {
        // manager1->loadObjects();
         std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Simulate some work
 
-        JDObjectInterface* obj = nullptr;
+        JDObject obj = nullptr;
         if (doesRemove)
         {
             obj = manager1->getObjects()[0];
@@ -302,7 +302,7 @@ void threadFunction1() {
         {
             if (hasLocked)
             {
-                JDObjectInterface* wasLocked = lockedPerson;
+                JDObject wasLocked = lockedPerson;
                 hasLocked = !unlockPerson(manager1, lockedPerson);
                 if (!hasLocked)
                     std::cout << "Unlocked: " << wasLocked->getObjectID();
@@ -327,17 +327,17 @@ void callback()
 }
 void onObjectRemoved(const JDObjectContainer& list)
 {
-    for(JDObjectInterface* obj : list)
+    for(JDObject obj : list)
         std::cout << "Object removed: " << obj->getObjectID() << "\n";
 }
 void onObjectAdded(const JDObjectContainer& list)
 {
-    for (JDObjectInterface* obj : list)
+    for (JDObject obj : list)
 	    std::cout << "Object added: " << obj->getObjectID() << "\n";
 }
 void onObjectOverrideChange(const JDObjectContainer& list)
 {
-    for (JDObjectInterface* obj : list)
+    for (JDObject obj : list)
         std::cout << "Object override change: " << obj->getObjectID() << "\n";
 }
 void onObjectChange(const std::vector<JDObjectPair>& list)
@@ -349,9 +349,9 @@ void onObjectChange(const std::vector<JDObjectPair>& list)
 // Function for the second thread
 void threadFunction2() {
     EASY_THREAD("Thread 2");
-    JDObjectInterface* obj = globalTable[0];
+    JDObject obj = globalTable[0];
     bool hasLocked = false;
-    JDObjectInterface* lockedPerson = nullptr;
+    JDObject lockedPerson = nullptr;
     auto start = std::chrono::high_resolution_clock::now();
 
     manager2->getSignals().connect_databaseFileChanged_slot(callback);
@@ -378,7 +378,7 @@ void threadFunction2() {
             //EASY_NONSCOPED_BLOCK("test", profiler::colors::DeepPurple900);
             if (hasLocked)
             {
-                JDObjectInterface* wasLocked = lockedPerson;
+                JDObject wasLocked = lockedPerson;
                 hasLocked = !unlockPerson(manager1, lockedPerson);
                 if (!hasLocked)
                     std::cout << "Unlocked: " << wasLocked->getObjectID()<< "\n";
@@ -406,7 +406,7 @@ void threadFunction3() {
     EASY_THREAD("Thread 3");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
-    JDObjectInterface* lockedPerson = nullptr;
+    JDObject lockedPerson = nullptr;
 
     manager3->getSignals().connect_databaseFileChanged_slot([] {
         //manager3->loadObjectsAsync();
@@ -427,7 +427,7 @@ void threadFunction3() {
         {
             if (hasLocked)
             {
-                JDObjectInterface* wasLocked = lockedPerson;
+                JDObject wasLocked = lockedPerson;
                 hasLocked = !unlockPerson(manager1, lockedPerson);
                 if (!hasLocked)
                     std::cout << "Unlocked: " << wasLocked->getObjectID();
@@ -447,7 +447,7 @@ void threadFunction4() {
     EASY_THREAD("Thread 4");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
-    JDObjectInterface* lockedPerson = nullptr;
+    JDObject lockedPerson = nullptr;
 
     manager4->getSignals().connect_databaseFileChanged_slot([] {
         //manager4->loadObjectsAsync(); 
@@ -469,7 +469,7 @@ void threadFunction4() {
         {
             if (hasLocked)
             {
-                JDObjectInterface* wasLocked = lockedPerson;
+                JDObject wasLocked = lockedPerson;
                 hasLocked = !unlockPerson(manager1, lockedPerson);
                 if (!hasLocked)
                     std::cout << "Unlocked: " << wasLocked->getObjectID() << "\n";
@@ -489,7 +489,7 @@ void threadFunction5() {
     EASY_THREAD("Thread 5");
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
-    JDObjectInterface* lockedPerson = nullptr;
+    JDObject lockedPerson = nullptr;
 
     manager5->getSignals().connect_databaseFileChanged_slot([] {
         //manager5->loadObjectsAsync();
@@ -511,7 +511,7 @@ void threadFunction5() {
         {
             if (hasLocked)
             {
-                JDObjectInterface* wasLocked = lockedPerson;
+                JDObject wasLocked = lockedPerson;
                 hasLocked = !unlockPerson(manager1, lockedPerson);
                 if (!hasLocked)
                     std::cout << "Unlocked: " << wasLocked->getObjectID() << "\n";
@@ -533,7 +533,7 @@ void threadFunction5() {
 void collisionChecker() {
     auto start = std::chrono::high_resolution_clock::now();
     bool hasLocked = false;
-    JDObjectInterface* lockedPerson = nullptr;
+    JDObject lockedPerson = nullptr;
 
    // watcher->startWatching();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS+1) {
