@@ -53,9 +53,8 @@ namespace JsonDatabase
             bool removeObjects(const std::vector<JDObject>& objList);
             template<typename T>
             bool removeObjects();
-            template<typename T>
-            
-            bool deleteObjects();
+            //template<typename T>
+            //bool deleteObjects();
             
             template<typename T>
             size_t getObjectCount() const;
@@ -177,7 +176,7 @@ namespace JsonDatabase
         }
 
 
-        template<typename T>
+       /* template<typename T>
         bool JDManagerObjectManager::deleteObjects()
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
@@ -189,7 +188,7 @@ namespace JsonDatabase
                 //delete obj;
             }
             return true;
-        }
+        }*/
 
         template<typename T>
         std::size_t JDManagerObjectManager::getObjectCount() const
@@ -197,7 +196,7 @@ namespace JsonDatabase
             size_t c = 0;
             for (auto& o : m_objs)
             {
-                if (dynamic_cast<T*>(o))
+                if (dynamic_cast<T*>(o.get()))
                     ++c;
             }
             return c;

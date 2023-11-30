@@ -43,8 +43,19 @@ namespace JsonDatabase
             return false;
         const JDObjectIDptr id = obj->getObjectID();
         auto it = m_objectMap.find(id->get());
-        if (exists(obj))
-            return false;
+        if (it != m_objectMap.end())
+        {
+            if (it->second.get() == obj.get())
+            {
+                // Object already added
+                return false;
+            }
+            else
+            {
+                // ID already taken for a different instance
+                return false;
+            }
+        }
         m_objectVector.emplace_back(obj);
         m_objectMap[id->get()] = obj;
         m_objectPtrMap[obj.get()] = obj;
@@ -54,7 +65,9 @@ namespace JsonDatabase
     {
         bool success = true;
         m_objectVector.reserve(m_objectVector.size() + objs.size());
-        //m_objectVector.insert(m_objectVector.end(), objs.begin(), objs.end());
+        m_objectMap.reserve(m_objectMap.size() + objs.size());
+        m_objectPtrMap.reserve(m_objectPtrMap.size() + objs.size());
+
         for (auto it = objs.begin(); it != objs.end(); ++it)
         {
             JDObject obj = *it;
@@ -64,15 +77,24 @@ namespace JsonDatabase
                 continue;
             }
                
-			auto it2 = m_objectPtrMap.find(obj.get());
-			if (it2 != m_objectPtrMap.end())
+            JDObjectIDptr id = obj->getObjectID();
+			auto it2 = m_objectMap.find(id->get());
+			if (it2 != m_objectMap.end())
 			{
 				success = false;
+                // Object already added
+                if (it2->second.get() == obj.get())
+                {
+                    // Object already added
+                }
+                else
+                {
+                    // ID already taken for a different instance
+                }
 				continue;
 			}
-			JDObjectIDptr id = obj->getObjectID();
-			m_objectMap[id->get()] = obj;
             m_objectVector.emplace_back(obj);
+			m_objectMap[id->get()] = obj;
             m_objectPtrMap[obj.get()] = obj;
 		}
         return success;

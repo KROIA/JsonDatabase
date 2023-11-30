@@ -233,7 +233,7 @@ namespace JsonDatabase
                 }
                 else
                 {
-                    objOut = manager.createClone(objOriginal.get(), json, ID);
+                    objOut = manager.createClone(objOriginal, json, ID);
                    // objOut = objOriginal->clone(json, ID);
                 }
             }
@@ -294,7 +294,7 @@ namespace JsonDatabase
 #endif
                     return false;
                 }
-                objOut = manager.createClone(clone.get(), json, ID);
+                objOut = manager.createClone(clone, json, ID);
                 // objOut = clone->clone(json, ID);
             }
             return true;
