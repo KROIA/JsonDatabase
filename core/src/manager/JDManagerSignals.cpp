@@ -42,10 +42,10 @@ namespace JsonDatabase
 
         DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseFileChanged, )
         DEFINE_SIGNAL_CONNECT_DISCONNECT(lockedObjectsChanged, )
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectRemovedFromDatabase, const JDObjectContainer&)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const JDObjectContainer&)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectRemovedFromDatabase, const std::vector<JDObject>&)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const std::vector<JDObject>&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectChangedFromDatabase, const std::vector<JDObjectPair>&)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const JDObjectContainer&)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const std::vector<JDObject>&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseOutdated, )
 
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onStartAsyncWork,)
@@ -68,15 +68,19 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK;
             container.reserve(size);
         }
+        size_t JDManagerSignals::ContainerSignal::size() const
+        {
+			return container.size();
+        }
         void JDManagerSignals::ContainerSignal::addObjs(const std::vector<JDObject>& objs)
         {
             JDM_UNIQUE_LOCK;
-            container.addObject(objs);
+            container.insert(container.end(), objs.begin(), objs.end());
         }
         void JDManagerSignals::ContainerSignal::addObj(JDObject obj)
         {
             JDM_UNIQUE_LOCK;
-            container.addObject(obj);
+            container.push_back(obj);
         }
         void JDManagerSignals::ContainerSignal::clear()
         {
@@ -85,7 +89,7 @@ namespace JsonDatabase
         }
         void JDManagerSignals::ContainerSignal::emitSignalIfNotEmpty()
         {
-            JDObjectContainer cpy;
+            std::vector<JDObject> cpy;
             {
                 JDM_UNIQUE_LOCK;
                 cpy = container;
@@ -95,11 +99,11 @@ namespace JsonDatabase
                 return;
             signal.emitSignal(cpy);
         }
-        void JDManagerSignals::ContainerSignal::connectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot)
+        void JDManagerSignals::ContainerSignal::connectSlot(const Signal<const std::vector<JDObject>&>::SlotFunction& slot)
         {
             signal.connectSlot(slot);
         }
-        void JDManagerSignals::ContainerSignal::disconnectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot)
+        void JDManagerSignals::ContainerSignal::disconnectSlot(const Signal<const std::vector<JDObject>&>::SlotFunction& slot)
         {
             signal.disconnectSlot(slot);
         }
@@ -112,6 +116,10 @@ namespace JsonDatabase
         {
             JDM_UNIQUE_LOCK;
 			container.reserve(size);
+        }
+        size_t JDManagerSignals::ObjectChangeSignal::size() const
+        {
+            return container.size();
         }
         void JDManagerSignals::ObjectChangeSignal::addPairs(const std::vector<JDObjectPair>& pairs)
         {

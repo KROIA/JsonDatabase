@@ -46,27 +46,38 @@ namespace JsonDatabase
 
 #ifdef JD_USE_QJSON
         const JDObject& JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
-        {
-            std::string className;
-            if (JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
-            {
-                return getObjectDefinition(className);
-            }
-            static const JDObject nullObj = nullptr;
-            return nullObj;
-        }
 #else
         const JDObject& JDObjectRegistry::getObjectDefinition(const JsonValue& json)
+#endif
         {
             std::string className;
+#ifdef JD_USE_QJSON
+            if (JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
+#else
             if (json.getString(className, JDObjectInterface::s_tag_className))
+#endif
             {
                 return getObjectDefinition(className);
             }
             static const JDObject nullObj = nullptr;
             return nullObj;
         }
+
+#ifdef JD_USE_QJSON
+        std::string JDObjectRegistry::getObjectTypeString(const QJsonObject& json)
+#else
+        std::string JDObjectRegistry::getObjectTypeString(const JsonValue& json)
 #endif
+        {
+            std::string className;
+#ifdef JD_USE_QJSON
+            JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className);
+#else
+            json.getString(className, JDObjectInterface::s_tag_className);
+#endif
+            return className;
+        }
+
         const JDObject& JDObjectRegistry::getObjectDefinition(const std::string& className)
         {
             const std::map<std::string, JDObject>& registry = getRegisteredTypes();

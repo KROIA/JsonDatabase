@@ -182,7 +182,7 @@ namespace JsonDatabase
             return true;
         }
 #endif
-
+/*
 #ifndef JD_USE_QJSON
         bool JsonUtilities::deserializeJson(
             const JsonValue& json, 
@@ -300,5 +300,7 @@ namespace JsonDatabase
             return true;
         }
 
+
+        */
 	}
 }

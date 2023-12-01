@@ -3,7 +3,15 @@
 
 namespace JsonDatabase
 {
-    
+    enum LoadMode
+    {
+        newObjects = 1,
+        changedObjects = 2,
+        removedObjects = 4,
+        allObjects = 7,
+
+        overrideChanges = 8,
+    };
     
     class JDManager;
     class JDSerializable;

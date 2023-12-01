@@ -238,6 +238,11 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
     bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
 
+    const bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
+    const bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
+    const bool hasObjectAddedToDatabaseSlots = m_signals.objectAddedToDatabase.signal.getSlotCount();
+    const bool hasObjectRemovedFromDatabaseSlots = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
+
 
     if (progress) progress->setComment("Reading database file");
 #ifdef JD_USE_QJSON
@@ -257,6 +262,23 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
     if(progress) progress->setProgress(0.2);
 
+
+    std::vector<JDObject> overridingObjs;
+    std::vector<std::pair<JDObjectID::IDType, JDObject>> newObjs;
+    std::vector<JDObject> removedObjs;
+    std::vector<JDObjectPair> pairsForSignal;
+
+    success &= loadObjectsFromJson_internal(*jsons, mode, progress, 
+        hasOverrideChangeFromDatabaseSlots,
+        hasChangeFromDatabaseSlots,
+        hasObjectAddedToDatabaseSlots,
+        hasObjectRemovedFromDatabaseSlots,
+        overridingObjs,
+        newObjs,
+        removedObjs,
+        pairsForSignal);
+
+    /*
     struct Pair
     {
         JDObject objOriginal;
@@ -471,6 +493,8 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         
     }
     else if (progress) progress->addProgress(subProgress);
+    */
+
     JDManagerFileSystem::unlockFile(error);
 
 
@@ -486,7 +510,6 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 		{
             if (pairsForSignal.size())
             {
-                replaceObject_internal(replaceObjs);
                 if (hasChangeFromDatabaseSlots)
                     m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
             }
@@ -496,8 +519,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     {
         if (removedObjs.size())
         {
-            removeObject_internal(removedObjs);
-            if (hasObjectRemovedFromDatabase)
+            if (hasObjectRemovedFromDatabaseSlots)
                 m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
         }
     }
@@ -505,9 +527,12 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     {
         if (newObjs.size())
         {
-            addObject_internal(newObjs);
-            if (hasObjectAddedToDatabase)
-                m_signals.objectAddedToDatabase.addObjs(newObjs);
+            if (hasObjectAddedToDatabaseSlots)
+            {
+                m_signals.objectAddedToDatabase.reserve(m_signals.objectAddedToDatabase.size() + newObjs.size());
+                for(auto& obj : newObjs)
+                    m_signals.objectAddedToDatabase.addObj(obj.second);
+            }
         }
     }
     return success;

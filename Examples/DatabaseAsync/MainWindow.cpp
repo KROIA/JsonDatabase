@@ -357,7 +357,7 @@ void MainWindow::onLockedObjectsChanged()
 	}
 	ui.lockedObjects_label->setText(QString::fromStdString(text));
 }
-void MainWindow::onObjectRemovedFromDatabase(const JsonDatabase::JDObjectContainer& removed)
+void MainWindow::onObjectRemovedFromDatabase(const std::vector<JDObject>& removed)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
@@ -370,7 +370,7 @@ void MainWindow::onObjectRemovedFromDatabase(const JsonDatabase::JDObjectContain
 	}
 	DEBUG_SIMPLE << buffer.c_str();
 }
-void MainWindow::onObjectAddedToDatabase(const JsonDatabase::JDObjectContainer& added)
+void MainWindow::onObjectAddedToDatabase(const std::vector<JDObject>& added)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG;
@@ -391,7 +391,7 @@ void MainWindow::onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDO
 		DEBUG_SIMPLE << "  " << obj.first->getObjectID()->toString().c_str() << "\n";
 	}
 }
-void MainWindow::onObjectOverrideChangeFromDatabase(const JsonDatabase::JDObjectContainer& overwritten)
+void MainWindow::onObjectOverrideChangeFromDatabase(const std::vector<JDObject>& overwritten)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG;

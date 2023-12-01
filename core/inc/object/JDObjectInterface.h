@@ -39,6 +39,11 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
+        JDObject clone() const;
+        template<typename T>
+        std::shared_ptr<T> clone() const;
+        
+
         // Creates a copy of the original object as a new instance
         //static std::vector<JDObject> reinstantiate(const std::vector<JDObject> &objList);
 #ifdef JD_USE_QJSON
@@ -57,6 +62,16 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         virtual const std::string& className() const = 0;
 
         JDObjectIDptr getObjectID() const;
+
+        /*
+            The shallow ID is a backup id for the case the object is unmanaged but was copied from an managed object.
+            This id has a weak bound to the object if it is managed.
+            Always try to use
+            JDObjectIDptr getObjectID() const;
+            to get the id of the object. Only if it returns an empty pointer use
+            const JDObjectID::IDType& getShallowObjectID() const;
+        */
+        const JDObjectID::IDType& getShallowObjectID() const;
     protected:
         //void setObjectID(const JDObjectIDptr&id);
 
@@ -83,17 +98,28 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     private:
 
         void setManager(Internal::JDObjectManager* manager);
+        Internal::JDObjectManager* getManager() const;
 
         virtual JDObjectInterface* clone_internal() const = 0;
 #ifdef JD_USE_QJSON
-        virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectIDptr& uniqueID) const = 0;
+        //virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectIDptr& uniqueID) const = 0;
 #else
-        virtual JDObjectInterface* clone_internal(const JsonValue& obj, const JDObjectIDptr& uniqueID) const = 0;
+        //virtual JDObjectInterface* clone_internal(const JsonValue& obj, const JDObjectIDptr& uniqueID) const = 0;
 #endif
 
 
 
         Internal::JDObjectManager* m_manager;
+
+        /*
+            The shallow ID is a backup id for the case the object is unmanaged but was copied from an managed object.
+            This id has a weak bound to the object if it is managed.
+            Always try to use 
+            JDObjectIDptr getObjectID() const;
+            to get the id of the object. Only if it returns an empty pointer use 
+            const JDObjectID::IDType& getShallowObjectID() const;
+        */
+        JDObjectID::IDType m_shallowID;
         //JDObjectIDptr m_objID;
         //Signal<const JDObjectInterface*> m_onDelete;
 
@@ -111,6 +137,13 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         
 };
 
+template<typename T>
+std::shared_ptr<T> JDObjectInterface::clone() const
+{
+    T* cloned = dynamic_cast<T*>(clone_internal());
+    std::shared_ptr<T> clone(cloned);
+    return clone;
+}
 
 
 
@@ -138,11 +171,11 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 #ifdef JD_USE_QJSON
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* clone_internal() const override; \
-    classNameVal* clone_internal(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override; 
+    //classNameVal* clone_internal(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override; 
 #else
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* clone_internal() const override; \
-    classNameVal* clone_internal(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override;
+    //classNameVal* clone_internal(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override;
 #endif
 
 #define JD_OBJECT_DECL_CLASSNAME(classNameVal) \
@@ -171,31 +204,31 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
     classNameVal* classNameVal::clone_internal() const \
     { \
         classNameVal* c = new classNameVal(*this); \
-        c->setObjectID(this->getObjectID()); \
+       /* c->setObjectID(this->getObjectID()); */ \
         return c; \
     } \
-    classNameVal* classNameVal::clone_internal(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
-    { \
-        classNameVal* obj = new classNameVal(); \
-        obj->setObjectID(uniqueID); \
-        obj->loadInternal(reader); \
-        return obj; \
-    } 
+    //classNameVal* classNameVal::clone_internal(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
+    //{ \
+    //    classNameVal* obj = new classNameVal(); \
+    //    obj->setObjectID(uniqueID); \
+    //    obj->loadInternal(reader); \
+    //    return obj; \
+    //} 
 #else
 #define JD_OBJECT_IMPL_CLONE(classNameVal) \
     classNameVal* classNameVal::clone_internal() const \
     { \
         classNameVal* c = new classNameVal(*this); \
-        c->setObjectID(this->getObjectID()); \
+        /* //c->setObjectID(this->getObjectID()); */ \
         return c; \
     } \
-    classNameVal* classNameVal::clone_internal(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
-    { \
-        classNameVal* obj = new classNameVal(); \
-        obj->setObjectID(uniqueID); \
-        obj->loadInternal(reader); \
-        return obj; \
-    } 
+    //classNameVal* classNameVal::clone_internal(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
+    //{ \
+    //    classNameVal* obj = new classNameVal(); \
+    //    obj->setObjectID(uniqueID); \
+    //    obj->loadInternal(reader); \
+    //    return obj; \
+    //} 
 #endif
 
 #define JD_OBJECT_IMPL_CLASSNAME(classNameVal) \

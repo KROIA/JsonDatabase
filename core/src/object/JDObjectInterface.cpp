@@ -31,6 +31,7 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 
 JDObjectInterface::JDObjectInterface()
     : m_manager(nullptr)
+    , m_shallowID(0)
     //, m_objID(nullptr)
   //  , m_onDelete("onDelete")
 {
@@ -43,6 +44,7 @@ JDObjectInterface::JDObjectInterface()
 }*/
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
     : m_manager(nullptr)
+    , m_shallowID(other.m_shallowID)
   //  , m_objID(other.m_objID)
    // , m_onDelete("onDelete")
 {
@@ -52,15 +54,36 @@ JDObjectInterface::~JDObjectInterface()
 {
  //   m_onDelete.emitSignal(this);
 #ifdef JD_DEBUG
-    if (JDObjectID::isValid(getObjectID()))
+    if (isManaged())
     {
-        JD_CONSOLE("Delete object with ID: " << getObjectID()->get());
+        if (JDObjectID::isValid(getObjectID()))
+        {
+            JD_CONSOLE("Delete managed object with ID: " << getObjectID()->get() << "\n");
+        }
+        else
+        {
+            JD_CONSOLE("Delete managed object with ID: invalid\n");
+        }
     }
     else
     {
-        JD_CONSOLE("Delete object with ID: invalid");
+        if (JDObjectID::isValid(getObjectID()))
+        {
+            JD_CONSOLE("Delete unmanaged object with ID: " << getObjectID()->get() << "\n");
+        }
+        else
+        {
+            JD_CONSOLE("Delete unmanaged object with ID: "<<m_shallowID<<"\n");
+        }
     }
+    
 #endif
+}
+
+JDObject JDObjectInterface::clone() const
+{
+    JDObjectInterface *instance = clone_internal();
+	return JDObject(instance);
 }
 
 /*/
@@ -142,6 +165,10 @@ JDObjectIDptr JDObjectInterface::getObjectID() const
     if(m_manager)
         return m_manager->getID();
     return nullptr;
+}
+const JDObjectID::IDType& JDObjectInterface::getShallowObjectID() const
+{
+    return m_shallowID;
 }
 /*void JDObjectInterface::setObjectID(const JDObjectIDptr& id)
 {
@@ -263,7 +290,13 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
     return ret;
 #else
     obj.reserve(3);
-    obj[s_tag_objID] = getObjectID()->get();
+    JDObjectIDptr id = getObjectID();
+    JDObjectID::IDType idVal = JDObjectID::invalidID;
+    if(id)
+        idVal = id->get();
+    else
+        idVal = m_shallowID;
+    obj[s_tag_objID] = idVal;
     obj[s_tag_className] = className();
     obj[s_tag_data] = JsonObject();
     bool ret;
@@ -279,6 +312,20 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
 
 void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
 {
+    if (m_manager)
+    {
+        if(!manager)
+            m_shallowID = m_manager->getID()->get();
+        else
+            m_shallowID = manager->getID()->get();
+    }
+    else
+        if(manager)
+			m_shallowID = manager->getID()->get();
 	m_manager = manager;
+}
+Internal::JDObjectManager* JDObjectInterface::getManager() const
+{
+    return m_manager;
 }
 }

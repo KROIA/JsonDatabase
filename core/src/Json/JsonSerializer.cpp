@@ -62,7 +62,7 @@ namespace JsonDatabase
     void JsonSerializer::serializeObject(const JsonObject& object, std::string& serializedOut, int& indent)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        JD_JSON_PROFILING_BLOCK("set up");
+        JD_JSON_PROFILING_BLOCK("set up", JD_COLOR_STAGE_3);
         serializedOut = "{";
         std::string spaced = std::string(m_useSpaces, ' ');
         std::string tmp1;
@@ -80,7 +80,7 @@ namespace JsonDatabase
         bool first = true;
 
         JD_JSON_PROFILING_END_BLOCK;
-        JD_JSON_PROFILING_BLOCK("for loop");
+        JD_JSON_PROFILING_BLOCK("for loop", JD_COLOR_STAGE_3);
         for (const auto& pair : object) {
             if (!first) {
                 serializedOut += ",";
@@ -94,7 +94,7 @@ namespace JsonDatabase
             serializedOut += std::move(toAdd);
         }
         JD_JSON_PROFILING_END_BLOCK;
-        JD_JSON_PROFILING_BLOCK("finalize");
+        JD_JSON_PROFILING_BLOCK("finalize", JD_COLOR_STAGE_3);
         if (m_useNewLinesInObjects)
         {
             serializedOut += "\n";

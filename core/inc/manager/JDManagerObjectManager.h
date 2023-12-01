@@ -26,7 +26,7 @@ namespace JsonDatabase
             virtual ~JDManagerObjectManager();
             bool setup();
         public:
-
+            
 
 
             template<typename T, typename... Args>
@@ -42,12 +42,12 @@ namespace JsonDatabase
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data);
 #endif
 
-            template<typename T>
+     /*       template<typename T>
 #ifdef JD_USE_QJSON
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr &id);
 #else
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id);
-#endif
+#endif*/
             
             bool addObject(JDObject obj);
             bool addObject(const std::vector<JDObject>& objList);
@@ -87,7 +87,9 @@ namespace JsonDatabase
             //void checkObjectIDAndFix_internal(const JDObject& obj);
             //void newObjectInstantiated_internal(const JDObject& obj);
             bool packAndAddObject_internal(const JDObject& obj);
+            bool packAndAddObject_internal(const JDObject& obj, const JDObjectID::IDType& presetID);
             bool packAndAddObject_internal(const std::vector<JDObject> &objs);
+            bool packAndAddObject_internal(const std::vector<std::pair<JDObjectID::IDType, JDObject>> &objs);
 
             //bool addObject_internal(JDObjectManager *obj);
             //bool addObject_internal(const std::vector<JDObjectManager*>& objs);
@@ -106,12 +108,35 @@ namespace JsonDatabase
             std::vector<JDObjectManager*> getObjectManagers_internal() const;
             void clearObjects_internal();
 
+#ifdef JD_USE_QJSON
+            bool loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
+                bool hasOverrideChangeFromDatabaseSlots,
+                bool hasChangeFromDatabaseSlots,
+                bool hasObjectAddedToDatabaseSlots,
+                bool hasObjectRemovedFromDatabaseSlots,
+                std::vector<JDObject>& overridingObjs,
+                std::vector<std::pair<JDObjectID::IDType, JDObject>>& newObjs,
+                std::vector<JDObject>& removedObjs,
+                std::vector<JDObjectPair>& changedPairs);
+#else
+            bool loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
+                bool hasOverrideChangeFromDatabaseSlots, 
+                bool hasChangeFromDatabaseSlots,
+                bool hasObjectAddedToDatabaseSlots,
+                bool hasObjectRemovedFromDatabaseSlots,
+                std::vector<JDObject>& overridingObjs,
+                std::vector<std::pair<JDObjectID::IDType, JDObject>>& newObjs,
+                std::vector<JDObject>& removedObjs,
+                std::vector<JDObjectPair>& changedPairs);
+#endif
+
             //void onObjectGotDeleted(const JDObjectInterface* obj);
 
             void update();
 
-            JDObjectIDDomain m_idDomain;
+            
         private:
+            JDObjectIDDomain m_idDomain;
             std::mutex &m_mutex;
 
             mutable std::mutex m_objsMutex;
@@ -150,7 +175,8 @@ namespace JsonDatabase
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data)
 #endif
         {
-            T* cloned = dynamic_cast<T*>(source->clone_internal(data));
+            T* cloned = dynamic_cast<T*>(source->clone_internal());
+            cloned->loadInternal(data);
 			std::shared_ptr<T> clone(cloned);
 
 			//newObjectInstantiated_internal(clone);
@@ -158,7 +184,7 @@ namespace JsonDatabase
 			return clone;
 
         }
-        template<typename T>
+        /*template<typename T>
 #ifdef JD_USE_QJSON
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr& id)
 #else
@@ -172,7 +198,7 @@ namespace JsonDatabase
 
             return clone;
 
-        }
+        }*/
 
 
         template<typename T>

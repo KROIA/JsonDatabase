@@ -28,8 +28,10 @@ namespace JsonDatabase
             static const std::map<std::string, JDObject>& getRegisteredTypes();
 #ifdef JD_USE_QJSON
             static const JDObject& getObjectDefinition(const QJsonObject& json);
+            static std::string getObjectTypeString(const QJsonObject& json);
 #else
             static const JDObject& getObjectDefinition(const JsonValue& json);
+            static std::string getObjectTypeString(const JsonValue& json);
 #endif
             static const JDObject& getObjectDefinition(const std::string& className);
 

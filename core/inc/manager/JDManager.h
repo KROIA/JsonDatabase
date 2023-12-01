@@ -77,15 +77,7 @@ class JSONDATABASE_EXPORT JDManager:
         void loadObjectAsync(const JDObject &obj);
 
 
-        enum LoadMode
-        {
-            newObjects = 1,
-            changedObjects = 2,
-            removedObjects = 4,
-            allObjects = 7,
-
-            overrideChanges = 8,
-        };
+        
         /*
             Loads the objects from the database file.
             New objects are created and added to the database. See signal objectAddedToDatabase.

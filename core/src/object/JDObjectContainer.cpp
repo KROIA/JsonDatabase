@@ -46,7 +46,7 @@ namespace JsonDatabase
             auto it = m_objectMap.find(id->get());
             if (it != m_objectMap.end())
             {
-                if (it->second == obj)
+               /* if (it->second == obj)
                 {
                     // Object already added
                     return false;
@@ -55,7 +55,8 @@ namespace JsonDatabase
                 {
                     // ID already taken for a different instance
                     return false;
-                }
+                }*/
+                return false;
             }
             m_objectVector.emplace_back(obj);
             m_objectMap[id->get()] = obj;
@@ -84,14 +85,14 @@ namespace JsonDatabase
                 {
                     success = false;
                     // Object already added
-                    if (it2->second == obj)
+                   /* if (it2->second == obj)
                     {
                         // Object already added
                     }
                     else
                     {
                         // ID already taken for a different instance
-                    }
+                    }*/
                     continue;
                 }
                 m_objectVector.emplace_back(obj);
@@ -160,19 +161,11 @@ namespace JsonDatabase
             if (objs.size() == 0)
                 return true;
 
+            bool success = true;
             for (auto& obj : objs) {
-                auto it = m_objectPtrMap.find(obj.get());
-                if (it == m_objectPtrMap.end())
-                    continue;
-
-                JDObjectIDptr id = obj->getObjectID();
-                auto it2 = m_objectMap.find(id->get());
-                m_objectMap.erase(it2);
-
-                auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
-                m_objectVector.erase(it3);
+                success &= removeObject(obj->getObjectID());
             }
-            return true;
+            return success;
         }
 
         JDObjectManager* JDObjectContainer::getObjectByID(const JDObjectIDptr& id)
@@ -193,7 +186,7 @@ namespace JsonDatabase
             }
             return nullptr;
         }
-        JDObjectManager* JDObjectContainer::getObjectByPtr(const JDObjectInterface* obj)
+        JDObjectManager* JDObjectContainer::getObjectByPtr(JDObjectInterface* obj)
         {
             auto it = m_objectPtrMap.find(obj);
             if (it != m_objectPtrMap.end())
@@ -211,7 +204,7 @@ namespace JsonDatabase
         {
             return m_objectMap;
         }
-        std::unordered_map<const JDObjectInterface*, JDObjectManager*> JDObjectContainer::getAllObjectsPtrMap() const
+        std::unordered_map<JDObjectInterface*, JDObjectManager*> JDObjectContainer::getAllObjectsPtrMap() const
         {
             return m_objectPtrMap;
         }

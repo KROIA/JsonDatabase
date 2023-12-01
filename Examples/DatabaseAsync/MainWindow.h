@@ -45,10 +45,10 @@ private:
 	// Signals from the manager
 	void onDatabaseFileChanged();
 	void onLockedObjectsChanged();
-	void onObjectRemovedFromDatabase(const JsonDatabase::JDObjectContainer& removed);
-	void onObjectAddedToDatabase(const JsonDatabase::JDObjectContainer& added);
+	void onObjectRemovedFromDatabase(const std::vector<JDObject>& removed);
+	void onObjectAddedToDatabase(const std::vector<JDObject>& added);
 	void onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>&changedPairs);
-	void onObjectOverrideChangeFromDatabase(const JsonDatabase::JDObjectContainer& overwritten);
+	void onObjectOverrideChangeFromDatabase(const std::vector<JDObject>& overwritten);
 	void onDatabaseOutdated();
 
 	void onAsyncWorkStarted();

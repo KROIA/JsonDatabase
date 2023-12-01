@@ -26,12 +26,12 @@ namespace JsonDatabase
             static bool serializeObject(JDObject obj, std::string& serializedOut);
             static bool serializeJson(const QJsonObject& obj, std::string& serializedOut);
 
-            static bool deserializeJson(
+          /*  static bool deserializeJson(
                 const QJsonObject& json, 
                 JDObject objOriginal, 
                 JDObject& objOut, 
                 JDObjectIDDomain& idDomain,
-                JDManager& manager);
+                JDManager& manager);*/
             static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj, bool& hasChangedOut);
             static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj);
 #else
@@ -40,12 +40,12 @@ namespace JsonDatabase
                 WorkProgress* progress, double deltaProgress);
 
             static bool serializeObject(JDObject obj, std::string& serializedOut);
-            static bool deserializeJson(
+          /*  static bool deserializeJson(
                 const JsonValue& json, 
                 JDObject objOriginal, 
                 JDObject& objOut,
                 JDObjectIDDomain& idDomain,
-                JDManager &manager);
+                JDManager &manager);*/
 
             static bool deserializeOverrideFromJson(const JsonValue& json, JDObject obj, bool& hasChangedOut);
             static bool deserializeOverrideFromJson(const JsonValue& json, JDObject obj);

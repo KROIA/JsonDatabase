@@ -14,6 +14,8 @@ namespace JsonDatabase
 			: JDManagerAysncWork(manager, mtx)
 			, m_success(false)
 		{
+			m_objects = objects;
+			
 			m_objects.resize(objects.size());
 			for (size_t i = 0; i < objects.size(); ++i)
 			{

@@ -66,14 +66,14 @@ namespace JsonDatabase
                 currently in this instance contained.
                 The removed objects are removed from this database but not deleted.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(objectRemovedFromDatabase, const JDObjectContainer&)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(objectRemovedFromDatabase, const std::vector<JDObject>&)
 
             /*
                 The objectAddedToDatabase signal gets emited if the database has loaded more objects as
                 currently in this instance contained.
                 The added objects are added to this database.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const JDObjectContainer&)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const std::vector<JDObject>&)
 
             /*
                 The objectChangedFromDatabase signal gets emited if the database has loaded an object with the same id as
@@ -89,7 +89,7 @@ namespace JsonDatabase
                 data into an object which was alreay instantiated in the manager.
                 The signal gets only emited if the object data was different from the data in the database file.
             */
-            DECLARE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const JDObjectContainer&)
+            DECLARE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const std::vector<JDObject>&)
 
             /*
                 The databaseOutdated signal gets emited if the user tries to save the database but the database file
@@ -146,30 +146,31 @@ namespace JsonDatabase
             
             struct ContainerSignal
             {
-                Signal<const JDObjectContainer&> signal;
+                Signal<const std::vector<JDObject>&> signal;
                 
 
                 ContainerSignal(const std::string& name);
                 void reserve(size_t size);
+                size_t size() const;
                 void addObjs(const std::vector<JDObject>& objs);
                 void addObj(JDObject obj);
                 void clear();
                 void emitSignalIfNotEmpty();
 
-                void connectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot);
+                void connectSlot(const Signal<const std::vector<JDObject>&>::SlotFunction& slot);
                 template<typename ObjectType>
-                void connectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const JDObjectContainer&))
+                void connectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const std::vector<JDObject>&))
                 {
                     signal.connectSlot(obj, memberFunc);
                 }
-                void disconnectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot);
+                void disconnectSlot(const Signal<const std::vector<JDObject>&>::SlotFunction& slot);
                 template<typename ObjectType>
-                void disconnectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const JDObjectContainer&))
+                void disconnectSlot(ObjectType* obj, void(ObjectType::* memberFunc)(const std::vector<JDObject>&))
                 {
                     signal.disconnectSlot(obj, memberFunc);
                 }
             private:
-                JDObjectContainer container;
+                std::vector<JDObject> container;
                 std::mutex m_mutex;
             };
             struct ObjectChangeSignal
@@ -179,6 +180,7 @@ namespace JsonDatabase
 
                 ObjectChangeSignal(const std::string& name);
                 void reserve(size_t size);
+                size_t size() const;
                 void addPairs(const std::vector<JDObjectPair>& pairs);
                 void addPair(const JDObjectPair& pair);
                 void clear();

@@ -170,7 +170,7 @@ namespace JsonDatabase
             static size_t getAddress(const SlotFunction& f)
             {
                 typedef void(fnType)(Args...);
-                const fnType* fnPointer = *f.target< fnType>();
+                fnType* fnPointer = *f.target< fnType>();
                 return reinterpret_cast<size_t>(fnPointer);
             }
             

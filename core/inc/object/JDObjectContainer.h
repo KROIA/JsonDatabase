@@ -35,10 +35,10 @@ namespace JsonDatabase
 
             JDObjectManager* getObjectByID(const JDObjectIDptr& id);
             JDObjectManager* getObjectByID(const JDObjectID::IDType& id);
-            JDObjectManager* getObjectByPtr(const JDObjectInterface* obj);
+            JDObjectManager* getObjectByPtr(JDObjectInterface* obj);
             std::vector<JDObjectManager*> getAllObjects() const;
             std::unordered_map<JDObjectID::IDType, JDObjectManager*> getAllObjectsIDMap() const;
-            std::unordered_map<const JDObjectInterface*, JDObjectManager*> getAllObjectsPtrMap() const;
+            std::unordered_map<JDObjectInterface*, JDObjectManager*> getAllObjectsPtrMap() const;
 
             bool exists(const JDObjectIDptr& id) const;
             bool exists(const JDObject& obj) const;
@@ -55,7 +55,7 @@ namespace JsonDatabase
         private:
             std::vector<JDObjectManager*> m_objectVector;
             std::unordered_map<JDObjectID::IDType, JDObjectManager*> m_objectMap;
-            std::unordered_map<const JDObjectInterface*, JDObjectManager*> m_objectPtrMap;
+            std::unordered_map<JDObjectInterface*, JDObjectManager*> m_objectPtrMap;
         };
     }
 }
