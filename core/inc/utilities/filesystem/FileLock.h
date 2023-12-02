@@ -27,7 +27,7 @@ namespace JsonDatabase
                 unableToLock = 3,
                 alreadyLocked = 4,
                 alreadyLockedForReading = 5,
-                alreadyLockedForWriting = 6,
+                alreadyLockedForWritingByOther = 6,
                 alreadyUnlocked = 7,
 
                 lockTimeout = 20,

@@ -22,12 +22,12 @@ namespace JsonDatabase
         {
             //friend class JDManager;
         protected:
-			JDManagerObjectManager(const std::string &domainName, std::mutex &mtx);
+			JDManagerObjectManager(std::mutex &mtx);
             virtual ~JDManagerObjectManager();
             bool setup();
         public:
             
-
+            void setDomainName(const std::string& name);
 
             template<typename T, typename... Args>
             std::shared_ptr<T> createInstance(Args&&... args);

@@ -48,12 +48,11 @@ JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
   //  , m_objID(other.m_objID)
    // , m_onDelete("onDelete")
 {
-    loadFrom(&other);
+    //loadFrom(&other);
 }
 JDObjectInterface::~JDObjectInterface()
 {
- //   m_onDelete.emitSignal(this);
-#ifdef JD_DEBUG
+/*#ifdef JD_DEBUG
     if (isManaged())
     {
         if (JDObjectID::isValid(getObjectID()))
@@ -76,8 +75,7 @@ JDObjectInterface::~JDObjectInterface()
             JD_CONSOLE("Delete unmanaged object with ID: "<<m_shallowID<<"\n");
         }
     }
-    
-#endif
+#endif*/
 }
 
 JDObject JDObjectInterface::deepClone() const
@@ -275,7 +273,13 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
 #ifdef JD_USE_QJSON
-    obj[s_tag_objID] = getObjectID()->get();
+    JDObjectIDptr id = getObjectID();
+    JDObjectID::IDType idVal = JDObjectID::invalidID;
+    if (id)
+        idVal = id->get();
+    else
+        idVal = m_shallowID;
+    obj[s_tag_objID] = idVal;
     obj[s_tag_className] = className().c_str();
     QJsonObject data;
     bool ret;

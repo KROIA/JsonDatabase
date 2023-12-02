@@ -8,9 +8,8 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        JDManagerObjectManager::JDManagerObjectManager(const std::string &domainName, std::mutex& mtx)
+        JDManagerObjectManager::JDManagerObjectManager(std::mutex& mtx)
             : m_mutex(mtx)
-            , m_idDomain(domainName)
         {
 
         }
@@ -22,6 +21,12 @@ namespace JsonDatabase
         {
             return true;
         }
+
+        void JDManagerObjectManager::setDomainName(const std::string& name)
+        {
+			m_idDomain.setName(name);
+        }
+
         
         
         bool JDManagerObjectManager::addObject(JDObject obj)

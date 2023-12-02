@@ -20,10 +20,10 @@ namespace JsonDatabase
 		public:
 			enum Access
 			{
-				read,
-				write,
-				readWrite,
-				unknown
+				unknown = 0,
+				read = 1,
+				write = 2,
+				readWrite = 3,
 			};
 
 			FileReadWriteLock(const std::string& filePath, const std::string& fileName);

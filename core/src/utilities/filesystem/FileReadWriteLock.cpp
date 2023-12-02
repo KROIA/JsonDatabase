@@ -142,7 +142,7 @@ namespace JsonDatabase
             {
                 wasLockedByOtherUserOut = true;
                 // Some are writing, can't read or write
-                return FileLock::Error::alreadyLockedForWriting;
+                return FileLock::Error::alreadyLockedForWritingByOther;
             }
             }
 

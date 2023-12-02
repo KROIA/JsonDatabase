@@ -49,6 +49,13 @@ namespace JsonDatabase
 
 	const JDObjectID::IDType JDObjectIDDomain::s_startID = 1;
 
+	JDObjectIDDomain::JDObjectIDDomain()
+		: m_name("")
+		, m_interface(std::shared_ptr<JDObjectIDDomainInterface>(new JDObjectIDDomainInterface(this)))
+		, m_nextID(s_startID)
+	{
+
+	};
 	JDObjectIDDomain::JDObjectIDDomain(const std::string& name)
 		: m_name(name)
 		, m_interface(std::shared_ptr<JDObjectIDDomainInterface>(new JDObjectIDDomainInterface(this)))

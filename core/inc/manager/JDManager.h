@@ -47,7 +47,6 @@ class JSONDATABASE_EXPORT JDManager:
     public:
         JDManager(const std::string &databasePath,
                   const std::string &databaseName,
-                  //const std::string &sessionID,
                   const std::string &user);
         JDManager(const JDManager &other);
         virtual ~JDManager();
@@ -60,13 +59,7 @@ class JSONDATABASE_EXPORT JDManager:
         */
         Internal::JDManagerSignals& getSignals();
 
-        void setDatabasePath(const std::string& path);
-        void setDatabaseName(const std::string& name);
-
-        const std::string& getDatabaseName() const;
-        const std::string& getDatabasePath() const;
-
-        std::string getDatabaseFilePath() const;
+        
 
         void enableZipFormat(bool enable);
         bool isZipFormatEnabled() const;
@@ -176,8 +169,7 @@ class JSONDATABASE_EXPORT JDManager:
 
         
 
-        std::string m_databasePath;
-        std::string m_databaseName;
+        
         Utilities::JDUser m_user;
 
         mutable std::mutex m_mutex;

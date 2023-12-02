@@ -33,6 +33,7 @@ namespace JsonDatabase
 	class JSONDATABASE_EXPORT JDObjectIDDomain
 	{
 	public:
+		JDObjectIDDomain();
 		JDObjectIDDomain(const std::string &name);
 		JDObjectIDDomain(const JDObjectIDDomain& other) = delete;
 		JDObjectIDDomain(JDObjectIDDomain&& other) = delete;

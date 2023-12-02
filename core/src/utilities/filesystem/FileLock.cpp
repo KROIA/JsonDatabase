@@ -99,7 +99,7 @@ namespace JsonDatabase
             case Error::unableToLock: { static const std::string msg = "FileLock::Error::unableToLock"; return msg; };
             case Error::alreadyLocked: { static const std::string msg = "FileLock::Error::alreadyLocked"; return msg; };
             case Error::alreadyLockedForReading: { static const std::string msg = "FileLock::Error::alreadyLockedForReading"; return msg; };
-            case Error::alreadyLockedForWriting: { static const std::string msg = "FileLock::Error::alreadyLockedForWriting"; return msg; };
+            case Error::alreadyLockedForWritingByOther: { static const std::string msg = "FileLock::Error::alreadyLockedForWritingByOther"; return msg; };
             case Error::alreadyUnlocked: { static const std::string msg = "FileLock::Error::alreadyUnlocked"; return msg; };
 
             case Error::lockTimeout: { static const std::string msg = "FileLock::Error::lockTimeout"; return msg; };

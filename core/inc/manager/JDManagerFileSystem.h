@@ -4,6 +4,8 @@
 #include "JDDeclaration.h"
 #include "utilities/filesystem/FileReadWriteLock.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
+#include "utilities/filesystem/LockedFileAccessor.h"
+
 
 #ifdef JD_USE_QJSON
 #include <QJsonObject>
@@ -20,181 +22,30 @@ namespace JsonDatabase
         {
         protected:
             JDManagerFileSystem(
+                const std::string& databasePath,
+                const std::string& databaseName,
                 JDManager& manager,
                 std::mutex &mtx);
             ~JDManagerFileSystem();
             bool setup();
         public:
-            enum class Error
-            {
-                none = 0,
 
-                // File locking
-                fileLock_unableToCreateOrOpenLockFile = 1,
-                fileLock_unableToDeleteLockFile = 2,
-                fileLock_unableToLock = 3,
-                fileLock_alreadyLocked = 4,
-                fileLock_alreadyLockedForReading = 5,
-                fileLock_alreadyLockedForWriting = 6,
-                fileLock_alreadyUnlocked = 7,
+            void setDatabasePath(const std::string& path);
+            void setDatabaseName(const std::string& name);
 
-                // Json reading/writing
-                json_parseError = 30,
+            const std::string& getDatabaseName() const;
+            const std::string& getDatabasePath() const;
 
-                // File reading/writing
-                file_cantOpenFileForRead = 40,
-                file_cantOpenFileForWrite = 41,
-                file_invalidFileSize = 42,
-                file_cantReadFile = 43,
-                file_cantWriteFile = 44,
-                file_cantVerifyFileContents = 45,
-            };
+            std::string getDatabaseFilePath() const;
 
-        protected:
             static const std::string& getJsonFileEnding();
-
-            bool lockFile(
-                const std::string& directory,
-                const std::string& fileName,
-                FileReadWriteLock::Access direction,
-                bool & wasLockedForWritingByOther,
-                Error &errorOut) const;
-            bool lockFile(
-                const std::string& directory,
-                const std::string& fileName,
-                FileReadWriteLock::Access direction,
-                bool& wasLockedForWritingByOther,
-                unsigned int timeoutMillis,
-                Error& errorOut) const;
-            bool unlockFile(Error& errorOut) const;
-            bool isFileLockedByOther(
-                const std::string& directory,
-                const std::string& fileName,
-                FileReadWriteLock::Access accessType) const;
+        protected:
             
-#ifdef JD_USE_QJSON
-            bool writeJsonFile(
-                const std::vector<QJsonObject>& jsons,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-            bool writeJsonFile(
-                const QJsonObject& json,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
+            void logOnDatabase(std::string &generatedSessionIDOut);
+            void logOffDatabase();
+            bool isLoggedOnDatabase() const;
 
 
-            bool readJsonFile(
-                std::vector<QJsonObject>& jsonsOut,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-            bool readJsonFile(
-                QJsonObject& objOut,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-            /*
-            bool readFile(
-                QByteArray& fileDataOut,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool lockedRead) const;
-            bool writeFile(
-                const QByteArray& fileData,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool lockedRead) const;
-                */
-
-#else
-            bool writeJsonFile(
-                const JsonArray& jsons,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-            bool writeJsonFile(
-                const JsonValue& json,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-
-
-            bool readJsonFile(
-                JsonArray& jsonsOut,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-            bool readJsonFile(
-                JsonValue& objOut,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool zipFormat,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-
-           /* bool readFile(
-                std::string& fileDataOut,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool lockedRead) const;
-            bool writeFile(
-                const std::string& fileData,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool lockedRead) const;*/
-#endif
-            bool readFile(
-                QByteArray& fileDataOut,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
-            bool writeFile(
-                const QByteArray& fileData,
-                const std::string& directory,
-                const std::string& fileName,
-                const std::string& fileEnding,
-                bool lockedRead,
-                Error& errorOut,
-                Internal::WorkProgress* progress) const;
 
             bool makeDatabaseDirs() const;
             bool makeDatabaseFiles() const;
@@ -206,11 +57,23 @@ namespace JsonDatabase
 
             ManagedFileChangeWatcher& getDatabaseFileWatcher();
             void restartDatabaseFileWatcher();
+            class FileWatcherAutoPause
+            {
+            public:
+                FileWatcherAutoPause(ManagedFileChangeWatcher& fs)
+                    : m_fs(fs)
+                { m_fs.pause(); }
+                ~FileWatcherAutoPause()
+                { m_fs.unpause(); }
+            private:
+                ManagedFileChangeWatcher& m_fs;
+            };
 
             void update();
-
-            const std::string& getErrorStr(Error err);
         private:
+            std::string m_databasePath;
+            std::string m_databaseName;
+
             size_t m_slowUpdateCounter;
 
             JDManager& m_manager;
@@ -218,6 +81,10 @@ namespace JsonDatabase
 
             mutable FileReadWriteLock* m_fileLock;
             mutable ManagedFileChangeWatcher m_fileWatcher;
+
+            // This lock file is used to ckeck if an user is still online or not.
+            // If it can be deleted, the user is offline and did not clean up after himself.
+            FileLock *m_databaseLoginFileLock;
 
             static const std::string s_jsonFileEnding;
 
