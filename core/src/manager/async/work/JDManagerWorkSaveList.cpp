@@ -20,7 +20,7 @@ namespace JsonDatabase
 			for (size_t i = 0; i < objects.size(); ++i)
 			{
 				//objects[i]->incrementVersionValue();
-				m_objects[i] = manager.createClone(objects[i]);
+				m_objects[i] = manager.createDeepClone(objects[i]);
 				//m_objects[i] = objects[i]->clone();
 			}
 				

@@ -33,7 +33,9 @@ namespace JsonDatabase
             std::shared_ptr<T> createInstance(Args&&... args);
 
             template<typename T>
-            std::shared_ptr<T> createClone(const std::shared_ptr<T> &source);
+            std::shared_ptr<T> createDeepClone(const std::shared_ptr<T> &source);
+            template<typename T>
+            std::shared_ptr<T> createShallowClone(const std::shared_ptr<T>& source);
 
             template<typename T>
 #ifdef JD_USE_QJSON
@@ -89,7 +91,7 @@ namespace JsonDatabase
             bool packAndAddObject_internal(const JDObject& obj);
             bool packAndAddObject_internal(const JDObject& obj, const JDObjectID::IDType& presetID);
             bool packAndAddObject_internal(const std::vector<JDObject> &objs);
-            bool packAndAddObject_internal(const std::vector<std::pair<JDObjectID::IDType, JDObject>> &objs);
+            bool packAndAddObject_internal(const std::vector<JDObjectID::IDType> &ids, const std::vector<JDObject>& objs);
 
             //bool addObject_internal(JDObjectManager *obj);
             //bool addObject_internal(const std::vector<JDObjectManager*>& objs);
@@ -105,29 +107,42 @@ namespace JsonDatabase
             std::vector<JDObject> getObjects_internal() const;
             JDObjectManager* getObjectManager_internal(const JDObjectIDptr& id);
             JDObjectManager* getObjectManager_internal(const JDObjectID::IDType& id);
-            std::vector<JDObjectManager*> getObjectManagers_internal() const;
+            const std::vector<JDObjectManager*>& getObjectManagers_internal() const;
             void clearObjects_internal();
 
+
+
 #ifdef JD_USE_QJSON
+            bool loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
                 bool hasOverrideChangeFromDatabaseSlots,
                 bool hasChangeFromDatabaseSlots,
                 bool hasObjectAddedToDatabaseSlots,
                 bool hasObjectRemovedFromDatabaseSlots,
                 std::vector<JDObject>& overridingObjs,
-                std::vector<std::pair<JDObjectID::IDType, JDObject>>& newObjs,
+                std::vector<JDObjectID::IDType>& newObjIDs,
+                std::vector<JDObject>& newObjInstances,
                 std::vector<JDObject>& removedObjs,
                 std::vector<JDObjectPair>& changedPairs);
 #else
+            bool loadObjectFromJson_internal(const JsonValue& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
                 bool hasOverrideChangeFromDatabaseSlots, 
                 bool hasChangeFromDatabaseSlots,
                 bool hasObjectAddedToDatabaseSlots,
                 bool hasObjectRemovedFromDatabaseSlots,
                 std::vector<JDObject>& overridingObjs,
-                std::vector<std::pair<JDObjectID::IDType, JDObject>>& newObjs,
+                std::vector<JDObjectID::IDType>& newObjIDs,
+                std::vector<JDObject>& newObjInstances,
                 std::vector<JDObject>& removedObjs,
                 std::vector<JDObjectPair>& changedPairs);
+#endif
+
+
+#ifdef JD_USE_QJSON
+
+#else
+
 #endif
 
             //void onObjectGotDeleted(const JDObjectInterface* obj);
@@ -158,9 +173,19 @@ namespace JsonDatabase
         }
 
         template<typename T>
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source)
+        std::shared_ptr<T> JDManagerObjectManager::createDeepClone(const std::shared_ptr<T>& source)
         {
-            T* cloned = dynamic_cast<T*>(source->clone_internal());
+            T* cloned = dynamic_cast<T*>(source->deepClone_internal());
+			std::shared_ptr<T> clone(cloned);
+
+			//newObjectInstantiated_internal(clone);
+
+			return clone;
+        }
+        template<typename T>
+        std::shared_ptr<T> JDManagerObjectManager::createShallowClone(const std::shared_ptr<T>& source)
+        {
+            T* cloned = dynamic_cast<T*>(source->shallowClone_internal());
 			std::shared_ptr<T> clone(cloned);
 
 			//newObjectInstantiated_internal(clone);
@@ -175,7 +200,7 @@ namespace JsonDatabase
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data)
 #endif
         {
-            T* cloned = dynamic_cast<T*>(source->clone_internal());
+            T* cloned = dynamic_cast<T*>(source->shallowClone_internal());
             cloned->loadInternal(data);
 			std::shared_ptr<T> clone(cloned);
 

@@ -80,7 +80,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
             bool writeJsonFile(
                 const QJsonObject& json,
                 const std::string& directory,
@@ -88,7 +89,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
 
 
             bool readJsonFile(
@@ -98,7 +100,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
             bool readJsonFile(
                 QJsonObject& objOut,
                 const std::string& directory,
@@ -106,7 +109,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
             /*
             bool readFile(
                 QByteArray& fileDataOut,
@@ -130,7 +134,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
             bool writeJsonFile(
                 const JsonValue& json,
                 const std::string& directory,
@@ -138,7 +143,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
 
 
             bool readJsonFile(
@@ -148,7 +154,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
             bool readJsonFile(
                 JsonValue& objOut,
                 const std::string& directory,
@@ -156,7 +163,8 @@ namespace JsonDatabase
                 const std::string& fileEnding,
                 bool zipFormat,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
 
            /* bool readFile(
                 std::string& fileDataOut,
@@ -177,19 +185,24 @@ namespace JsonDatabase
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
             bool writeFile(
                 const QByteArray& fileData,
                 const std::string& directory,
                 const std::string& fileName,
                 const std::string& fileEnding,
                 bool lockedRead,
-                Error& errorOut) const;
+                Error& errorOut,
+                Internal::WorkProgress* progress) const;
 
             bool makeDatabaseDirs() const;
             bool makeDatabaseFiles() const;
             bool deleteDir(const std::string& dir) const;
             bool deleteFile(const std::string& file) const;
+
+            // Returns the amount of locks it has deleted
+            int tryToClearUnusedFileLocks() const;
 
             ManagedFileChangeWatcher& getDatabaseFileWatcher();
             void restartDatabaseFileWatcher();
@@ -198,6 +211,8 @@ namespace JsonDatabase
 
             const std::string& getErrorStr(Error err);
         private:
+            size_t m_slowUpdateCounter;
+
             JDManager& m_manager;
             std::mutex& m_mutex;
 

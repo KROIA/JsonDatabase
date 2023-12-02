@@ -50,11 +50,12 @@ namespace JsonDatabase
         const JDObject& JDObjectRegistry::getObjectDefinition(const JsonValue& json)
 #endif
         {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
             std::string className;
 #ifdef JD_USE_QJSON
-            if (JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
+            if (Utilities::JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
 #else
-            if (json.getString(className, JDObjectInterface::s_tag_className))
+            if (json.extractString(className, JDObjectInterface::s_tag_className))
 #endif
             {
                 return getObjectDefinition(className);
@@ -71,9 +72,9 @@ namespace JsonDatabase
         {
             std::string className;
 #ifdef JD_USE_QJSON
-            JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className);
+            Utilities::JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className);
 #else
-            json.getString(className, JDObjectInterface::s_tag_className);
+            json.extractString(className, JDObjectInterface::s_tag_className);
 #endif
             return className;
         }

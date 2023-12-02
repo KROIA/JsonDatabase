@@ -15,6 +15,7 @@
 #include "object/JDObjectRegistry.h"
 
 #include "utilities/Signal.h"
+#include "utilities/JDUser.h"
 
 
 
@@ -46,7 +47,7 @@ class JSONDATABASE_EXPORT JDManager:
     public:
         JDManager(const std::string &databasePath,
                   const std::string &databaseName,
-                  const std::string &sessionID,
+                  //const std::string &sessionID,
                   const std::string &user);
         JDManager(const JDManager &other);
         virtual ~JDManager();
@@ -146,7 +147,7 @@ class JSONDATABASE_EXPORT JDManager:
 
 
 
-        const std::string& getUser() const; // Owner of this database instance
+        const Utilities::JDUser& getUser() const; // Owner of this database instance
         const std::string& getSessionID() const; // Session ID of this database instance
         const std::string& getLoadModeStr(int mode) const; // Returns a string representation of the load mode
 
@@ -167,6 +168,7 @@ class JSONDATABASE_EXPORT JDManager:
         bool saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress);
         bool saveObjects_internal(const std::vector<JDObject> & objList, unsigned int timeoutMillis, Internal::WorkProgress* progress);
 
+
         void onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> work);
         void onAsyncWorkError(std::shared_ptr<Internal::JDManagerAysncWork> work);
 
@@ -176,8 +178,7 @@ class JSONDATABASE_EXPORT JDManager:
 
         std::string m_databasePath;
         std::string m_databaseName;
-        std::string m_sessionID;
-        std::string m_user;
+        Utilities::JDUser m_user;
 
         mutable std::mutex m_mutex;
         mutable std::mutex m_updateMutex;
@@ -192,13 +193,13 @@ class JSONDATABASE_EXPORT JDManager:
         //Internal::JDManagerAsyncWorker m_asyncWorker;
         
 
-        static const QString s_timeFormat;
-        static const QString s_dateFormat;
-
-        static const QString s_tag_sessionID;
-        static const QString s_tag_user;
-        static const QString s_tag_date;
-        static const QString s_tag_time;
+        //static const QString s_timeFormat;
+        //static const QString s_dateFormat;
+        //
+        //static const QString s_tag_sessionID;
+        //static const QString s_tag_user;
+        //static const QString s_tag_date;
+        //static const QString s_tag_time;
 
         static const unsigned int s_fileLockTimeoutMs;
 

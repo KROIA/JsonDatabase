@@ -9,6 +9,55 @@
 
 namespace JsonDatabase
 {
+    void JsonSerializer::enableTabs(bool enable)
+    {
+        m_useTabs = enable;
+    }
+    void JsonSerializer::setTabSize(int size)
+    {
+        m_tabSize = size;
+    }
+    void JsonSerializer::enableNewLinesInObjects(bool enable)
+    {
+		m_useNewLinesInObjects = enable;
+    }
+    void JsonSerializer::enableNewLineAfterObject(bool enable)
+    {
+        m_useNewLineAfterObject = enable;
+    }
+    void JsonSerializer::enableSpaces(bool enable)
+    {
+		m_useSpaces = enable;
+    }
+    void JsonSerializer::setIndentChar(char indentChar)
+    {
+		m_indentChar = indentChar;
+    }
+         
+    bool JsonSerializer::tabsEnabled() const
+    {
+		return m_useTabs;
+    }
+    int  JsonSerializer::tabSize() const
+    {
+        return m_tabSize;
+    }
+    bool JsonSerializer::newLinesInObjectsEnabled() const
+    {
+        return m_useNewLinesInObjects;
+    }
+    bool JsonSerializer::newLineAfterObjectEnabled() const
+    {
+		return m_useNewLineAfterObject;
+    }
+    bool JsonSerializer::spacesEnabled() const
+    {
+        return m_useSpaces;
+    }
+    char JsonSerializer::indentChar() const
+    {
+		return m_indentChar;
+    }
 
     std::string JsonSerializer::serializeValue(const JsonValue& value)
     {
@@ -42,7 +91,7 @@ namespace JsonDatabase
         case JsonValue::Type::Array:
             serializeArray(std::get<JsonArray>(value.m_value), serializedOut, indent); break;
         case JsonValue::Type::Object:
-            serializeObject(std::get<JsonObject>(value.m_value), serializedOut, indent); break;
+            serializeObject(*value.m_objElement, serializedOut, indent); break;
         }
     }
 
@@ -64,7 +113,7 @@ namespace JsonDatabase
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         JD_JSON_PROFILING_BLOCK("set up", JD_COLOR_STAGE_3);
         serializedOut = "{";
-        std::string spaced = std::string(m_useSpaces, ' ');
+        std::string spaced(m_useSpaces, ' ');
         std::string tmp1;
         if (m_useNewLinesInObjects)
         {
@@ -90,7 +139,7 @@ namespace JsonDatabase
             first = false;
             std::string value;
             serializeValue(pair.second, value, indent);
-            std::string toAdd = tmp1 + pair.first + tmp2 + std::move(value);
+            std::string toAdd = tmp1 + std::string(pair.first) + tmp2 + std::move(value);
             serializedOut += std::move(toAdd);
         }
         JD_JSON_PROFILING_END_BLOCK;
@@ -108,10 +157,14 @@ namespace JsonDatabase
 
     std::string JsonSerializer::serializeArray(const JsonArray& array)
     {
+        return serializeArray(array, nullptr);
+    }
+    std::string JsonSerializer::serializeArray(const JsonArray& array, Internal::WorkProgress* progress)
+    {
         //JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         std::string out;
         int ident = 0;
-        serializeArray(array, out, ident);
+        serializeArray(array, out, ident, progress);
         return out;
     }
     void JsonSerializer::serializeArray(const JsonArray& array, std::string& serializedOut)
@@ -119,7 +172,13 @@ namespace JsonDatabase
         int indent = 0;
         serializeArray(array, serializedOut, indent);
     }
+
     void JsonSerializer::serializeArray(const JsonArray& array, std::string& serializedOut, int& indent)
+    {
+        serializeArray(array, serializedOut, indent, nullptr);
+    }
+
+    void JsonSerializer::serializeArray(const JsonArray& array, std::string& serializedOut, int& indent, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         serializedOut = "[";
@@ -129,10 +188,11 @@ namespace JsonDatabase
             if (m_useTabs)
                 indent += m_tabSize;
         }
-        const std::string indented = std::string(indent, m_indentChar);
+        const std::string indented(indent, m_indentChar);
         size_t sumSize = 0;
         std::vector<std::string> serializedValues;
         serializedValues.resize(array.size());
+        double deltaProgress = 1.0 / (double)array.size();
 #ifdef JD_ENABLE_MULTITHREADING
         unsigned int threadCount = std::thread::hardware_concurrency();
         if (threadCount > 100)
@@ -145,6 +205,7 @@ namespace JsonDatabase
                 size_t end;
                 size_t sizeSum;
                 int indent;
+                std::atomic<int> finishCount;
             };
             std::vector<ThreadData> threadData(threadCount);
             std::vector<std::thread*> threads(threadCount, nullptr);
@@ -157,6 +218,7 @@ namespace JsonDatabase
                 threadData[i].end = start + chunkSize;
                 threadData[i].sizeSum = 0;
                 threadData[i].indent = indent;
+                threadData[i].finishCount = 0;
                 start += chunkSize;
                 if (i == threadCount - 1)
                     threadData[i].end += remainder;
@@ -164,6 +226,7 @@ namespace JsonDatabase
                 threads[i] = new std::thread([&threadData, &array, i, this, &indented, &serializedValues]()
                     {
                         ThreadData& data = threadData[i];
+                        std::atomic<int>& finishCount = threadData[i].finishCount;
                         for (size_t j = data.start; j < data.end; ++j)
                         {
                             const auto& value = array[j];
@@ -177,6 +240,7 @@ namespace JsonDatabase
                             valueText += indented + std::move(serializedValue);
                             data.sizeSum += valueText.size();
                             serializedValues[j] = std::move(valueText);
+                            finishCount++;
                         }
                         if (i == 0)
                         {
@@ -184,11 +248,43 @@ namespace JsonDatabase
                         }
                     });
             }
+
+            // Create a progress updater Thread
+            std::thread* progressUpdater = nullptr;
+            std::atomic<bool> progressUpdaterRunning = false;
+            if (progress)
+            {
+                progressUpdaterRunning = true;
+                size_t objectCount = array.size();
+                progressUpdater = new std::thread([&threadData, progress, deltaProgress, &progressUpdaterRunning, objectCount]()
+                    {
+                        while (progressUpdaterRunning.load())
+                        {
+                            int finishCount = 0;
+                            for (size_t i = 0; i < threadData.size(); ++i)
+                            {
+                                finishCount += threadData[i].finishCount;
+                            }
+
+                            progress->setProgress((double)finishCount * deltaProgress);
+                            if (finishCount < objectCount / 2) // Only sleep if it is not almost finished
+                                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                        }
+                    });
+            }
+
             for (size_t i = 0; i < threadCount; ++i)
             {
                 threads[i]->join();
                 sumSize += threadData[i].sizeSum;
                 delete threads[i];
+            }
+            if (progressUpdater)
+            {
+                progressUpdaterRunning = false;
+                progressUpdater->join();
+                delete progressUpdater;
+                progressUpdater = nullptr;
             }
         }
         else
@@ -213,6 +309,9 @@ namespace JsonDatabase
                 serializeValue(value, serializedValue);
                 valueText += indented + std::move(serializedValue);
                 sumSize += valueText.size();
+
+                if (progress)
+                    progress->addProgress(deltaProgress);
             }
         }
 

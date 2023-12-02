@@ -1,6 +1,6 @@
 #pragma once
 
-#include "object/JDSerializable.h"
+#include "utilities/JDSerializable.h"
 #include "object/JDObjectInterface.h"
 #include "manager/JDManager.h"
 

@@ -321,21 +321,21 @@ void threadFunction1() {
 
 void callback()
 {
-    manager2->loadObjectsAsync(JDManager::LoadMode::allObjects);
-    manager2->loadObjectsAsync(JDManager::LoadMode::allObjects + JDManager::LoadMode::overrideChanges);
+    manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects);
+    manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects + JsonDatabase::LoadMode::overrideChanges);
    // manager2->disconnectDatabaseFileChangedSlot(callback);
 }
-void onObjectRemoved(const JDObjectContainer& list)
+void onObjectRemoved(const std::vector<JDObject>& list)
 {
     for(JDObject obj : list)
         std::cout << "Object removed: " << obj->getObjectID() << "\n";
 }
-void onObjectAdded(const JDObjectContainer& list)
+void onObjectAdded(const std::vector<JDObject>& list)
 {
     for (JDObject obj : list)
 	    std::cout << "Object added: " << obj->getObjectID() << "\n";
 }
-void onObjectOverrideChange(const JDObjectContainer& list)
+void onObjectOverrideChange(const std::vector<JDObject>& list)
 {
     for (JDObject obj : list)
         std::cout << "Object override change: " << obj->getObjectID() << "\n";

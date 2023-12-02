@@ -2,6 +2,7 @@
 #include "object/JDObjectInterface.h"
 
 #include "object/JDObjectRegistry.h"
+#include "manager/async/WorkProgress.h"
 
 namespace JsonDatabase
 {
@@ -36,6 +37,139 @@ namespace JsonDatabase
 		ChangeState JDObjectManager::getChangeState() const
 		{
 			return m_changestate;
+		}
+
+#ifdef JD_USE_QJSON
+		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut)
+#else
+		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
+#endif
+		{
+			return getJsonArray(objs, jsonOut, nullptr);
+		}
+#ifdef JD_USE_QJSON
+		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
+			std::vector<QJsonObject>& jsonOut,
+			WorkProgress* progress)
+#else
+		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
+			JsonArray& jsonOut,
+			WorkProgress* progress)
+#endif
+		{
+			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+			if (objs.size() == 0)
+			{
+				if(progress)
+					progress->setProgress(1.0);
+				return true;
+			}
+
+			bool success = true;
+			double deltaProgress = 1.0 / (double)objs.size();
+#ifdef JD_ENABLE_MULTITHREADING
+			unsigned int threadCount = std::thread::hardware_concurrency();
+			if (threadCount > 100)
+				threadCount = 100;
+			size_t objCount = objs.size();
+			if (objCount > 100 && threadCount)
+			{
+				struct ThreadData
+				{
+					size_t start;
+					size_t end;
+					std::atomic<int> finishCount;
+				};
+				std::vector<std::thread*> threads(threadCount, nullptr);
+				std::vector<ThreadData> threadData(threadCount);
+				size_t chunkSize = objCount / threadCount;
+				size_t remainder = objCount % threadCount;
+				size_t start = 0;
+				jsonOut.resize(objCount);
+
+
+				for (size_t i = 0; i < threadCount; ++i)
+				{
+					threadData[i].start = start;
+					threadData[i].end = start + chunkSize;
+					threadData[i].finishCount = 0;
+					start += chunkSize;
+					if (i == threadCount - 1)
+						threadData[i].end += remainder;
+					threads[i] = new std::thread([&threadData, &objs, i, &jsonOut]()
+						{
+							ThreadData& data = threadData[i];
+							std::atomic<int> & finishCount = threadData[i].finishCount;
+							for (size_t j = data.start; j < data.end; ++j)
+							{
+#ifdef JD_USE_QJSON
+								QJsonObject data;
+#else
+								JsonObject data;
+#endif
+								objs[j]->saveInternal(data);
+								jsonOut[j] = std::move(data);
+								finishCount++;
+							}
+						});
+				}
+
+				// Create a progress updater Thread
+				std::thread* progressUpdater = nullptr;
+				std::atomic<bool> progressUpdaterRunning = false;
+				if (progress)
+				{
+					progressUpdaterRunning = true;
+					size_t objectCount = objs.size();
+					progressUpdater = new std::thread([&threadData, progress, deltaProgress, &progressUpdaterRunning, objectCount]()
+						{
+							while (progressUpdaterRunning.load())
+							{
+								int finishCount = 0;
+								for (size_t i = 0; i < threadData.size(); ++i)
+								{
+									finishCount += threadData[i].finishCount;
+								}
+
+								progress->setProgress((double)finishCount * deltaProgress);
+								if(finishCount < objectCount/2) // Only sleep if it is not almost finished
+									std::this_thread::sleep_for(std::chrono::milliseconds(1));
+							}
+						});
+				}
+
+				// Wait for all threads to finish
+				for (size_t i = 0; i < threadCount; ++i)
+				{
+					threads[i]->join();
+					delete threads[i];
+				}
+				if(progressUpdater)
+				{
+					progressUpdaterRunning = false;
+					progressUpdater->join();
+					delete progressUpdater;
+					progressUpdater = nullptr;
+				}
+			}
+			else
+#endif
+			{
+				jsonOut.reserve(objs.size());
+				for (auto o : objs)
+				{
+#ifdef JD_USE_QJSON
+					QJsonObject data;
+#else
+					JsonObject data;
+#endif
+					success &= o->saveInternal(data);
+					jsonOut.emplace_back(std::move(data));
+					if (progress)
+						progress->addProgress(deltaProgress);
+				}
+			}
+			return success;
 		}
 
 		const std::string& JDObjectManager::managedLoadStatusToString(ManagedLoadStatus status)
@@ -140,7 +274,7 @@ namespace JsonDatabase
 				}
 				else
 				{
-					JDObject instance = obj->clone();
+					JDObject instance = obj->shallowClone();
 					if (!instance.get())
 						return ManagedLoadStatus::loadFailed;
 					if (!deserializeOverrideFromJson_internal(json, instance))
@@ -196,16 +330,17 @@ namespace JsonDatabase
 				return ManagedLoadStatus::loadFailed_IncompleteData;
 			}
 			*/
-			JDObject instance = templateObj->clone();
+			JDObject instance = templateObj->shallowClone();
 			instance->loadInternal(json);
-			containers.newObjs.push_back(std::make_pair(misc.id, instance));
+			containers.newObjIDs.push_back(misc.id);
+			containers.newObjInstances.push_back(instance);
 
 			return ManagedLoadStatus::success;
 		}
 
 
 #ifdef JD_USE_QJSON
-		bool JDObjectManager::loadAndOverrideData(QJsonObject& json)
+		bool JDObjectManager::loadAndOverrideData(const QJsonObject& json)
 #else
 		bool JDObjectManager::loadAndOverrideData(const JsonValue& json)
 #endif
@@ -215,7 +350,7 @@ namespace JsonDatabase
 		}
 
 #ifdef JD_USE_QJSON
-		bool JDObjectManager::loadAndOverrideDataIfChanged(QJsonObject& json, bool& hasChangesOut)
+		bool JDObjectManager::loadAndOverrideDataIfChanged(const QJsonObject& json, bool& hasChangesOut)
 #else
 		bool JDObjectManager::loadAndOverrideDataIfChanged(const JsonValue& json, bool& hasChangesOut)
 #endif
@@ -253,7 +388,7 @@ namespace JsonDatabase
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
-			JDObject instance = original->clone();
+			JDObject instance = original->shallowClone();
 			JDObjectManager* manager = new JDObjectManager(original, id);
 			if (!manager->loadAndOverrideData(json))
 			{

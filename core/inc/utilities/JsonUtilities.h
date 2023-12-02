@@ -14,17 +14,17 @@
 
 namespace JsonDatabase
 {
-    namespace Internal
+    namespace Utilities
     {
         class JsonUtilities
         {
         public:
 #ifdef JD_USE_QJSON
-            static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut);
-            static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut, 
-                                     WorkProgress* progress, double deltaProgress);
-            static bool serializeObject(JDObject obj, std::string& serializedOut);
-            static bool serializeJson(const QJsonObject& obj, std::string& serializedOut);
+           // static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut);
+           // static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut, 
+           //                          WorkProgress* progress, double deltaProgress);
+            //static bool serializeObject(JDObject obj, std::string& serializedOut);
+            //static bool serializeJson(const QJsonObject& obj, std::string& serializedOut);
 
           /*  static bool deserializeJson(
                 const QJsonObject& json, 
@@ -32,14 +32,14 @@ namespace JsonDatabase
                 JDObject& objOut, 
                 JDObjectIDDomain& idDomain,
                 JDManager& manager);*/
-            static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj, bool& hasChangedOut);
-            static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj);
+         //   static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj, bool& hasChangedOut);
+         //   static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj);
 #else
-            static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
-            static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
-                WorkProgress* progress, double deltaProgress);
+           // static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
+           // static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
+           //     WorkProgress* progress, double deltaProgress);
 
-            static bool serializeObject(JDObject obj, std::string& serializedOut);
+          //  static bool serializeObject(JDObject obj, std::string& serializedOut);
           /*  static bool deserializeJson(
                 const JsonValue& json, 
                 JDObject objOriginal, 
@@ -47,8 +47,8 @@ namespace JsonDatabase
                 JDObjectIDDomain& idDomain,
                 JDManager &manager);*/
 
-            static bool deserializeOverrideFromJson(const JsonValue& json, JDObject obj, bool& hasChangedOut);
-            static bool deserializeOverrideFromJson(const JsonValue& json, JDObject obj);
+           // static bool deserializeOverrideFromJson(const JsonValue& json, JDObject obj, bool& hasChangedOut);
+           // static bool deserializeOverrideFromJson(const JsonValue& json, JDObject obj);
 #endif
         };
     }

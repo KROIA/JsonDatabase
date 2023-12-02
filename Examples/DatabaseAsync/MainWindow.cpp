@@ -10,7 +10,7 @@
 #endif
 
 #define DEBUG_SIMPLE std::cout
-#define DEBUG DEBUG_SIMPLE << m_manager->getUser().c_str() << "::" << __FUNCTION__ << ": "
+#define DEBUG DEBUG_SIMPLE << m_manager->getUser().getName().c_str() << "::" << __FUNCTION__ << ": "
 
 
 MainWindow::MainWindow(const std::string& user, QWidget *parent)
@@ -20,7 +20,7 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	ui.setupUi(this);
 	setWindowTitle(QString::fromStdString(user));
 
-	m_manager = new JDManager("asyncDatabase", "Person", "sessionID", user);
+	m_manager = new JDManager("asyncDatabase", "Person", user);
 	m_manager->setup();
 
 	m_uiPersonEditor = new UIPerson(ui.editor_frame);
@@ -350,7 +350,7 @@ void MainWindow::onLockedObjectsChanged()
 		auto p = m_manager->getObject<Person>(id.objectID);
 		if (p.get())
 		{
-			text += "\"" + JDObjectID::toString(id.objectID) + "\" object locked by \"" + id.owner + "\"\n";
+			text += "\"" + JDObjectID::toString(id.objectID) + "\" object locked by \"" + id.user.getName() + "\"\n";
 		}
 		else
 			text += "\"" + JDObjectID::toString(id.objectID) + "\" object not found\n";

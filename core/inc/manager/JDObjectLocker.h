@@ -2,8 +2,9 @@
 
 #include "JD_base.h"
 #include "object/JDObjectInterface.h"
-#include "object/JDSerializable.h"
+#include "utilities/JDSerializable.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
+#include "utilities/JDUser.h"
 
 #include <string>
 #include <vector>
@@ -53,15 +54,23 @@ namespace JsonDatabase
 			struct LockData
 			{
 				JDObjectID::IDType objectID;
-				std::string owner;
-				std::string sessionID;
-				std::string lockDate;
-				std::string lockTime;
+				Utilities::JDUser user;
+				QDate lockDate;
+				QTime lockTime;
 			};
 			bool getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const;
 
 
 			const std::string& getErrorStr(Error err) const;
+
+			struct JsonKeys
+			{
+				static constexpr std::string_view objectID = "objID";
+				static constexpr std::string_view user     = "user";
+				static constexpr std::string_view lockDate = "lockDate";
+				static constexpr std::string_view lockTime = "lockTime";
+			};
+
 		protected:
 			ManagedFileChangeWatcher& getLockTableFileWatcher();
 			void update();
@@ -69,7 +78,7 @@ namespace JsonDatabase
 
 
 		private:
-			class JSONDATABASE_EXPORT ObjectLockData : public JDSerializable
+			class JSONDATABASE_EXPORT ObjectLockData : public Utilities::JDSerializable
 			{
 			public:
 				ObjectLockData();
@@ -109,7 +118,7 @@ namespace JsonDatabase
 
 			void getObjectLockDataFromSessionID(const std::vector<ObjectLockData>& locks,
 				const std::string& targetSessionID,
-				const std::string& userName,
+				//const Utilities::JDUser& user,
 				std::vector<ObjectLockData>& locksOut,
 				std::vector<size_t>& matches,
 				std::vector<size_t>& mismatches) const;
@@ -123,21 +132,6 @@ namespace JsonDatabase
 			mutable std::string m_specificDatabasePath;
 			
 			mutable ManagedFileChangeWatcher m_lockTableWatcher;
-
-
-#ifdef JD_USE_QJSON
-			static QString s_jsonKey_objectID;
-			static QString s_jsonKey_owner;
-			static QString s_jsonKey_sessionID;
-			static QString s_jsonKey_lockDate;
-			static QString s_jsonKey_lockTime;
-#else
-			static std::string s_jsonKey_objectID;
-			static std::string s_jsonKey_owner;
-			static std::string s_jsonKey_sessionID;
-			static std::string s_jsonKey_lockDate;
-			static std::string s_jsonKey_lockTime;
-#endif
 		};
 	}
 }

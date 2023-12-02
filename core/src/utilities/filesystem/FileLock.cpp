@@ -1,6 +1,7 @@
 #include "utilities/filesystem/FileLock.h"
 #include "utilities/JDUniqueMutexLock.h"
 #include "utilities/JDUtilities.h"
+#include "utilities/StringUtilities.h"
 
 #ifdef JD_ENABLE_MULTITHREADING
 #include <thread>
@@ -16,7 +17,7 @@ namespace JsonDatabase
         std::mutex FileLock::m_mutex;
 
         FileLock::FileLock(const std::string& filePath, const std::string& fileName)
-            : m_directory(replaceForwardSlashesWithBackslashes(filePath))
+            : m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
             , m_fileName(fileName)
             , m_locked(false)
             , m_fileHandle(nullptr)
@@ -106,6 +107,42 @@ namespace JsonDatabase
             static std::string unknown;
             unknown = "Unknown FileLock Error: " + std::to_string((int)err);
             return unknown;
+        }
+
+        bool FileLock::isLockInUse(const std::string& filePath, const std::string& fileName)
+        {
+			return isFileLocked(filePath + "\\" + fileName + s_lockFileEnding);
+        }
+
+        bool FileLock::isFileLocked(const std::string& fullFilePath)
+        {
+            HANDLE fileHandle = CreateFile(
+                fullFilePath.c_str(),
+                GENERIC_WRITE,
+                0,
+                nullptr,
+                OPEN_EXISTING,  // Use OPEN_EXISTING instead of CREATE_ALWAYS
+                FILE_ATTRIBUTE_NORMAL,
+                nullptr
+            );
+
+            if (fileHandle == INVALID_HANDLE_VALUE) {
+                // Failed to open the file, indicating it might be locked
+                return true; // File is possibly locked
+            }
+
+            // Try to lock the file
+            if (!LockFile(fileHandle, 0, 0, MAXDWORD, MAXDWORD)) {
+                // Locking failed, file is already locked
+                CloseHandle(fileHandle);
+                return true; // File is locked
+            }
+
+            // File is not locked, release the lock and close the file handle
+            UnlockFile(fileHandle, 0, 0, MAXDWORD, MAXDWORD);
+            CloseHandle(fileHandle);
+
+            return false; // File is not locked
         }
 
 
@@ -200,24 +237,5 @@ namespace JsonDatabase
             m_locked = false;
             return err;
         }
-
-
-
-
-        std::string FileLock::replaceForwardSlashesWithBackslashes(const std::string& input)
-        {
-            std::string result = input;
-            size_t pos = 0;
-
-            while ((pos = result.find('/', pos)) != std::string::npos)
-            {
-                result.replace(pos, 1, "\\");
-                pos += 2; // Move past the double backslashes
-            }
-
-            return result;
-        }
-
-
     }    
 }

@@ -32,11 +32,7 @@ namespace JsonDatabase
 
                 lockTimeout = 20,
             };
-
-
-
             FileLock(const std::string& filePath, const std::string& fileName);
-
             ~FileLock();
 
             const std::string& getFilePath() const;
@@ -50,11 +46,8 @@ namespace JsonDatabase
 
 
             static const std::string& getErrorStr(Error err);
-
-
-            static std::string replaceForwardSlashesWithBackslashes(const std::string& input);
-
-
+            static bool isLockInUse(const std::string& filePath, const std::string& fileName);
+            static bool isFileLocked(const std::string& fullFilePath);
 
             static const std::string s_lockFileEnding;
         private:

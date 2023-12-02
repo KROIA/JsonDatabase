@@ -56,8 +56,8 @@ namespace JsonDatabase
 			If it is, success is set to true and the ID is returned.
 			If it is not, success is set to false and a invalid ID is generated and returned.
 		*/
-		JDObjectIDptr getNewID(const JDObjectID::IDType &existing, bool &success);
-		std::vector<JDObjectIDptr> getNewIDs(const std::vector<JDObjectID::IDType> &existingIDs, bool &allSuccess);
+		JDObjectIDptr getPredefinedID(const JDObjectID::IDType &existing, bool &success);
+		std::vector<JDObjectIDptr> getPredefinedIDs(const std::vector<JDObjectID::IDType> &existingIDs, bool &allSuccess);
 		
 		JDObjectIDptr getExistingID(const JDObjectID::IDType &existing) const;
 		

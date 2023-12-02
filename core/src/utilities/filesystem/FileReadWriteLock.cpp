@@ -1,4 +1,5 @@
 #include "utilities/filesystem/FileReadWriteLock.h"
+#include "utilities/StringUtilities.h"
 
 #include <random>
 
@@ -10,7 +11,7 @@ namespace JsonDatabase
 
 
         FileReadWriteLock::FileReadWriteLock(const std::string& filePath, const std::string& fileName)
-            : m_directory(FileLock::replaceForwardSlashesWithBackslashes(filePath))
+            : m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
             , m_fileName(fileName)
             , m_locked(false)
             , m_access(Access::unknown)

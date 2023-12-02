@@ -29,6 +29,15 @@ namespace JsonDatabase
 			Lockstate getLockstate() const;
 			ChangeState getChangeState() const;
 
+#ifdef JD_USE_QJSON
+			static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut);
+			static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut,
+				WorkProgress* progress);
+#else
+			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
+			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
+				WorkProgress* progress);
+#endif
 			
 		private:
 			enum ManagedLoadStatus
@@ -54,7 +63,8 @@ namespace JsonDatabase
 					The objects need to be added with the exact same ID's as the ones in the pair.
 					These objects are new objects that need to be added to the database.
 				*/
-				std::vector<std::pair<JDObjectID::IDType, JDObject>>& newObjs;
+				std::vector<JDObjectID::IDType>& newObjIDs;
+				std::vector<JDObject>& newObjInstances;
 
 				/*
 					These objects are used in the "objectChangedFromDatabase" signal. 
@@ -96,8 +106,8 @@ namespace JsonDatabase
 				const ManagedLoadMisc &misc);
 
 
-			bool loadAndOverrideData(QJsonObject& json);
-			bool loadAndOverrideDataIfChanged(QJsonObject& json, bool &hasChangesOut);
+			bool loadAndOverrideData(const QJsonObject& json);
+			bool loadAndOverrideDataIfChanged(const QJsonObject& json, bool &hasChangesOut);
 
 			static JDObjectManager* instantiateAndLoadObject(const QJsonObject& json, const JDObjectIDptr& id);
 			static JDObjectManager* cloneAndLoadObject(const JDObject& original, const QJsonObject& json, const JDObjectIDptr& id);
@@ -118,7 +128,7 @@ namespace JsonDatabase
 
 #ifdef JD_USE_QJSON
 			static ManagedLoadStatus managedLoadExisting_internal(
-				const QJsonObject json, 
+				const QJsonObject& json, 
 				JDObjectManager* manager,
 				ManagedLoadContainers& containers,
 				const ManagedLoadMode& loadMode,

@@ -18,7 +18,7 @@ namespace JsonDatabase
 			{
 				//object->incrementVersionValue();
 
-				m_object = manager.createClone(object);
+				m_object = manager.createDeepClone(object);
 				//m_object = object->clone();
 				m_progress.setTaskName("Speichere Objekt: " + m_object->getObjectID()->toString());
 			}

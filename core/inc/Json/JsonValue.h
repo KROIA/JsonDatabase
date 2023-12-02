@@ -18,7 +18,7 @@ namespace JsonDatabase
 	
 
 	using JsonArray = JsonArrayType<JsonValue>;
-	using JsonObject = JsonMapType<std::string, JsonValue>;
+	using JsonObject = JsonMapType<std::string_view, JsonValue>;
 
 	class JSONDATABASE_EXPORT JsonValue
 	{
@@ -83,27 +83,62 @@ namespace JsonDatabase
 		JsonValue& operator[](const std::string& key); // returns the value of the key if this is an object
 
 
-		const std::string &getString() const;
-		int getInt() const;
-		double getDouble() const;
-		bool getBool() const;
+		std::string &getString();
+		int& getInt();
+		double& getDouble();
+		bool& getBool();
+		JsonArray& getArray();
+		JsonObject& getObject();
+
+		const std::string& getString() const;
+		const int& getInt() const;
+		const double& getDouble() const;
+		const bool& getBool() const;
 		const JsonArray& getArray() const;
 		const JsonObject& getObject() const;
 
-		bool getString(std::string& valueOut) const;
-		bool getString(JsonValue& objOut, const std::string &key) const;
-		bool getInt(int& valueOut) const;
-		bool getDouble(double& valueOut) const;
-		bool getBool(bool& valueOut) const;
-		bool getArray(JsonArray& valueOut) const;
-		bool getObject(JsonObject& valueOut) const;
+		bool extractString(std::string& valueOut) const;
+		//bool getString(JsonValue& objOut, const std::string &key) const;
+		bool extractInt(int& valueOut) const;
+		bool extractDouble(double& valueOut) const;
+		bool extractBool(bool& valueOut) const;
+		bool extractArray(JsonArray& valueOut) const;
+		bool extractObject(JsonObject& valueOut) const;
 
-		bool getString(std::string& valueOut, const std::string& key) const;
-		bool getInt(int& valueOut, const std::string& key) const;
-		bool getDouble(double& valueOut, const std::string& key) const;
-		bool getBool(bool& valueOut, const std::string& key) const;
-		bool getArray(JsonArray& valueOut, const std::string& key) const;
-		bool getObject(JsonObject& valueOut, const std::string& key) const;
+		bool extractString(std::string& valueOut, const std::string& key) const;
+		bool extractInt(int& valueOut, const std::string& key) const;
+		bool extractDouble(double& valueOut, const std::string& key) const;
+		bool extractBool(bool& valueOut, const std::string& key) const;
+		bool extractArray(JsonArray& valueOut, const std::string& key) const;
+		bool extractObject(JsonObject& valueOut, const std::string& key) const;
+
+		std::string& getString(const std::string& key);
+		int &getInt(const std::string& key);
+		double& getDouble(const std::string& key);
+		bool& getBool(const std::string& key);
+		JsonArray& getArray(const std::string& key);
+		JsonObject& getObject(const std::string& key);
+
+		const std::string& getString(const std::string& key) const;
+		const int& getInt(const std::string& key) const;
+		const double& getDouble(const std::string& key) const;
+		const bool& getBool(const std::string& key) const;
+		const JsonArray& getArray(const std::string& key) const;
+		const JsonObject& getObject(const std::string& key) const;
+
+		std::string* getStringPtr(const std::string& key);
+		int* getIntPtr(const std::string& key);
+		double* getDoublePtr(const std::string& key);
+		bool* getBoolPtr(const std::string& key);
+		JsonArray* getArrayPtr(const std::string& key);
+		JsonObject* getObjectPtr(const std::string& key);
+
+		const std::string* getStringPtr(const std::string& key) const;
+		const int* getIntPtr(const std::string& key) const;
+		const double* getDoublePtr(const std::string& key) const;
+		const bool* getBoolPtr(const std::string& key) const;
+		const JsonArray* getArrayPtr(const std::string& key) const;
+		const JsonObject* getObjectPtr(const std::string& key) const;
 
 		JsonVariantType &getVariant();
 		const JsonVariantType &getConstVariant() const;
@@ -117,7 +152,7 @@ namespace JsonDatabase
 		
 		Type m_type;
 		JsonVariantType m_value;
-
+		JsonObject* m_objElement; // is active, if this is an JsonObject
 		
 	};
 }

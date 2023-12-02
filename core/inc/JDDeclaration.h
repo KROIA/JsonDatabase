@@ -14,7 +14,6 @@ namespace JsonDatabase
     };
     
     class JDManager;
-    class JDSerializable;
     class JDObjectInterface;
 
     typedef std::shared_ptr<JDObjectInterface> JDObject;
@@ -34,12 +33,16 @@ namespace JsonDatabase
 
     
 
-    
+    namespace Utilities
+    {
+        class JsonUtilities;
+        class JDSerializable;
+    }
     
     namespace Internal
     {
         class FileChangeWatcher;
-        class JsonUtilities;
+        
         class FileLock;
         class FileReadWriteLock;
 
@@ -48,6 +51,7 @@ namespace JsonDatabase
         class JDManagerSignals;
         class JDObjectLocker;
 
+        
         class JDObjectContainer;
         class JDObjectManager;
         enum Lockstate

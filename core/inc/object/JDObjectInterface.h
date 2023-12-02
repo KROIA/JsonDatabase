@@ -2,7 +2,7 @@
 
 #include "JD_base.h"
 #include "JDDeclaration.h"
-#include "JDSerializable.h"
+#include "utilities/JDSerializable.h"
 #include "JDObjectID.h"
 #include "utilities/Signal.h"
 #include <memory>
@@ -22,11 +22,11 @@ namespace JsonDatabase
     
     
     
-class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
+class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
 {
         friend JDManager;
         friend Internal::JDManagerObjectManager;
-        friend Internal::JsonUtilities;
+        friend Utilities::JsonUtilities;
         friend Internal::JDObjectManager;
 
         friend class AutoObjectAddToRegistry;
@@ -39,9 +39,13 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
-        JDObject clone() const;
+        JDObject deepClone() const;
         template<typename T>
-        std::shared_ptr<T> clone() const;
+        std::shared_ptr<T> deepClone() const;
+
+        JDObject shallowClone() const;
+        template<typename T>
+        std::shared_ptr<T> shallowClone() const;
         
 
         // Creates a copy of the original object as a new instance
@@ -100,7 +104,8 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
         void setManager(Internal::JDObjectManager* manager);
         Internal::JDObjectManager* getManager() const;
 
-        virtual JDObjectInterface* clone_internal() const = 0;
+        virtual JDObjectInterface* deepClone_internal() const = 0;
+        virtual JDObjectInterface* shallowClone_internal() const = 0;
 #ifdef JD_USE_QJSON
         //virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectIDptr& uniqueID) const = 0;
 #else
@@ -138,9 +143,18 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected JDSerializable
 };
 
 template<typename T>
-std::shared_ptr<T> JDObjectInterface::clone() const
+std::shared_ptr<T> JDObjectInterface::deepClone() const
 {
-    T* cloned = dynamic_cast<T*>(clone_internal());
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    T* cloned = dynamic_cast<T*>(deepClone_internal());
+    std::shared_ptr<T> clone(cloned);
+    return clone;
+}
+template<typename T>
+std::shared_ptr<T> JDObjectInterface::shallowClone() const
+{
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    T* cloned = dynamic_cast<T*>(shallowClone_internal());
     std::shared_ptr<T> clone(cloned);
     return clone;
 }
@@ -170,11 +184,13 @@ std::shared_ptr<T> JDObjectInterface::clone() const
 
 #ifdef JD_USE_QJSON
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
-    classNameVal* clone_internal() const override; \
+    classNameVal* deepClone_internal() const override; \
+    classNameVal* shallowClone_internal() const override; \
     //classNameVal* clone_internal(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override; 
 #else
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
-    classNameVal* clone_internal() const override; \
+    classNameVal* deepClone_internal() const override; \
+    classNameVal* shallowClone_internal() const override; \
     //classNameVal* clone_internal(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override;
 #endif
 
@@ -201,9 +217,17 @@ std::shared_ptr<T> JDObjectInterface::clone() const
 
 #ifdef JD_USE_QJSON
 #define JD_OBJECT_IMPL_CLONE(classNameVal) \
-    classNameVal* classNameVal::clone_internal() const \
+    classNameVal* classNameVal::deepClone_internal() const \
     { \
+        JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_5); \
         classNameVal* c = new classNameVal(*this); \
+       /* c->setObjectID(this->getObjectID()); */ \
+        return c; \
+    } \
+    classNameVal* classNameVal::shallowClone_internal() const \
+    { \
+        JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_5); \
+        classNameVal* c = new classNameVal(); \
        /* c->setObjectID(this->getObjectID()); */ \
         return c; \
     } \
@@ -216,9 +240,17 @@ std::shared_ptr<T> JDObjectInterface::clone() const
     //} 
 #else
 #define JD_OBJECT_IMPL_CLONE(classNameVal) \
-    classNameVal* classNameVal::clone_internal() const \
+    classNameVal* classNameVal::deepClone_internal() const \
     { \
+        JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_5); \
         classNameVal* c = new classNameVal(*this); \
+        /* //c->setObjectID(this->getObjectID()); */ \
+        return c; \
+    } \
+    classNameVal* classNameVal::shallowClone_internal() const \
+    { \
+        JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_5); \
+        classNameVal* c = new classNameVal(); \
         /* //c->setObjectID(this->getObjectID()); */ \
         return c; \
     } \

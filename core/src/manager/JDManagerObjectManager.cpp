@@ -157,6 +157,7 @@ namespace JsonDatabase
         }*/
         bool JDManagerObjectManager::packAndAddObject_internal(const JDObject& obj)
         { 
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if(m_objs.exists(obj) || !obj.get())
 				return false; // Object already added
             if (obj->isManaged())
@@ -169,12 +170,13 @@ namespace JsonDatabase
         }
         bool JDManagerObjectManager::packAndAddObject_internal(const JDObject& obj, const JDObjectID::IDType& presetID)
         {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if (m_objs.exists(obj) || !obj.get())
                 return false; // Object already added
             if (obj->isManaged())
                 return false; // Object already managed
             bool success;
-            JDObjectIDptr id = m_idDomain.getNewID(presetID, success);
+            JDObjectIDptr id = m_idDomain.getPredefinedID(presetID, success);
             if(!success)
             {
 #ifdef JD_DEBUG
@@ -194,33 +196,33 @@ namespace JsonDatabase
         }
         bool JDManagerObjectManager::packAndAddObject_internal(const std::vector<JDObject>& objs)
         {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             m_objs.reserve(m_objs.size() + objs.size());
             bool success = true;
             for (size_t i = 0; i < objs.size(); ++i)
 				success &= packAndAddObject_internal(objs[i]);
 			return success;
         }
-        bool JDManagerObjectManager::packAndAddObject_internal(const std::vector<std::pair<JDObjectID::IDType, JDObject>>& objs)
+        bool JDManagerObjectManager::packAndAddObject_internal(const std::vector<JDObjectID::IDType>& ids, const std::vector<JDObject>& objs)
         {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             m_objs.reserve(m_objs.size() + objs.size());
+
             bool success = true;
+            std::vector<JDObjectIDptr> generatedIDs = m_idDomain.getPredefinedIDs(ids, success);
+
+            m_objs.reserve(m_objs.size() + objs.size());
             for (size_t i = 0; i < objs.size(); ++i)
-                success &= packAndAddObject_internal(objs[i].second, objs[i].first);
+            {
+                JDObjectManager* manager = new JDObjectManager(objs[i], generatedIDs[i]);
+                success &= m_objs.addObject(manager);
+            }
+            
+           // for (size_t i = 0; i < objs.size(); ++i)
+           //     success &= packAndAddObject_internal(ids[i], objs[i]);
             return success;
         }
-        /*bool JDManagerObjectManager::addObject_internal(JDObjectManager* obj)
-        {
-            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            //obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
-            return m_objs.addObject(obj);
-        }
-        bool JDManagerObjectManager::addObject_internal(const std::vector<JDObjectManager*>& objs)
-        {
-            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            //for(auto obj : objs)
-            //    obj->m_onDelete.connectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
-            return m_objs.addObject(objs);
-        }*/
+
         JDObject JDManagerObjectManager::replaceObject_internal(const JDObject& obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
@@ -258,8 +260,6 @@ namespace JsonDatabase
         bool JDManagerObjectManager::removeObject_internal(const std::vector<JDObject>& objs)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            //for (auto obj : objs)
-			//	obj->m_onDelete.disconnectSlot(this, &JDManagerObjectManager::onObjectGotDeleted);
             return m_objs.removeObject(objs);
         }
         bool JDManagerObjectManager::exists_internal(const JDObject & obj) const
@@ -308,7 +308,7 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             return m_objs.getObjectByID(id);
         }
-        std::vector<JDObjectManager*> JDManagerObjectManager::getObjectManagers_internal() const
+        const std::vector<JDObjectManager*>& JDManagerObjectManager::getObjectManagers_internal() const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             return m_objs.getAllObjects();
@@ -318,6 +318,22 @@ namespace JsonDatabase
             m_objs.clear();
         }
 
+#ifdef JD_USE_QJSON
+        bool JDManagerObjectManager::loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj)
+#else
+        bool JDManagerObjectManager::loadObjectFromJson_internal(const JsonValue& json, const JDObject& obj)
+#endif
+        {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+            if (!obj->loadInternal(json))
+            {
+                JD_CONSOLE_FUNCTION("Can't load data in object: " << obj->getObjectID() << " classType: " << obj->className() + "\n");
+                return false;
+            }
+            return true;
+        }
+
+
 
 #ifdef JD_USE_QJSON
         bool JDManagerObjectManager::loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
@@ -326,7 +342,8 @@ namespace JsonDatabase
             bool hasObjectAddedToDatabaseSlots,
             bool hasObjectRemovedFromDatabaseSlots,
             std::vector<JDObject>& overridingObjs,
-            std::vector<std::pair<JDObjectID::IDType, JDObject>>& newObjs,
+            std::vector<JDObjectID::IDType>& newObjIDs,
+            std::vector<JDObject>& newObjInstances,
             std::vector<JDObject>& removedObjs,
             std::vector<JDObjectPair>& changedPairs)
 #else
@@ -336,13 +353,18 @@ namespace JsonDatabase
             bool hasObjectAddedToDatabaseSlots,
             bool hasObjectRemovedFromDatabaseSlots,
             std::vector<JDObject> &overridingObjs,
-            std::vector<std::pair<JDObjectID::IDType, JDObject>> &newObjs,
+            std::vector<JDObjectID::IDType>& newObjIDs,
+            std::vector<JDObject>& newObjInstances,
             std::vector<JDObject> &removedObjs,
             std::vector<JDObjectPair> &changedPairs)
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-
+            double progressScalar = 0;
+            if (progress)
+            {
+                progressScalar = progress->getScalar();
+            }
             bool success = true;
 
             bool modeNewObjects = (mode & (int)LoadMode::newObjects);
@@ -357,7 +379,8 @@ namespace JsonDatabase
             // Prepare the data for the loader
             JDObjectManager::ManagedLoadContainers loaderContainers {
                 .overridingObjs = overridingObjs,
-                .newObjs = newObjs,
+                .newObjIDs = newObjIDs,
+                .newObjInstances = newObjInstances,
                 .changedPairs = changedPairs,
                 .replaceObjs = replaceObjs,
                 .loadedObjects = loadedObjects 
@@ -368,19 +391,42 @@ namespace JsonDatabase
 				.changedObjects = modeChangedObjects,
 				.overridingObjects = overrideChanges
 			};
+
+           /* double progressToTotal = 0;
+            if (progress)
+            {
+                progressToTotal = 1.0 - progress->getProgress();
+                progress->setComment("Loading "+std::to_string(jsons.size()) + " objects");
+            }
+            double deltaProgress = (progressToTotal*0.5) / (jsons.size()+1);
+            */
+
+            if (progress)
+            {
+                progress->setComment("Loading " + std::to_string(jsons.size()) + " objects");
+                progress->startNewSubProgress(progressScalar * 0.6);
+            }
             
+            JD_GENERAL_PROFILING_BLOCK("Load objects", JD_COLOR_STAGE_3);
+            size_t jsonCount = jsons.size();
+            overridingObjs.reserve(jsonCount);
+            newObjIDs.reserve(jsonCount);
+            newObjInstances.reserve(jsonCount);
+            changedPairs.reserve(jsonCount);
+            replaceObjs.reserve(jsonCount);
+            replaceObjs.reserve(jsonCount);
+            loadedObjects.reserve(jsonCount);
 
-
-
+            double factor = 1 / (double)jsonCount;
             for (size_t i = 0; i < jsons.size(); ++i)
             {
                 JDObjectManager::ManagedLoadMisc loaderMisc;
 #ifdef JD_USE_QJSON
                 const QJsonObject& json = jsons[i];
-                if (!json.getInt(id, JDObjectInterface::s_tag_objID))
+                if (!Utilities::JDSerializable::getJsonValue(json, loaderMisc.id, JDObjectInterface::s_tag_objID))
 #else
                 const JsonValue& json = jsons[i];
-                if (!jsons[i].getInt(loaderMisc.id, JDObjectInterface::s_tag_objID))
+                if (!jsons[i].extractInt(loaderMisc.id, JDObjectInterface::s_tag_objID))
 #endif
                 {
 #ifndef JD_USE_QJSON
@@ -407,16 +453,21 @@ namespace JsonDatabase
                         << JDObjectManager::managedLoadStatusToString(status) << "\"\n");
 					continue;
 				}
+				if (progress)
+					progress->setProgress((double)i * factor);
             }
+            JD_GENERAL_PROFILING_END_BLOCK;
 
+            JD_GENERAL_PROFILING_BLOCK("Find removed objects", JD_COLOR_STAGE_3);
             // Find new added objects
             if (modeRemovedObjects)
             {
-                std::vector<JDObject> allObjs = getObjects_internal();
+                std::vector<JDObjectManager*> managers = getObjectManagers_internal();
 
-                removedObjs.reserve(allObjs.size());
-                for (auto obj : allObjs)
+                removedObjs.reserve(managers.size());
+                for (auto manager : managers)
                 {
+                    JDObject obj = manager->getObject();
                     if (loadedObjects.find(obj) != loadedObjects.end())
                         continue;
 
@@ -426,256 +477,65 @@ namespace JsonDatabase
                 }
             }
 
-            /*struct Pair
-            {
-                JDObject objOriginal;
-                JDObject obj;
-#ifdef JD_USE_QJSON
-                QJsonObject& json;
-#else
-                const JsonValue& json;
-#endif
-            };
-
-            std::vector< Pair> pairs;
-            pairs.reserve(jsons.size());
-            std::vector< Pair> newObjectPairs;
-            newObjectPairs.reserve(jsons.size());
-            {
-                JD_GENERAL_PROFILING_BLOCK("Match objects with json data", JD_COLOR_STAGE_2);
-                if (progress) progress->setComment("Matching objects with json data");
-                for (size_t i = 0; i < jsons.size(); ++i)
-                {
-                    //JDObjectID ID;
-                    JDObjectID::IDType id;
-                    JD_GENERAL_PROFILING_NONSCOPED_BLOCK("Get object ID from json", JD_COLOR_STAGE_3);
-#ifdef JD_USE_QJSON
-                    if (!JDSerializable::getJsonValue(jsons[i], id, JDObjectInterface::s_tag_objID))
-#else
-
-                    if (!jsons[i].getInt(id, JDObjectInterface::s_tag_objID))
-#endif
-                    {
-#ifdef JD_USE_QJSON
-                        JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode)
-                            << "\") Object with no ID found: "
-                            << QJsonValue(jsons[i]).toString().toStdString()
-                            << "\n");
-#else
-                        JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\"" << getLoadModeStr(mode)
-                            << "\") Object with no ID found: "
-                            << jsons[i].toString()
-                            << "\n");
-#endif
-                        success = false;
-                    }
-                    JD_GENERAL_PROFILING_END_BLOCK;
-
-                    //JDObjectIDptr ID = JDManagerObjectManager::m_idDomain.getExistingID(id);
-
-                    Pair p{ .objOriginal = nullptr, .obj = nullptr, .json = jsons[i] };
-                    //if (JDManagerObjectManager::objectIDIsValid(id))
-                    p.objOriginal = getObject_internal(id);
-                    if (p.objOriginal)
-                        pairs.emplace_back(p);
-                    else
-                        newObjectPairs.emplace_back(p);
-
-                }
-                if (progress) progress->addProgress(0.03);
-            }
-            if (!success)
-            {
-                return false;
-            }
-
-            double subProgress = 1;
             if (progress)
-                subProgress = (1 - progress->getProgress()) / 3.0;
-
-
-          // const bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
-          // const bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
-          // const bool hasObjectAddedToDatabase = m_signals.objectAddedToDatabase.signal.getSlotCount();
-          // const bool hasObjectRemovedFromDatabase = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
-
-             //std::vector<JDObject> overridingObjs;
-             //std::vector<JDObject> newObjs;
-             //std::vector<JDObject> removedObjs;
-             //std::vector<JDObjectPair> changedPairs;
-
-            
-
-            std::unordered_map<JDObject, JDObject> loadedObjects;
-            if (modeRemovedObjects) loadedObjects.reserve(jsons.size());
-
-            if (modeChangedObjects && pairs.size() > 0)
             {
-                double dProgress = subProgress / pairs.size();
-                if (overrideChanges)
-                {
-                    JD_GENERAL_PROFILING_BLOCK("Deserialize objects override mode", JD_COLOR_STAGE_2);
-                    if (progress) progress->setComment("Deserializing objects override mode");
-
-                    overridingObjs.reserve(pairs.size());
-                    // Loads the existing objects and overrides the data in the current object instance
-                    for (Pair& pair : pairs)
-                    {
-                        if (hasOverrideChangeFromDatabaseSlots)
-                        {
-                            bool hasChanged = false;
-                            success &= Internal::JsonUtilities::deserializeOverrideFromJson(pair.json, pair.objOriginal, hasChanged);
-                            if (modeRemovedObjects) loadedObjects[pair.objOriginal] = pair.objOriginal;
-                            if (hasChanged)
-                            {
-                                // The loaded object is not equal to the original object
-                                overridingObjs.push_back(pair.objOriginal);
-                            }
-                        }
-                        else
-                            success &= Internal::JsonUtilities::deserializeOverrideFromJson(pair.json, pair.objOriginal);
-                        pair.obj = pair.objOriginal;
-                        if (progress) progress->addProgress(dProgress);
-                    }
-
-                }
-                else
-                {
-                    JD_GENERAL_PROFILING_BLOCK("Deserialize objects reinstatiation mode", JD_COLOR_STAGE_2);
-                    if (progress) progress->setComment("Deserializing objects reinstatiation mode");
-
-                    changedPairs.reserve(pairs.size());
-                    replaceObjs.reserve(pairs.size());
-                    // Loads the existing objects and creates a new object instance if the data has changed
-                    for (Pair& pair : pairs)
-                    {
-                        success &= Internal::JsonUtilities::deserializeJson(
-                            pair.json,
-                            pair.objOriginal,
-                            pair.obj,
-                            JDManagerObjectManager::m_idDomain,
-                            *this);
-                        if (modeRemovedObjects) loadedObjects[pair.objOriginal] = pair.objOriginal;
-                        if (pair.objOriginal != pair.obj)
-                        {
-                            // The loaded object is not equal to the original object
-                            if (hasChangeFromDatabaseSlots)
-                                changedPairs.emplace_back(std::move(JDObjectPair(pair.objOriginal, pair.obj)));
-                            replaceObjs.emplace_back(pair.obj);
-                            //replaceObject_internal(pair.obj);
-                        }
-                        if (progress) progress->addProgress(dProgress);
-                    }
-                }
-
+                progress->setScalar(progressScalar);
+                progress->addProgress(0.1);
             }
-            else if (progress) progress->addProgress(subProgress);
+            JD_GENERAL_PROFILING_END_BLOCK;
 
-            if (modeNewObjects && newObjectPairs.size() > 0)
-            {
-                JD_GENERAL_PROFILING_BLOCK("Deserialize and create new objects", JD_COLOR_STAGE_2);
-                if (progress) progress->setComment("Deserializing and creating new objects");
-                double dProgress = subProgress / newObjectPairs.size();
+           
+            int counter = 0;
 
-
-                newObjs.reserve(newObjectPairs.size());
-                // Loads the new objects and creates a new object instance
-                try
-                {
-
-                    for (Pair& pair : newObjectPairs)
-                    {
-                        success &= Internal::JsonUtilities::deserializeJson(
-                            pair.json,
-                            pair.objOriginal,
-                            pair.obj,
-                            JDManagerObjectManager::m_idDomain,
-                            *this);
-                        if (modeRemovedObjects) loadedObjects[pair.obj] = pair.obj;
-                        // Add the new generated object to the database
-                        //addObject_internal(pair.obj);
-                        newObjs.emplace_back(pair.obj);
-                        if (progress) progress->addProgress(dProgress);
-                    }
-                }
-                catch (const std::exception& e)
-                {
-                    JD_CONSOLE_FUNCTION("Exception: " << e.what() << "\n");
-                    //JDManagerFileSystem::unlockFile(error);
-                    return false;
-                }
-                catch (...)
-                {
-                    JD_CONSOLE_FUNCTION("Exception unknown\n");
-                    //JDManagerFileSystem::unlockFile(error);
-                    return false;
-                }
-
-            }
-            else if (progress) progress->addProgress(subProgress);
-
-            if (modeRemovedObjects)
-            {
-                JD_GENERAL_PROFILING_BLOCK("Search for erased objects", JD_COLOR_STAGE_2);
-                if (progress) progress->setComment("Searching for erased objects");
-                std::vector<JDObject> allObjs = getObjects_internal();
-                double dProgress = subProgress / (allObjs.size() + 1);
-
-                removedObjs.reserve(allObjs.size());
-                for (auto obj : allObjs)
-                {
-                    if (loadedObjects.find(obj) != loadedObjects.end())
-                        continue;
-
-                    if (hasObjectRemovedFromDatabase)
-                        removedObjs.emplace_back(obj);
-
-
-                nextObj:;
-                    if (progress) progress->addProgress(dProgress);
-                }
-
-            }
-            else if (progress) progress->addProgress(subProgress);
-            //JDManagerFileSystem::unlockFile(error);
-            */
-
+            JD_GENERAL_PROFILING_BLOCK("Remove objects", JD_COLOR_STAGE_3);
             // Copy the data to the signals
-            if (modeChangedObjects)
+            if (modeRemovedObjects && removedObjs.size())
             {
-                if (overrideChanges)
+                if (progress)
+                    progress->setComment("Remove " + std::to_string(removedObjs.size()) + " objects");
+                success &= removeObject_internal(removedObjs);
+                if (progress)
                 {
-                   // if (hasOverrideChangeFromDatabaseSlots && overridingObjs.size())
-                   //     m_signals.objectOverrideChangeFromDatabase.addObjs(overridingObjs);
-                }
-                else
-                {
-                    if (changedPairs.size())
-                    {
-                        replaceObject_internal(replaceObjs);
-                        //if (hasChangeFromDatabaseSlots)
-                        //   m_signals.objectChangedFromDatabase.addPairs(changedPairs);
-                    }
+                    progress->addProgress(0.1);
+                    ++counter;
                 }
             }
-            if (modeRemovedObjects)
+            JD_GENERAL_PROFILING_END_BLOCK;
+
+            JD_GENERAL_PROFILING_BLOCK("Replace objects", JD_COLOR_STAGE_3);
+            if (modeChangedObjects && !overrideChanges && changedPairs.size())
             {
-                if (removedObjs.size())
+                if(progress)
+                    progress->setComment("Replace " + std::to_string(replaceObjs.size()) + " objects");
+                replaceObject_internal(replaceObjs);
+                if (progress)
                 {
-                    success &= removeObject_internal(removedObjs);
-                    //if (hasObjectRemovedFromDatabase)
-                    //    m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
+                    progress->addProgress(0.1);
+                    ++counter;
                 }
             }
-            if (modeNewObjects)
+            JD_GENERAL_PROFILING_END_BLOCK;
+
+            JD_GENERAL_PROFILING_BLOCK("Add new objects", JD_COLOR_STAGE_3);
+            if (modeNewObjects && newObjIDs.size())
             {
-                if (newObjs.size())
+                if (progress)
+                    progress->setComment("Add " + std::to_string(newObjIDs.size()) + " new objects");
+                success &= packAndAddObject_internal(newObjIDs, newObjInstances);
+                if (progress)
                 {
-                    success &= packAndAddObject_internal(newObjs);
-                    //if (hasObjectAddedToDatabase)
-                    //    m_signals.objectAddedToDatabase.addObjs(newObjs);
+                    progress->addProgress(0.1);
+                    ++counter;
                 }
+                
             }
+
+            if (progress)
+            {
+                progress->addProgress((3 - counter) * 0.1);
+            }
+            JD_GENERAL_PROFILING_END_BLOCK;
+                
             return success;
         }
 

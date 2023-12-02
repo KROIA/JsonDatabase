@@ -9,12 +9,12 @@ namespace JsonDatabase
     // Constructors
     JDObjectID::JDObjectID(const IDType& id, 
                            State state,
-                           std::shared_ptr<JDObjectIDDomainInterface> domain)
+                           const std::shared_ptr<JDObjectIDDomainInterface> &domain)
         : m_id(id)
         , m_isValid(state)
         , m_domainInterface(domain)
     {
-        if (id == invalidID)
+        if (m_id == invalidID)
             m_isValid = State::Invalid;
     }
 

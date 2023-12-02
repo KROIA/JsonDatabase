@@ -2,6 +2,7 @@
 #include "manager/JDObjectLocker.h"
 #include "utilities/filesystem/FileLock.h"
 #include "utilities/JDUniqueMutexLock.h"
+#include "utilities/JDUtilities.h"
 
 
 #include <QFile>
@@ -33,19 +34,7 @@ namespace JsonDatabase
 		} \
 	} 
 
-#ifdef JD_USE_QJSON
-		QString JDObjectLocker::s_jsonKey_objectID = "objID";
-		QString JDObjectLocker::s_jsonKey_owner = "owner";
-		QString JDObjectLocker::s_jsonKey_sessionID = "sessionID";
-		QString JDObjectLocker::s_jsonKey_lockDate = "lockDate";
-		QString JDObjectLocker::s_jsonKey_lockTime = "lockTime";
-#else
-		std::string JDObjectLocker::s_jsonKey_objectID = "objID";
-		std::string JDObjectLocker::s_jsonKey_owner = "owner";
-		std::string JDObjectLocker::s_jsonKey_sessionID = "sessionID";
-		std::string JDObjectLocker::s_jsonKey_lockDate = "lockDate";
-		std::string JDObjectLocker::s_jsonKey_lockTime = "lockTime";
-#endif
+
 
 		JDObjectLocker::JDObjectLocker(JDManager& manager, std::mutex& mtx)
 			: m_manager(manager)
@@ -104,22 +93,28 @@ namespace JsonDatabase
 			// Check if Lock is already aquired 
 			ObjectLockData targetLock;
 			size_t targetIndex;
+			Utilities::JDUser user = m_manager.getUser();
 			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
 			{
-				if (targetLock.data.owner == m_manager.getUser() && 
-					targetLock.data.sessionID == m_manager.getSessionID())
+				
+				if (targetLock.data.user.getSessionID() == user.getSessionID())
 				{
 					// Already locked by this session
-					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID()->toString() << "\") Lock for object: \"" + obj->getObjectID()->toString() + "\" type: \"" + obj->className() + "\" is already aquired in this session\n");
+					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" 
+						<< obj->getObjectID()->toString() << "\") Lock for object: \"" 
+						+ obj->getObjectID()->toString() + "\" type: \"" + obj->className() 
+						+ "\" is already aquired in this session\n");
 					err = Error::none;
 					return true;
 				}
 				else
 				{
 					err = Error::lockedByOther;
-					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" << obj->getObjectID()->toString() << "\") Can't aquire lock for object: \"" + obj->getObjectID()->toString() + "\" type: \"" + obj->className() +
+					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" 
+						<< obj->getObjectID()->toString() << "\") Can't aquire lock for object: \"" 
+						+ obj->getObjectID()->toString() + "\" type: \"" + obj->className() +
 						"\"\nLock Data: \n" + targetLock.toString() + "\n"
-						"Lock is already aquired from user: \"" + targetLock.data.owner + "\"\n");
+						"Lock is already aquired from user: \"" + targetLock.data.user.toString() + "\"\n");
 					return false;
 				}
 			}
@@ -144,8 +139,7 @@ namespace JsonDatabase
 				size_t targetIndex;
 				if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
 				{
-					if (targetLock.data.owner == m_manager.getUser() &&
-						targetLock.data.sessionID == m_manager.getSessionID())
+					if (targetLock.data.user.getSessionID() == user.getSessionID())
 					{
 						// Already locked by this session
 						err = Error::none;
@@ -154,7 +148,9 @@ namespace JsonDatabase
 					else
 					{
 						err = Error::lockedByOther;
-						JD_CONSOLE("Can't verify the locked object: " << obj->getObjectID() <<" Object is locked by: \""<< targetLock.data.owner <<"\"");
+						JD_CONSOLE("Can't verify the locked object: " 
+							<< obj->getObjectID() 
+							<<" Object is locked by: \""<< targetLock.data.user.toString() <<"\"");
 						return false;
 					}
 				}
@@ -189,10 +185,10 @@ namespace JsonDatabase
 			// Check if Lock is already aquired 
 			ObjectLockData targetLock;
 			size_t targetIndex;
+			Utilities::JDUser user = m_manager.getUser();
 			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
 			{
-				if (targetLock.data.owner == m_manager.getUser() &&
-					targetLock.data.sessionID == m_manager.getSessionID())
+				if (targetLock.data.user.getSessionID() == user.getSessionID())
 				{
 					// Locked by this session
 
@@ -208,13 +204,16 @@ namespace JsonDatabase
 				{
 					err = Error::lockedByOther;
 					
-					JD_CONSOLE_FUNCTION("Can't release lock for object: \"" + obj->getObjectID()->toString() + "\" type: \"" + obj->className()
-					<<"\"\nLock Data: \n" + targetLock.toString() + "\n"
-					<<"Lock is owned by user: " + targetLock.data.owner + "\n");
+					JD_CONSOLE_FUNCTION("Can't release lock for object: \"" 
+						<< obj->getObjectID()->toString() << "\" type: \"" << obj->className()
+						<< "\"\nLock Data: \n" + targetLock.toString() + "\n"
+						<< "Lock is owned by user: " + targetLock.data.user.toString() + "\n");
 					return false;
 				}
 			}
-			JD_CONSOLE_FUNCTION("Lock for object: \"" + obj->getObjectID()->toString() + "\" type: \"" + obj->className() + "\" did not exist\n");
+			JD_CONSOLE_FUNCTION("Lock for object: \"" + 
+				obj->getObjectID()->toString() + "\" type: \"" + 
+				obj->className() + "\" did not exist\n");
 
 			err = Error::none;
 			return true;
@@ -234,7 +233,7 @@ namespace JsonDatabase
 			std::vector<ObjectLockData> locksOut;
 			std::vector<size_t> matches;
 			std::vector<size_t> mismatches;
-			getObjectLockDataFromSessionID(locks, m_manager.getSessionID(), m_manager.getUser(), locksOut, matches, mismatches);
+			getObjectLockDataFromSessionID(locks, m_manager.getSessionID(), locksOut, matches, mismatches);
 
 			// Save all locks which do not match, with this session id, to a new table
 			std::vector<ObjectLockData> newLockTable;
@@ -300,8 +299,7 @@ namespace JsonDatabase
 			size_t targetIndex;
 			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
 			{
-				if (targetLock.data.owner == m_manager.getUser() &&
-					targetLock.data.sessionID == m_manager.getSessionID())
+				if (targetLock.data.user.getSessionID() == m_manager.getUser().getSessionID())
 				{
 					// Already locked by this session
 					return true;
@@ -333,8 +331,7 @@ namespace JsonDatabase
 			size_t targetIndex;
 			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
 			{
-				if (targetLock.data.owner != m_manager.getUser() ||
-					targetLock.data.sessionID != m_manager.getSessionID())
+				if (targetLock.data.user.getSessionID() == m_manager.getUser().getSessionID())
 				{
 					// Already locked by this session
 					return true;
@@ -449,7 +446,7 @@ namespace JsonDatabase
 			std::vector<ObjectLockData> locksOut;
 			std::vector<size_t> matches;
 			std::vector<size_t> mismatches;
-			getObjectLockDataFromSessionID(locks, m_manager.getSessionID(), m_manager.getUser(), locksOut, matches, mismatches);
+			getObjectLockDataFromSessionID(locks, m_manager.getSessionID(), locksOut, matches, mismatches);
 
 			std::vector<ObjectLockData> locksFromOldLocation;
 			for (size_t i = 0; i < mismatches.size(); ++i)
@@ -503,11 +500,10 @@ namespace JsonDatabase
 			this->obj = obj;
 			if (!this->obj.get())
 				return;
-			data.objectID = this->obj->getObjectID()->get();
-			data.owner = manager.getUser();
-			data.sessionID = manager.getSessionID();
-			data.lockDate = QDate::currentDate().toString(Qt::DateFormat::ISODate).toStdString();
-			data.lockTime = QTime::currentTime().toString(Qt::DateFormat::ISODate).toStdString();
+			data.objectID  = this->obj->getObjectID()->get();
+			data.user      = manager.getUser();
+			data.lockDate  = QDate::currentDate();
+			data.lockTime  = QTime::currentTime();
 		}
 #ifdef JD_USE_QJSON
 		bool JDObjectLocker::ObjectLockData::load(const QJsonObject& obj)
@@ -518,17 +514,16 @@ namespace JsonDatabase
 			if(!isValid(obj))
 				return false;
 #ifdef JD_USE_QJSON
-			data.objectID = obj[s_jsonKey_objectID].toInt();
-			data.owner = obj[s_jsonKey_owner].toString().toStdString();
-			data.sessionID = obj[s_jsonKey_sessionID].toString().toStdString();
-			data.lockDate = obj[s_jsonKey_lockDate].toString().toStdString();
-			data.lockTime = obj[s_jsonKey_lockTime].toString().toStdString();
+			data.objectID = obj[JsonKeys::objectID.data()].toInt();
+			data.user.load(obj[JsonKeys::user.data()].toObject());
+			data.lockDate = Utilities::stringToQDate(obj[JsonKeys::lockDate.data()].toString().toStdString());
+			data.lockTime = Utilities::stringToQTime(obj[JsonKeys::lockTime.data()].toString().toStdString());
 #else
-			data.objectID = obj.at(s_jsonKey_objectID).getInt();
-			data.owner = obj.at(s_jsonKey_owner).toString();
-			data.sessionID = obj.at(s_jsonKey_sessionID).toString();
-			data.lockDate = obj.at(s_jsonKey_lockDate).toString();
-			data.lockTime = obj.at(s_jsonKey_lockTime).toString();
+
+			data.objectID = obj.at(JsonKeys::objectID).getInt();
+			data.user.load(obj.at(JsonKeys::user).getObject());
+			data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).toString());
+			data.lockTime = Utilities::stringToQTime(obj.at(JsonKeys::lockTime).toString());
 #endif
 			return true;
 		}
@@ -539,19 +534,22 @@ namespace JsonDatabase
 #endif
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			bool success = true;
 #ifdef JD_USE_QJSON
-			obj[s_jsonKey_objectID] = data.objectID;
-			obj[s_jsonKey_owner] = data.owner.c_str();
-			obj[s_jsonKey_sessionID] = data.sessionID.c_str();
-			obj[s_jsonKey_lockDate] = data.lockDate.c_str();
-			obj[s_jsonKey_lockTime] = data.lockTime.c_str();
+			obj[JsonKeys::objectID.data()] = data.objectID;
+			QJsonObject userObj;
+			success &= data.user.save(userObj);
+			obj[JsonKeys::user.data()] = userObj;
+			obj[JsonKeys::lockDate.data()] = Utilities::qDateToString(data.lockDate).c_str();
+			obj[JsonKeys::lockTime.data()] = Utilities::qTimeToString(data.lockTime).c_str();
 #else
 			obj.reserve(5);
-			obj[s_jsonKey_objectID] = data.objectID;
-			obj[s_jsonKey_owner] = data.owner;
-			obj[s_jsonKey_sessionID] = data.sessionID;
-			obj[s_jsonKey_lockDate] = data.lockDate;
-			obj[s_jsonKey_lockTime] = data.lockTime;
+			obj[JsonKeys::objectID] = data.objectID;
+			JsonObject userObj;
+			success &= data.user.save(userObj);
+			obj[JsonKeys::user] = userObj;
+			obj[JsonKeys::lockDate] = Utilities::qDateToString(data.lockDate);
+			obj[JsonKeys::lockTime] = Utilities::qTimeToString(data.lockTime);
 #endif
 			return true;
 		}
@@ -563,11 +561,10 @@ namespace JsonDatabase
 #endif
 		{
 			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-			if (!lock.contains(s_jsonKey_objectID)) return false;
-			if (!lock.contains(s_jsonKey_owner)) return false;
-			if (!lock.contains(s_jsonKey_sessionID)) return false;
-			if (!lock.contains(s_jsonKey_lockDate)) return false;
-			if (!lock.contains(s_jsonKey_lockTime)) return false;
+			if (!lock.contains(JsonKeys::objectID.data())) return false;
+			if (!lock.contains(JsonKeys::user.data())) return false;
+			if (!lock.contains(JsonKeys::lockDate.data())) return false;
+			if (!lock.contains(JsonKeys::lockTime.data())) return false;
 
 			return true;
 		}
@@ -774,7 +771,7 @@ namespace JsonDatabase
 		}
 		void JDObjectLocker::getObjectLockDataFromSessionID(const std::vector<ObjectLockData>& locks,
 			const std::string& targetSessionID,
-			const std::string& userName,
+			//const Utilities::JDUser& user,
 			std::vector<ObjectLockData>& locksOut,
 			std::vector<size_t>& matches,
 			std::vector<size_t>& mismatches) const
@@ -783,7 +780,7 @@ namespace JsonDatabase
 			for (size_t i = 0; i < locks.size(); ++i)
 			{
 				const ObjectLockData& lock = locks[i];
-				if (lock.data.sessionID == targetSessionID && lock.data.owner == userName)
+				if (lock.data.user.getSessionID() == targetSessionID)
 				{
 					locksOut.push_back(lock);
 					matches.push_back(i);

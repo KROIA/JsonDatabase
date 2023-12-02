@@ -48,7 +48,7 @@ JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
   //  , m_objID(other.m_objID)
    // , m_onDelete("onDelete")
 {
-
+    loadFrom(&other);
 }
 JDObjectInterface::~JDObjectInterface()
 {
@@ -80,16 +80,23 @@ JDObjectInterface::~JDObjectInterface()
 #endif
 }
 
-JDObject JDObjectInterface::clone() const
+JDObject JDObjectInterface::deepClone() const
 {
-    JDObjectInterface *instance = clone_internal();
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JDObjectInterface *instance = deepClone_internal();
+	return JDObject(instance);
+}
+JDObject JDObjectInterface::shallowClone() const
+{
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JDObjectInterface *instance = shallowClone_internal();
 	return JDObject(instance);
 }
 
 /*/
 std::vector<JDObject> JDObjectInterface::reinstantiate(const std::vector<JDObject>& objList)
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     std::vector<JDObject> ret;
 	ret.reserve(objList.size());
     for (auto it = objList.begin(); it != objList.end(); ++it)
@@ -118,7 +125,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
     for (size_t i = 0; i < jsons.size(); ++i)
     {
         int id;
-        if (jsons[i].getInt(id, s_tag_objID))
+        if (jsons[i].extractInt(id, s_tag_objID))
         {
             if (id == objID->get())
                 return i;
@@ -181,17 +188,17 @@ bool JDObjectInterface::equalData(const QJsonObject& obj) const
 bool JDObjectInterface::equalData(const JsonValue& obj) const
 #endif
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
 #ifdef JD_USE_QJSON
     QJsonObject data1;
     QJsonObject data2;
     bool equal = getJsonValue(obj, data1, s_tag_data);
     {
-        JD_GENERAL_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
         equal &= save(data2);
     }
     {
-        JD_GENERAL_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
         equal &= data1 == data2;
     }
 
@@ -207,11 +214,11 @@ bool JDObjectInterface::equalData(const JsonValue& obj) const
     JsonObject data2;
 
     {
-        JD_GENERAL_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
         equal &= save(data2);
     }
     {
-        JD_GENERAL_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
         equal &= data1 == data2;
     }
 
@@ -225,38 +232,29 @@ bool JDObjectInterface::loadInternal(const QJsonObject &obj)
 bool JDObjectInterface::loadInternal(const JsonValue& obj)
 #endif
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     
 #ifdef JD_USE_QJSON
-    if(!obj.contains(s_tag_objID))
-        return false;
     QJsonObject data;
     bool success = getJsonValue(obj, data, s_tag_data);
     
     {
-        JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
         success &= load(data);
     }
     //setObjectID(obj[s_tag_objID].toInt());
     return success;
 #else
-    if (!obj.contains(s_tag_objID))
-        return false;
-    JsonObject data;
-    bool success = obj.getObject(data, s_tag_data);
+    const JsonObject *data = obj.getObjectPtr(s_tag_data);
+    bool success = true;
 
+    if (data)
     {
-        JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
-        success &= load(data);
+        JD_OBJECT_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
+        success &= load(*data);
     }
-/*#ifdef JD_USE_QJSON
-    setObjectID(obj.getInt(s_tag_objID));
-#else
-    int id;
-    if (!obj.getInt(id, s_tag_objID))
-        return false;
-    setObjectID(id);
-#endif*/
+    else
+        success = false;
     return success;
 #endif
 }
@@ -275,14 +273,14 @@ bool JDObjectInterface::getSaveData(QJsonObject& obj) const
 bool JDObjectInterface::getSaveData(JsonObject& obj) const
 #endif
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
 #ifdef JD_USE_QJSON
     obj[s_tag_objID] = getObjectID()->get();
     obj[s_tag_className] = className().c_str();
     QJsonObject data;
     bool ret;
     {
-        JD_GENERAL_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
         ret = save(data);
     }
 
@@ -298,12 +296,13 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
         idVal = m_shallowID;
     obj[s_tag_objID] = idVal;
     obj[s_tag_className] = className();
-    obj[s_tag_data] = JsonObject();
     bool ret;
     {
-        JD_GENERAL_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
-        JsonObject& data = std::get<JsonObject>(obj[s_tag_data].getVariant());
+        JD_OBJECT_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
+       // JsonObject& data = std::get<JsonObject>(obj[s_tag_data].getVariant());
+        JsonObject data;
         ret = save(data);
+        obj[s_tag_data] = std::move(data);
     }
     return ret;
 #endif

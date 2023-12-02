@@ -95,7 +95,7 @@ namespace JsonDatabase
 
 	
 
-	JDObjectIDptr JDObjectIDDomain::getNewID(const JDObjectID::IDType& existing, bool& success)
+	JDObjectIDptr JDObjectIDDomain::getPredefinedID(const JDObjectID::IDType& existing, bool& success)
 	{
 		JD_ID_DOMAIN_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 
@@ -119,7 +119,7 @@ namespace JsonDatabase
 		success = false;
 		return nullptr;
 	}
-	std::vector<JDObjectIDptr> JDObjectIDDomain::getNewIDs(const std::vector<JDObjectID::IDType>& existingIDs, bool& allSuccess)
+	std::vector<JDObjectIDptr> JDObjectIDDomain::getPredefinedIDs(const std::vector<JDObjectID::IDType>& existingIDs, bool& allSuccess)
 	{
 		JD_ID_DOMAIN_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 		std::vector<JDObjectIDptr> ids;
@@ -149,7 +149,6 @@ namespace JsonDatabase
 			}
 			JDObjectIDptr id = JDObjectIDptr(new JDObjectID(current, JDObjectID::State::Valid, m_interface));
 			m_usedIDs[current] = id;
-
 			ids.push_back(id);
 		}
 		return ids;

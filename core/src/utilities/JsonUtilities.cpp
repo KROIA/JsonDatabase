@@ -14,8 +14,11 @@
 
 namespace JsonDatabase
 {
-	namespace Internal
+	namespace Utilities
 	{
+		/*
+	{
+        /*
 #ifdef JD_USE_QJSON
         bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut)
 #else
@@ -112,7 +115,8 @@ namespace JsonDatabase
                 }
             }
             return success;
-        }
+        }*/
+        /*
 #ifdef JD_USE_QJSON
         bool JsonUtilities::serializeObject(JDObject obj, std::string& serializedOut)
         {
@@ -135,8 +139,9 @@ namespace JsonDatabase
             serializedOut = bytes.constData();
             return true;
         }
-#endif
+#endif*/
 
+        /*
 #ifdef JD_USE_QJSON
         bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObject obj, bool& hasChangedOut)
 #else
@@ -166,8 +171,8 @@ namespace JsonDatabase
                 return false;
             }
             return true;
-        }
-
+        }*/
+/*
 #ifndef JD_USE_QJSON
         bool JsonUtilities::serializeObject(JDObject obj, std::string& serializedOut)
         {
@@ -181,7 +186,7 @@ namespace JsonDatabase
             serializedOut = JsonValue(data).serialize();
             return true;
         }
-#endif
+#endif*/
 /*
 #ifndef JD_USE_QJSON
         bool JsonUtilities::deserializeJson(

@@ -196,15 +196,15 @@ namespace JsonDatabase
             return nullptr;
         }
 
-        std::vector<JDObjectManager*> JDObjectContainer::getAllObjects() const
+        const std::vector<JDObjectManager*>& JDObjectContainer::getAllObjects() const
         {
             return m_objectVector;
         }
-        std::unordered_map<JDObjectID::IDType, JDObjectManager*> JDObjectContainer::getAllObjectsIDMap() const
+        const std::unordered_map<JDObjectID::IDType, JDObjectManager*>& JDObjectContainer::getAllObjectsIDMap() const
         {
             return m_objectMap;
         }
-        std::unordered_map<JDObjectInterface*, JDObjectManager*> JDObjectContainer::getAllObjectsPtrMap() const
+        const std::unordered_map<JDObjectInterface*, JDObjectManager*>& JDObjectContainer::getAllObjectsPtrMap() const
         {
             return m_objectPtrMap;
         }

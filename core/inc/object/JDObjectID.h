@@ -26,7 +26,7 @@ namespace JsonDatabase
 	private:
 		JDObjectID(const IDType& id, 
 				   State state,
-				   std::shared_ptr<JDObjectIDDomainInterface> domain);
+				   const std::shared_ptr<JDObjectIDDomainInterface> &domain);
 	public:
 		
 
