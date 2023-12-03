@@ -107,7 +107,7 @@ namespace JsonDatabase
 			bool readLockTable(std::vector<ObjectLockData>& locks, Error& err) const;
 			bool writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const;
 
-			const std::string& getTablePath() const;
+			std::string getTablePath() const;
 			const std::string& getTableFileName() const;
 			std::string getTableFileFilePath() const;
 

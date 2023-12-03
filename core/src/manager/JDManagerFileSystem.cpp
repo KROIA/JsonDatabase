@@ -31,6 +31,7 @@ namespace JsonDatabase
             std::mutex& mtx)
 			: m_databasePath(databasePath)
             , m_databaseName(databaseName)
+            , m_databaseFileName("data")
             , m_manager(manager)
             , m_mutex(mtx)
             , m_fileLock(nullptr)
@@ -71,24 +72,28 @@ namespace JsonDatabase
                 return;
             JDObjectLocker::Error lockerError;
             m_manager.onDatabasePathChange(m_databasePath, path, lockerError);
-            logOffDatabase();
+          //  logOffDatabase();
             m_databasePath = path;
             makeDatabaseDirs();
             makeDatabaseFiles();
-            logOnDatabase();
+           // logOnDatabase();
             restartDatabaseFileWatcher();
         }
         const std::string& JDManagerFileSystem::getDatabaseName() const
         {
             return m_databaseName;
         }
-        const std::string& JDManagerFileSystem::getDatabasePath() const
+        const std::string& JDManagerFileSystem::getDatabaseFileName() const
         {
-            return m_databasePath;
+            return m_databaseFileName;
+        }
+        std::string JDManagerFileSystem::getDatabasePath() const
+        {
+            return m_databasePath + "//" + m_databaseName;
         }
         std::string JDManagerFileSystem::getDatabaseFilePath() const
         {
-            return  m_databasePath + "//" + m_databaseName + Internal::JDManagerFileSystem::getJsonFileEnding();
+            return  getDatabasePath() + "//" + m_databaseFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
         }
 
 
@@ -108,6 +113,7 @@ namespace JsonDatabase
         bool JDManagerFileSystem::isLoggedOnDatabase() const
         {
 
+            return false;
         }
 
 
@@ -117,7 +123,7 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             bool success = true;
 
-            std::string path = m_manager.getDatabasePath();
+            std::string path = getDatabasePath();
             QDir dir(path.c_str());
             if (!dir.exists())
             {
@@ -223,7 +229,7 @@ namespace JsonDatabase
         }
         void JDManagerFileSystem::restartDatabaseFileWatcher()
         {
-            m_fileWatcher.setup(m_manager.getDatabaseFilePath());
+            m_fileWatcher.setup(getDatabaseFilePath());
         }
         
         void JDManagerFileSystem::update()

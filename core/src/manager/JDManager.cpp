@@ -138,7 +138,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     if (!JDManagerObjectManager::exists_internal(obj))
         return false;
 
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::read, s_fileLockTimeoutMs);
 
@@ -238,7 +238,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         return false;
     }*/
 
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::read, s_fileLockTimeoutMs);
 
@@ -372,7 +372,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     }
     bool success = true;
 
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, s_fileLockTimeoutMs);
 
@@ -491,7 +491,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     if(progress)
         progressScalar = progress->getScalar();
 
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, s_fileLockTimeoutMs);
 

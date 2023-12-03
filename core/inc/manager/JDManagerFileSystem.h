@@ -34,7 +34,8 @@ namespace JsonDatabase
             void setDatabaseName(const std::string& name);
 
             const std::string& getDatabaseName() const;
-            const std::string& getDatabasePath() const;
+            const std::string& getDatabaseFileName() const;
+            std::string getDatabasePath() const;
 
             std::string getDatabaseFilePath() const;
 
@@ -73,6 +74,7 @@ namespace JsonDatabase
         private:
             std::string m_databasePath;
             std::string m_databaseName;
+            std::string m_databaseFileName;
 
             size_t m_slowUpdateCounter;
 

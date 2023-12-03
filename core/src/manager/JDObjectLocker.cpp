@@ -734,7 +734,7 @@ namespace JsonDatabase
 			//m_lockTableWatcher.unpause();
 			return true;
 		}
-		const std::string& JDObjectLocker::getTablePath() const
+		std::string JDObjectLocker::getTablePath() const
 		{
 			if (m_useSpecificDatabasePath)
 			{
