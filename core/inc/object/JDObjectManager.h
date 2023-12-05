@@ -115,8 +115,8 @@ namespace JsonDatabase
 			static ManagedLoadStatus managedLoad(
 				const JsonValue& json, 
 				JDObjectManager* manager, 
-				ManagedLoadContainers& containers, 
-				const ManagedLoadMode& loadMode,
+				ManagedLoadContainers& containers/*,
+				const ManagedLoadMode& loadMode*/,
 				const ManagedLoadMisc& misc);
 
 			bool loadAndOverrideData(const JsonValue& json);
@@ -131,13 +131,13 @@ namespace JsonDatabase
 				const QJsonObject& json, 
 				JDObjectManager* manager,
 				ManagedLoadContainers& containers,
-				const ManagedLoadMode& loadMode,
-				const ManagedLoadMisc& misc);
+				const ManagedLoadMode& loadMode/*,
+				const ManagedLoadMisc& misc*/ );
 
 			static ManagedLoadStatus managedLoadNew_internal(
 				const QJsonObject& json,
-				ManagedLoadContainers& containers,
-				const ManagedLoadMode& loadMode,
+				ManagedLoadContainers& containers/*,
+				const ManagedLoadMode& loadMode*/,
 				const ManagedLoadMisc& misc);
 
 
@@ -148,8 +148,8 @@ namespace JsonDatabase
 				const JsonValue& json,
 				JDObjectManager* manager,
 				ManagedLoadContainers& containers,
-				const ManagedLoadMode& loadMode,
-				const ManagedLoadMisc& misc);
+				const ManagedLoadMode& loadMode/*,
+				const ManagedLoadMisc& misc*/);
 
 			static ManagedLoadStatus managedLoadNew_internal(
 				const JsonValue& json,

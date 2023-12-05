@@ -36,7 +36,8 @@ namespace JsonDatabase
             , m_mutex(mtx)
             , m_fileLock(nullptr)
             , m_slowUpdateCounter(-1) // -1 to trigger first update
-            , m_databaseLoginFileLock(nullptr)
+            , m_userRegistration(manager)
+           // , m_databaseLoginFileLock(nullptr)
 		{
             
         }
@@ -45,6 +46,8 @@ namespace JsonDatabase
             m_fileWatcher.stop();
             if(m_fileLock)
                 delete m_fileLock;
+
+            logOffDatabase();
         }
 
 
@@ -53,7 +56,11 @@ namespace JsonDatabase
             bool success = true;
             success &= makeDatabaseDirs();
             success &= makeDatabaseFiles();
+            
             restartDatabaseFileWatcher();
+            m_userRegistration.setup();
+
+            logOnDatabase();
             return success;
         }
 
@@ -72,11 +79,12 @@ namespace JsonDatabase
                 return;
             JDObjectLocker::Error lockerError;
             m_manager.onDatabasePathChange(m_databasePath, path, lockerError);
-          //  logOffDatabase();
+            logOffDatabase();
             m_databasePath = path;
             makeDatabaseDirs();
             makeDatabaseFiles();
-           // logOnDatabase();
+            
+            logOnDatabase();
             restartDatabaseFileWatcher();
         }
         const std::string& JDManagerFileSystem::getDatabaseName() const
@@ -89,11 +97,15 @@ namespace JsonDatabase
         }
         std::string JDManagerFileSystem::getDatabasePath() const
         {
-            return m_databasePath + "//" + m_databaseName;
+            return m_databasePath + "\\" + m_databaseName;
         }
         std::string JDManagerFileSystem::getDatabaseFilePath() const
         {
-            return  getDatabasePath() + "//" + m_databaseFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
+            return  getDatabasePath() + "\\" + m_databaseFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
+        }
+        bool JDManagerFileSystem::isLoggedOnDatabase() const
+        {
+            return m_userRegistration.isUserRegistered();
         }
 
 
@@ -102,19 +114,18 @@ namespace JsonDatabase
             return s_jsonFileEnding;
         }
      
-        void JDManagerFileSystem::logOnDatabase(std::string& generatedSessionIDOut)
+        void JDManagerFileSystem::logOnDatabase()
         {
-
+            Utilities::JDUser &user = m_manager.m_user;
+            std::string sessionID;
+            m_userRegistration.registerUser(user, sessionID);
+            user.setSessionID(sessionID);            
         }
         void JDManagerFileSystem::logOffDatabase()
         {
-
+            m_userRegistration.unregisterUser();
         }
-        bool JDManagerFileSystem::isLoggedOnDatabase() const
-        {
 
-            return false;
-        }
 
 
 
@@ -147,6 +158,31 @@ namespace JsonDatabase
             QFile file(m_manager.getDatabaseFilePath().c_str());
             if (!file.exists())
             {
+                // Create empty data
+                LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
+                fileAccessor.setProgress(nullptr);
+                LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::write);
+
+                if (fileError != LockedFileAccessor::Error::none)
+                {
+                    JD_CONSOLE("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+                    return false;
+                }
+
+#ifdef JD_USE_QJSON
+                std::vector<QJsonObject> jsonData;
+#else
+                JsonArray jsonData;
+#endif
+                fileError = fileAccessor.writeJsonFile(jsonData);
+                if (fileError != LockedFileAccessor::Error::none)
+                {
+                    JD_CONSOLE("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+                    return false;
+                }
+                else
+                    return true;
+                /*
                 if (file.open(QIODevice::WriteOnly))
                 {
 					file.close();
@@ -156,7 +192,7 @@ namespace JsonDatabase
                 {
 					JD_CONSOLE("bool JDManagerFileSystem::makeDatabaseFiles() Can't create database file: " << m_manager.getDatabaseFilePath().c_str() << "\n");
                     return false;
-                }
+                }*/
             }
             return true;
         }
@@ -165,6 +201,7 @@ namespace JsonDatabase
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             int ret = SystemCommand::execute("rd /s /q \"" + dir + "\"");
+            JD_UNUSED(ret);
             QDir folder(dir.c_str());
             if (folder.exists())
             {
@@ -183,7 +220,8 @@ namespace JsonDatabase
 
         int JDManagerFileSystem::tryToClearUnusedFileLocks() const
         {
-            const std::string lockFileEnding = FileLock::s_lockFileEnding;
+            return m_userRegistration.unregisterInactiveUsers();
+           /* const std::string lockFileEnding = FileLock::s_lockFileEnding;
 
             // Get all files in the database directory
             QDir dir(m_manager.getDatabasePath().c_str());
@@ -220,7 +258,7 @@ namespace JsonDatabase
 					}
 				}
 			}
-			return count;
+			return count;*/
         }
 
         ManagedFileChangeWatcher& JDManagerFileSystem::getDatabaseFileWatcher()
@@ -234,7 +272,7 @@ namespace JsonDatabase
         
         void JDManagerFileSystem::update()
         {
-            if(m_slowUpdateCounter >= 10000)
+            if(m_slowUpdateCounter >= 100)
 			{
 				m_slowUpdateCounter = 0;
 				tryToClearUnusedFileLocks();

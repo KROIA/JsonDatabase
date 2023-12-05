@@ -106,7 +106,7 @@ namespace JsonDatabase
 
         void JDManagerAsyncWorker::threadLoop()
         {
-            JD_PROFILING_THREAD((m_manager.getDatabaseName()+"::"+ m_manager.getUser() + " JDManagerAsyncWorker").c_str());
+            JD_PROFILING_THREAD((m_manager.getDatabaseName()+"::"+ m_manager.getUser().getName() + " JDManagerAsyncWorker").c_str());
             while (!m_stopFlag.load())
             {
                 m_busy.store(false);

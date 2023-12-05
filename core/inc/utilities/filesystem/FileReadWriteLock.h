@@ -41,8 +41,7 @@ namespace JsonDatabase
 			Access getAccessStatus() const;
 			Access getAccessStatus(size_t& readerCount) const;
 
-			static std::vector<std::string> getFileNamesInDirectory(const std::string& directory);
-			static std::vector<std::string> getFileNamesInDirectory(const std::string& directory, const std::string& fileEndig);
+			
 			static const std::string& accessTypeToString(Access access);
 			static Access stringToAccessType(const std::string& accessStr);
 			static std::string getRandomString(size_t length);

@@ -40,6 +40,7 @@ namespace JsonDatabase
 		if (!m_domain)
 			return false; // Domain is not alive
 		m_domain->unregisterID(id);
+		return true;
 	}
 
 

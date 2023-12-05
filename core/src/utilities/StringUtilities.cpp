@@ -6,6 +6,7 @@ namespace JsonDatabase
     {
         std::string replaceForwardSlashesWithBackslashes(const std::string& input)
         {
+			return input;
             std::string result = input;
             size_t pos = 0;
 
@@ -27,6 +28,10 @@ namespace JsonDatabase
 				"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 				"abcdefghijklmnopqrstuvwxyz";
 
+			// create a random number generator
+			srand((unsigned int)time(NULL));
+
+			// generate random string
 			for (int i = 0; i < length; ++i)
 			{
 				result[i] = alphanum[rand() % (sizeof(alphanum) - 1)];

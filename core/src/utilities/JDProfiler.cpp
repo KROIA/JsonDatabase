@@ -12,6 +12,8 @@ namespace JsonDatabase
     {
 #ifdef JD_PROFILING
         profiler::dumpBlocksToFile(profileFilePath.c_str());
+#else
+        JD_UNUSED(profileFilePath);
 #endif
     }
 }

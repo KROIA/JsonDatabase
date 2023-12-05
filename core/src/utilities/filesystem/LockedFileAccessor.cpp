@@ -760,7 +760,7 @@ namespace JsonDatabase
                     DWORD size = chunkSize;
                     if (i == chunkCount - 1)
                         size = fileData.size() - totalBytesWritten;
-                    if (totalBytesWritten + size > fileData.size())
+                    if (totalBytesWritten + size > (DWORD)fileData.size())
                         size = fileData.size() - totalBytesWritten;
 
                     DWORD bytesWritten = 0;

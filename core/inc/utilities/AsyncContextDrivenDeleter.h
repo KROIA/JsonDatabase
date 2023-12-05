@@ -106,12 +106,12 @@ namespace JsonDatabase
 					if (obj.use_count() == 1)
 					{
 						obj.reset();
-						T* objPtr = obj.get();
+						//T* objPtr = obj.get();
 					}
 					else
 					{
 						//JD_LOG_WARNING("Object is still in use. Object will not be deleted.");
-						int a = 0;
+						//int a = 0;
 					}
 				}
 			}

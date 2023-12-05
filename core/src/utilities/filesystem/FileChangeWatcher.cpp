@@ -280,6 +280,11 @@ namespace JsonDatabase
             m_databaseFileWatcher = new FileChangeWatcher(targetFile);
             bool success = m_databaseFileWatcher->setup();
             DWORD lastError = m_databaseFileWatcher->getSetupError();
+            if (!success)
+            {
+				JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << lastError << " : " << Utilities::getLastErrorString(lastError) << "\n");
+				return false;
+			}
             m_databaseFileWatcher->startWatching();
             return success;
         }

@@ -47,10 +47,19 @@ namespace JsonDatabase
 
             static const std::string& getErrorStr(Error err);
             static bool isLockInUse(const std::string& filePath, const std::string& fileName);
-            static bool isFileLocked(const std::string& fullFilePath);
+            
+            static bool fileExists(const std::string& filePath, const std::string& fileName);
+            static bool deleteFile(const std::string& filePath, const std::string& fileName);
+            static std::vector<std::string> getLockFileNamesInDirectory(const std::string& directory);
+            static std::string getFullFilePath(const std::string& filePath, const std::string& fileName);
+
+            static std::vector<std::string> getFileNamesInDirectory(const std::string& directory);
+            static std::vector<std::string> getFileNamesInDirectory(const std::string& directory, const std::string& fileEndig);
 
             static const std::string s_lockFileEnding;
         private:
+            static bool isFileLocked(const std::string& fullFilePath);
+            static bool deleteFile(const std::string& fullFilePath);
             Error lock_internal();
             Error lockFile();
             Error unlockFile();
@@ -58,7 +67,7 @@ namespace JsonDatabase
 
 
 
-            std::string m_filePath;
+            //std::string m_filePath;
             std::string m_directory;
             std::string m_fileName;
 

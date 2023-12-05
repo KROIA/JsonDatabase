@@ -144,7 +144,7 @@ namespace JsonDatabase
             if (obj.contains(key))
             {
 #ifdef JD_USE_QJSON
-                value = obj[key].toDouble(value);
+                value = static_cast<float>(obj[key].toDouble(static_cast<double>(value)));
 #else
                 value = obj.find(key)->second.getDouble();
 #endif

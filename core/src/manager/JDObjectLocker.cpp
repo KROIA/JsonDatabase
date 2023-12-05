@@ -135,11 +135,11 @@ namespace JsonDatabase
 					return false;
 
 				// Check if Lock is already aquired 
-				ObjectLockData targetLock;
-				size_t targetIndex;
-				if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
+				ObjectLockData targetLock2;
+				size_t targetIndex2;
+				if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock2, targetIndex2))
 				{
-					if (targetLock.data.user.getSessionID() == user.getSessionID())
+					if (targetLock2.data.user.getSessionID() == user.getSessionID())
 					{
 						// Already locked by this session
 						err = Error::none;
@@ -150,7 +150,7 @@ namespace JsonDatabase
 						err = Error::lockedByOther;
 						JD_CONSOLE("Can't verify the locked object: " 
 							<< obj->getObjectID() 
-							<<" Object is locked by: \""<< targetLock.data.user.toString() <<"\"");
+							<<" Object is locked by: \""<< targetLock2.data.user.toString() <<"\"");
 						return false;
 					}
 				}

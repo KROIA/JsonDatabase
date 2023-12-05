@@ -5,6 +5,7 @@
 #include "utilities/filesystem/FileReadWriteLock.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/filesystem/LockedFileAccessor.h"
+#include "utilities/JDUserRegistration.h"
 
 
 #ifdef JD_USE_QJSON
@@ -39,12 +40,14 @@ namespace JsonDatabase
 
             std::string getDatabaseFilePath() const;
 
+            bool isLoggedOnDatabase() const;
+
+
             static const std::string& getJsonFileEnding();
         protected:
             
-            void logOnDatabase(std::string &generatedSessionIDOut);
+            void logOnDatabase();
             void logOffDatabase();
-            bool isLoggedOnDatabase() const;
 
 
 
@@ -81,12 +84,14 @@ namespace JsonDatabase
             JDManager& m_manager;
             std::mutex& m_mutex;
 
+
             mutable FileReadWriteLock* m_fileLock;
             mutable ManagedFileChangeWatcher m_fileWatcher;
 
+            Utilities::JDUserRegistration m_userRegistration;
             // This lock file is used to ckeck if an user is still online or not.
             // If it can be deleted, the user is offline and did not clean up after himself.
-            FileLock *m_databaseLoginFileLock;
+            //FileLock *m_databaseLoginFileLock;
 
             static const std::string s_jsonFileEnding;
 

@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
 
-    JDManager manager("database", "MyData", "sessionID", "USER");
+    JDManager manager("database", "MyData", "USER");
     manager.setup();
     //JDManager manager("C:\\Users\\alexk\\Documents\\Privat\\Softwareentwicklung\\QT\\Projekte\\JsonDatabase\\example\\bin\\database","sessionID","USER");
     //manager.addObjectDefinition<A>();
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
     
 
-    JDManager manager2("database", "MyData", "sessionID2", "USER");
+    JDManager manager2("database", "MyData", "USER");
     //manager2.addObjectDefinition<A>();
     //manager2.addObjectDefinition<B>();
     //manager2.addObjectDefinition<C>();

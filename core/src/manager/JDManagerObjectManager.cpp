@@ -342,10 +342,10 @@ namespace JsonDatabase
 
 #ifdef JD_USE_QJSON
         bool JDManagerObjectManager::loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
-            bool hasOverrideChangeFromDatabaseSlots,
-            bool hasChangeFromDatabaseSlots,
-            bool hasObjectAddedToDatabaseSlots,
-            bool hasObjectRemovedFromDatabaseSlots,
+           // bool hasOverrideChangeFromDatabaseSlots,
+           // bool hasChangeFromDatabaseSlots,
+           // bool hasObjectAddedToDatabaseSlots,
+           // bool hasObjectRemovedFromDatabaseSlots,
             std::vector<JDObject>& overridingObjs,
             std::vector<JDObjectID::IDType>& newObjIDs,
             std::vector<JDObject>& newObjInstances,
@@ -353,10 +353,10 @@ namespace JsonDatabase
             std::vector<JDObjectPair>& changedPairs)
 #else
         bool JDManagerObjectManager::loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
-            bool hasOverrideChangeFromDatabaseSlots,
-            bool hasChangeFromDatabaseSlots,
-            bool hasObjectAddedToDatabaseSlots,
-            bool hasObjectRemovedFromDatabaseSlots,
+           // bool hasOverrideChangeFromDatabaseSlots,
+           // bool hasChangeFromDatabaseSlots,
+           // bool hasObjectAddedToDatabaseSlots,
+           // bool hasObjectRemovedFromDatabaseSlots,
             std::vector<JDObject> &overridingObjs,
             std::vector<JDObjectID::IDType>& newObjIDs,
             std::vector<JDObject>& newObjInstances,

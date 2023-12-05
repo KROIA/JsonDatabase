@@ -29,6 +29,7 @@ namespace JsonDatabase
                 if (m_objectVector[i]->getObject().get() == obj.get())
                     return i;
             }
+            return std::string::npos;
         }
 
         void JDObjectContainer::reserve(size_t size)

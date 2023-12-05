@@ -20,6 +20,9 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	ui.setupUi(this);
 	setWindowTitle(QString::fromStdString(user));
 
+	//if(m_manager)
+	//	delete m_manager;
+
 	m_manager = new JDManager("asyncDatabase", "Person", user);
 	m_manager->setup();
 
@@ -80,7 +83,7 @@ void MainWindow::onAsyncUpdateTimerFinished()
 	if (managerIsBusy)
 	{
 		JsonDatabase::Internal::WorkProgress progress = m_manager->getWorkProgress();
-		ui.progressBar->setValue(progress.getProgress() * 100);
+		ui.progressBar->setValue(static_cast<int>(progress.getProgress() * 100));
 		ui.progressTaskName_label->setText(QString::fromStdString(progress.getTaskText()));
 		ui.progressComment_label->setText(QString::fromStdString(progress.getComment()));
 	}

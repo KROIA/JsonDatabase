@@ -33,6 +33,19 @@ namespace JsonDatabase
 
 
     JDManager::JDManager(const std::string& databasePath,
+                         const std::string& databaseName)
+        : JDManagerObjectManager(m_mutex)
+        , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
+        , JDObjectLocker(*this, m_mutex)
+        , JDManagerAsyncWorker(*this, m_mutex)
+        , m_useZipFormat(false)
+        , m_signleEntryUpdateLock(false)
+        , m_signals(*this, m_mutex)
+    {
+        m_user = Utilities::JDUser::generateUser();
+        JDManagerObjectManager::setDomainName(m_user.getSessionID());
+    }
+    JDManager::JDManager(const std::string& databasePath,
         const std::string& databaseName,
         const std::string& user)
         : JDManagerObjectManager(m_mutex)
@@ -304,10 +317,10 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         progress->startNewSubProgress(progressScalar * 0.9);
     }
     success &= JDManagerObjectManager::loadObjectsFromJson_internal(*jsons, mode, progress, 
-        hasOverrideChangeFromDatabaseSlots,
+       /* hasOverrideChangeFromDatabaseSlots,
         hasChangeFromDatabaseSlots,
         hasObjectAddedToDatabaseSlots,
-        hasObjectRemovedFromDatabaseSlots,
+        hasObjectRemovedFromDatabaseSlots,*/
         overridingObjs,
         newObjIDs,
         newObjInstances, 
@@ -374,7 +387,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
 
     LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
     fileAccessor.setProgress(progress);
-    LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, s_fileLockTimeoutMs);
+    LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, timeoutMillis);
 
     if (fileError != LockedFileAccessor::Error::none)
     {
@@ -493,7 +506,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
 
     LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
     fileAccessor.setProgress(progress);
-    LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, s_fileLockTimeoutMs);
+    LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, timeoutMillis);
 
     if (fileError != LockedFileAccessor::Error::none)
     {

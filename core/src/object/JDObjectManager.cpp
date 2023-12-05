@@ -4,6 +4,10 @@
 #include "object/JDObjectRegistry.h"
 #include "manager/async/WorkProgress.h"
 
+#ifdef JD_ENABLE_MULTITHREADING
+#include <thread>
+#endif
+
 namespace JsonDatabase
 {
 	namespace Internal
@@ -103,12 +107,12 @@ namespace JsonDatabase
 							for (size_t j = data.start; j < data.end; ++j)
 							{
 #ifdef JD_USE_QJSON
-								QJsonObject data;
+								QJsonObject jsonData;
 #else
-								JsonObject data;
+								JsonObject jsonData;
 #endif
-								objs[j]->saveInternal(data);
-								jsonOut[j] = std::move(data);
+								objs[j]->saveInternal(jsonData);
+								jsonOut[j] = std::move(jsonData);
 								finishCount++;
 							}
 						});
@@ -218,8 +222,8 @@ namespace JsonDatabase
 #endif
 		{
 			if (manager)
-				return managedLoadExisting_internal(json, manager, containers, loadMode, misc);
-			return managedLoadNew_internal(json, containers, loadMode, misc);
+				return managedLoadExisting_internal(json, manager, containers, loadMode);
+			return managedLoadNew_internal(json, containers, misc);
 		}
 
 #ifdef JD_USE_QJSON
@@ -227,15 +231,15 @@ namespace JsonDatabase
 			const QJsonObject& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers,
-			const ManagedLoadMode& loadMode,
-			const ManagedLoadMisc& misc)
+			const ManagedLoadMode& loadMode/*,
+			const ManagedLoadMisc& misc*/)
 #else
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadExisting_internal(
 			const JsonValue& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers,
-			const ManagedLoadMode& loadMode,
-			const ManagedLoadMisc& misc)
+			const ManagedLoadMode& loadMode/*,
+			const ManagedLoadMisc& misc*/)
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
@@ -291,14 +295,14 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadNew_internal(
 			const QJsonObject& json,
-			ManagedLoadContainers& containers,
-			const ManagedLoadMode& loadMode,
+			ManagedLoadContainers& containers/*,
+			const ManagedLoadMode& loadMode*/,
 			const ManagedLoadMisc& misc)
 #else
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadNew_internal(
 			const JsonValue& json,
-			ManagedLoadContainers& containers,
-			const ManagedLoadMode& loadMode,
+			ManagedLoadContainers& containers/*,
+			const ManagedLoadMode& loadMode*/,
 			const ManagedLoadMisc& misc)
 #endif
 		{

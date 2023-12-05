@@ -212,13 +212,10 @@ namespace JsonDatabase
         }
         FileReadWriteLock::Access FileReadWriteLock::getAccessStatus(size_t& readerCount) const
         {
-            std::vector<std::string> files = getFileNamesInDirectory(m_directory, FileLock::s_lockFileEnding);
+            std::vector<std::string> files = FileLock::getFileNamesInDirectory(m_directory, FileLock::s_lockFileEnding);
             readerCount = 0;
             for (const std::string& file : files)
             {
-                if (file.find(FileLock::s_lockFileEnding) == std::string::npos)
-                    continue;
-
                 // Check the filename to see if it matches the file we want to lock
                 size_t pos = file.find_last_of("_");
                 if (pos == std::string::npos)
@@ -254,59 +251,6 @@ namespace JsonDatabase
             return Access::unknown;
         }
 
-
-        std::vector<std::string> FileReadWriteLock::getFileNamesInDirectory(const std::string& directory)
-        {
-            std::vector<std::string> fileNames;
-
-            WIN32_FIND_DATA findFileData;
-            HANDLE hFind = FindFirstFile((directory + "\\*").c_str(), &findFileData);
-
-            if (hFind == INVALID_HANDLE_VALUE)
-            {
-                return fileNames;
-            }
-
-            do
-            {
-                if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-                {
-                    // This is a directory, skip it
-                    continue;
-                }
-                fileNames.push_back(findFileData.cFileName);
-            } while (FindNextFile(hFind, &findFileData) != 0);
-
-            FindClose(hFind);
-
-            return fileNames;
-        }
-        std::vector<std::string> FileReadWriteLock::getFileNamesInDirectory(const std::string& directory, const std::string& fileEndig)
-        {
-            std::vector<std::string> fileNames;
-
-            WIN32_FIND_DATA findFileData;
-            HANDLE hFind = FindFirstFile((directory + "\\*" + fileEndig).c_str(), &findFileData);
-
-            if (hFind == INVALID_HANDLE_VALUE)
-            {
-                return fileNames;
-            }
-
-            do
-            {
-                if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-                {
-                    // This is a directory, skip it
-                    continue;
-                }
-                fileNames.push_back(findFileData.cFileName);
-            } while (FindNextFile(hFind, &findFileData) != 0);
-
-            FindClose(hFind);
-
-            return fileNames;
-        }
         const std::string& FileReadWriteLock::accessTypeToString(Access access)
         {
             switch (access)

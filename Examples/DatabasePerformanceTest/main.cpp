@@ -65,11 +65,11 @@ int main(int argc, char* argv[])
 #ifdef CONCURENT_TEST
     JsonDatabase::Profiler::startProfiler();
 
-    manager1 = new JDManager("database", "Persons", "sessionID1", "USER 1");
-    manager2 = new JDManager("database", "Persons", "sessionID2", "USER 2");
-    manager3 = new JDManager("database", "Persons", "sessionID3", "USER 3");
-    manager4 = new JDManager("database", "Persons", "sessionID4", "USER 4");
-    manager5 = new JDManager("database", "Persons", "sessionID5", "USER 5");
+    manager1 = new JDManager("database", "Persons", "USER 1");
+    manager2 = new JDManager("database", "Persons", "USER 2");
+    manager3 = new JDManager("database", "Persons", "USER 3");
+    manager4 = new JDManager("database", "Persons", "USER 4");
+    manager5 = new JDManager("database", "Persons", "USER 5");
 
     manager1->setup();
     manager2->setup();
@@ -538,7 +538,8 @@ void collisionChecker() {
    // watcher->startWatching();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS+1) {
         
-        std::vector<std::string>  files = Internal::FileReadWriteLock::getFileNamesInDirectory("database", ".clk");
+        std::vector<std::string>  files = Internal::FileReadWriteLock::
+            ("database", ".clk");
         size_t wCount = 0;
         size_t rCount = 0;
         for (const std::string& file : files)

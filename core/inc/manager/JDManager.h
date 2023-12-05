@@ -45,6 +45,8 @@ class JSONDATABASE_EXPORT JDManager:
     friend class Internal::JDManagerAysncWorkSaveList;
 
     public:
+        JDManager(const std::string& databasePath,
+            const std::string& databaseName);
         JDManager(const std::string &databasePath,
                   const std::string &databaseName,
                   const std::string &user);
