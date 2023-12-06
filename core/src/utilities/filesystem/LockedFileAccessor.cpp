@@ -348,7 +348,10 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                     jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
 #else
-                    deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString(), m_progress);
+                    if (m_progress)
+                        deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString(), m_progress);
+                    else
+                        deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString());
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -359,7 +362,10 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                     jsonDocument = QJsonDocument::fromJson(fileData);
 #else
-                    deserialized = deserializer.deserializeValue(fileData.toStdString(), m_progress);
+                    if (m_progress)
+                        deserialized = deserializer.deserializeValue(fileData.toStdString(), m_progress);
+                    else
+                        deserialized = deserializer.deserializeValue(fileData.toStdString());
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -375,7 +381,10 @@ namespace JsonDatabase
 #else
 
                 std::string str = std::move(fileData.toStdString());
-                deserializer.deserializeValue(str, deserialized, m_progress);
+                if(m_progress)
+                    deserializer.deserializeValue(str, deserialized, m_progress);
+                else
+                    deserializer.deserializeValue(str, deserialized);
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
@@ -471,7 +480,10 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                     document = QJsonDocument::fromJson(uncompressed.toUtf8());
 #else
-                    deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString(), m_progress);
+                    if (m_progress)
+                        deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString(), m_progress);
+                    else
+                        deserialized = deserializer.deserializeValue(uncompressed.toUtf8().toStdString());
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -482,7 +494,10 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                     document = QJsonDocument::fromJson(fileData);
 #else
-                    deserialized = deserializer.deserializeValue(fileData.toStdString(), m_progress);
+                    if (m_progress)
+                        deserialized = deserializer.deserializeValue(fileData.toStdString(), m_progress);
+                    else
+                        deserialized = deserializer.deserializeValue(fileData.toStdString());
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -496,7 +511,10 @@ namespace JsonDatabase
                 if (m_progress)
                     m_progress->setProgress(1);
 #else
-                deserialized = deserializer.deserializeValue(fileData.toStdString(), m_progress);
+                if (m_progress)
+                    deserialized = deserializer.deserializeValue(fileData.toStdString(), m_progress);
+                else
+					deserialized = deserializer.deserializeValue(fileData.toStdString());
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }

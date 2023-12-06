@@ -60,7 +60,7 @@ namespace JsonDatabase
 		/*bool JDObjectLocker::setup(Error& err)
 		{
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
 			bool success = false;
 			err = Error::none;
@@ -85,7 +85,7 @@ namespace JsonDatabase
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -186,7 +186,7 @@ namespace JsonDatabase
 
 			// Verify lock success
 			{
-				JD_OBJECT_LOCK_PROFILING_BLOCK("Verify object lock", JD_COLOR_STAGE_11);
+				JD_REGISTRY_PROFILING_BLOCK("Verify object lock", JD_COLOR_STAGE_11);
 				std::vector<ObjectLockData> verifyLocks;
 				if (!readLockTable(verifyLocks, err))
 					return false;
@@ -230,7 +230,7 @@ namespace JsonDatabase
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -317,7 +317,7 @@ namespace JsonDatabase
 		bool JDObjectLocker::unlockAllObjs(Error& err)
 		{
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 			err = Error::none;
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -363,7 +363,7 @@ namespace JsonDatabase
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
@@ -399,7 +399,7 @@ namespace JsonDatabase
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -443,7 +443,7 @@ namespace JsonDatabase
 				return false;
 			}
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -487,7 +487,7 @@ namespace JsonDatabase
 		bool JDObjectLocker::getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const
 		{
 			JDM_UNIQUE_LOCK_P;
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			lockedObjectsOut.clear();
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
@@ -586,7 +586,7 @@ namespace JsonDatabase
 		}
 		/*void JDObjectLocker::onDatabasePathChange(const std::string& oldPath, const std::string& newPath, Error& err) const
 		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 
 			FileLock::Error lockErr1;
 			FileLock fileLock1(oldPath, m_lockTableFile);
@@ -737,7 +737,7 @@ namespace JsonDatabase
 		bool JDObjectLocker::LockEntryObjectImpl::save(JsonObject& obj) const
 #endif
 		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			bool success = LockEntryObject::save(obj);
 #ifdef JD_USE_QJSON
 			obj[JsonKeys::objectID.data()] = data.objectID;
@@ -764,7 +764,7 @@ namespace JsonDatabase
 		bool JDObjectLocker::LockEntryObjectImpl::isValid(const JsonObject& lock)
 #endif
 		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			if (!lock.contains(JsonKeys::objectID.data())) return false;
 			if (!lock.contains(JsonKeys::user.data())) return false;
 			if (!lock.contains(JsonKeys::lockDate.data())) return false;
@@ -799,7 +799,7 @@ namespace JsonDatabase
 
 		bool JDObjectLocker::readLockTable(std::vector<ObjectLockData>& locks, Error& err) const
 		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			std::string filePath = getTableFileFilePath();
 			QFile file(filePath.c_str());
 			if (!file.exists())
@@ -884,7 +884,7 @@ namespace JsonDatabase
 		}
 		bool JDObjectLocker::writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const
 		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			std::string filePath = getTableFileFilePath();
 			
 			QFile file(filePath.c_str());
@@ -960,7 +960,7 @@ namespace JsonDatabase
 			ObjectLockData& lockOut,
 			size_t& index) const
 		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			for (size_t i = 0; i < locks.size(); ++i)
 			{
 				const ObjectLockData& lock = locks[i];
@@ -980,7 +980,7 @@ namespace JsonDatabase
 			std::vector<size_t>& matches,
 			std::vector<size_t>& mismatches) const
 		{
-			JD_OBJECT_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			for (size_t i = 0; i < locks.size(); ++i)
 			{
 				const ObjectLockData& lock = locks[i];

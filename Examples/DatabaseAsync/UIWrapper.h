@@ -16,11 +16,17 @@ public:
 		w1 = new MainWindow("User1");
 		// Create a single shot timer that creates both MainWindows in differend times
 		// Create single shot with lambda
-		QTimer::singleShot(3000, [this]() {
-			w2 = new MainWindow("User2"); 
-			w2->show(); 
-			connect(w2, &MainWindow::closeWindow, this, &UIWrapper::onWindowClosed); 
-			});
+
+		bool useSecondWindow = false;
+
+		if (useSecondWindow)
+		{
+			QTimer::singleShot(3000, [this]() {
+				w2 = new MainWindow("User2");
+				w2->show();
+				connect(w2, &MainWindow::closeWindow, this, &UIWrapper::onWindowClosed);
+				});
+		}
 		
 
 		w1->show();

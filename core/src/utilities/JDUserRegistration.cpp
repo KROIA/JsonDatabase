@@ -25,6 +25,7 @@ namespace JsonDatabase
 
 		bool JDUserRegistration::registerUser(const JDUser& user, std::string& generatedSessionIDOut)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			m_registeredUser.reset();
 			if (m_isRegistered)
 				return false;
@@ -74,6 +75,7 @@ namespace JsonDatabase
 		}
 		bool JDUserRegistration::unregisterUser()
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			if (!m_isRegistered)
 				return false;
 
@@ -106,6 +108,7 @@ namespace JsonDatabase
 
 		std::vector<JDUser> JDUserRegistration::getRegisteredUsers() const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return std::vector<JDUser>();
 			AbstractRegistry::AutoClose autoClose(this);
@@ -122,6 +125,8 @@ namespace JsonDatabase
 		}
 		int JDUserRegistration::unregisterInactiveUsers() const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
+			
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return 0;
 			AbstractRegistry::AutoClose autoClose(this);
@@ -165,6 +170,7 @@ namespace JsonDatabase
 		bool JDUserRegistration::LockEntryObjectImpl::load(const JsonObject& obj) 
 #endif
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			bool success = LockEntryObject::load(obj);
 #ifdef JD_USE_QJSON
 			if(obj.contains(LockEntryObjectImpl::JsonKeys::user.c_str()))
@@ -200,6 +206,7 @@ namespace JsonDatabase
 		bool JDUserRegistration::LockEntryObjectImpl::save(JsonObject& obj) const
 #endif
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			bool success = LockEntryObject::save(obj);
 #ifdef JD_USE_QJSON
 			QJsonObject userData;

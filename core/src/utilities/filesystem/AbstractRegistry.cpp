@@ -30,6 +30,7 @@ namespace JsonDatabase
 
 		void AbstractRegistry::setDatabasePath(const std::string& path)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (m_databasePath == path)
 				return;
 
@@ -95,6 +96,7 @@ namespace JsonDatabase
 		}
 		void AbstractRegistry::setName(const std::string& name)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if(name == m_registrationName)
 				return;
 			std::string newName = name;
@@ -182,6 +184,7 @@ namespace JsonDatabase
 
 		void AbstractRegistry::createFiles()
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			QString path = QString::fromStdString(getPath());
 			QDir dir(path);
 			if (!dir.exists())
@@ -203,10 +206,7 @@ namespace JsonDatabase
 					AbstractRegistry::AutoClose autoClose(this);
 					saveObjects_internal({});
 				}
-				
-
 			}
-
 			onCreateFiles();
 		}
 
@@ -310,6 +310,7 @@ namespace JsonDatabase
 
 		bool AbstractRegistry::openRegistryFile() const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if(isRegistryFileOpen())
 				return true;
 			
@@ -326,6 +327,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::openRegistryFile(unsigned int timeoutMillis) const
 		{
+			//JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (isRegistryFileOpen())
 				return true;
 
@@ -361,6 +363,7 @@ namespace JsonDatabase
 
 		int AbstractRegistry::addObjects(const std::vector<std::shared_ptr<LockEntryObject>>& objects)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (!isRegistryFileOpen())
 				return 0;
 #ifdef JD_USE_QJSON
@@ -396,6 +399,7 @@ namespace JsonDatabase
 		}
 		int AbstractRegistry::removeObjects(const std::vector<std::shared_ptr<LockEntryObject>>& objects)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (!isRegistryFileOpen())
 				return 0;
 			
@@ -408,6 +412,7 @@ namespace JsonDatabase
 		}
 		int AbstractRegistry::removeObjects(const std::vector<std::string>& keys)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (!isRegistryFileOpen())
 				return 0;
 #ifdef JD_USE_QJSON
@@ -446,6 +451,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::isObjectActive(const std::string& key) const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (!isRegistryFileOpen())
 				return false;
 
@@ -477,6 +483,7 @@ namespace JsonDatabase
 		int AbstractRegistry::saveObjects_internal(const JsonArray& jsons) const
 #endif
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			if (!isRegistryFileOpen())
 				return 0;
 			
@@ -493,6 +500,7 @@ namespace JsonDatabase
 		bool AbstractRegistry::readObjects_internal(JsonArray& jsons) const
 #endif
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			if (!isRegistryFileOpen())
 				return 0;
 
@@ -508,6 +516,7 @@ namespace JsonDatabase
 		bool AbstractRegistry::readObjects_internal(const JsonArray& jsons, std::vector<JDSerializable*>& objects) const
 #endif
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			bool success = true;
 			std::vector<JDSerializable*> successfully;
 			for(size_t i=0; i< objects.size(); ++i)
@@ -532,6 +541,7 @@ namespace JsonDatabase
 
 		bool AbstractRegistry::createSelfOwnedLock(const std::string& name)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
 			if(m_fileLocks.find(name) != m_fileLocks.end())
 				return false;
 
@@ -547,6 +557,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::removeSelfOwnedLock(const std::string& name)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
 			const auto &it = m_fileLocks.find(name);
 			if (it == m_fileLocks.end())
 				return false;
@@ -560,6 +571,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::removeAllSelfOwnedObjects()
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
 			if (!isRegistryFileOpen())
 				return 0;
 #ifdef JD_USE_QJSON
@@ -604,6 +616,7 @@ namespace JsonDatabase
 		}
 		int AbstractRegistry::removeInactiveObjects() const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
 			if (!isRegistryFileOpen())
 				return 0;
 #ifdef JD_USE_QJSON
@@ -635,7 +648,7 @@ namespace JsonDatabase
 			
 			int removed = 0;
 
-
+			JD_REGISTRY_PROFILING_BLOCK("Search inactive locks", JD_COLOR_STAGE_8);
 			for (size_t i = 0; i < lockFiles.size(); ++i)
 			{
 				const auto &it = objectsFromFile.find(lockFiles[i]);
@@ -655,6 +668,7 @@ namespace JsonDatabase
 					}
 				}
 			}
+			JD_REGISTRY_PROFILING_END_BLOCK;
 			if (jsonsOut.size() != jsons.size())
 			{
 				/*for (auto& obj : objectsFromFile)
@@ -667,6 +681,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::lockExists(const std::string& name) const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			/*/const auto& it = m_fileLocks.find(name);
 			if (it == m_fileLocks.end())
 				return false;*/
@@ -678,6 +693,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::isSelfOwned(const std::string& key) const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			const auto& it = m_fileLocks.find(key);
 			if (it != m_fileLocks.end())
 				return true;
@@ -686,11 +702,13 @@ namespace JsonDatabase
 
 		std::vector<std::string> AbstractRegistry::getLockNames() const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			std::vector<std::string> files = Internal::FileLock::getLockFileNamesInDirectory(getLocksPath());
 			return files;
 		}
 		std::vector<std::string> AbstractRegistry::getSelfOwnedLockNames() const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			std::vector<std::string> names;
 			for (auto& lock : m_fileLocks)
 			{
@@ -700,6 +718,7 @@ namespace JsonDatabase
 		}
 		std::vector<std::string> AbstractRegistry::getNotSelfOwnedLockNames() const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			std::vector<std::string> names = getLockNames();
 			std::vector<std::string> selfOwned = getSelfOwnedLockNames();
 
