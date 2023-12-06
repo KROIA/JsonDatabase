@@ -35,8 +35,7 @@ bool test_json_stringParse_str_to_number(int shuldBeType, const std::string& str
 {
 	int intValue = 0;
 	double doubleValue = 0;
-	size_t index = 0; 
-	int type = JsonDatabase::JsonDeserializer::deserializeNumber(str, intValue, doubleValue, index);
+	int type = JsonDatabase::JsonDeserializer::deserializeNumber(str, intValue, doubleValue);
 	std::string typeStr;
 	switch (type)
 	{

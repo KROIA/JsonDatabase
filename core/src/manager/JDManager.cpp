@@ -266,10 +266,11 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 #endif
     AsyncContextDrivenDeleter asyncDeleter(jsons);
 
+    const double loadingBarRatio = 0.5;
     if (progress)
     {
         progress->setComment("Reading database file");
-        progress->startNewSubProgress(progressScalar * 0.1);
+        progress->startNewSubProgress(progressScalar * loadingBarRatio);
     }
     fileError = fileAccessor.readJsonFile(*jsons);
     
@@ -309,7 +310,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     if (progress)
     {
         //progress->setComment("Deserialize objects");
-        progress->startNewSubProgress(progressScalar * 0.9);
+        progress->startNewSubProgress(progressScalar * (1- loadingBarRatio));
     }
     success &= JDManagerObjectManager::loadObjectsFromJson_internal(*jsons, mode, progress, 
        /* hasOverrideChangeFromDatabaseSlots,
