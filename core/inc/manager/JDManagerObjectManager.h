@@ -4,6 +4,7 @@
 #include "JDDeclaration.h"
 #include "object/JDObjectContainer.h"
 #include "utilities/JDObjectIDDomain.h"
+#include "JDObjectLocker.h"
 
 #include <vector>
 #include <mutex>
@@ -20,9 +21,9 @@ namespace JsonDatabase
     {
         class JSONDATABASE_EXPORT JDManagerObjectManager
         {
-            //friend class JDManager;
+            friend class JDManager;
         protected:
-			JDManagerObjectManager(std::mutex &mtx);
+			JDManagerObjectManager(JDManager& manager, std::mutex &mtx);
             virtual ~JDManagerObjectManager();
             bool setup();
         public:
@@ -82,19 +83,31 @@ namespace JsonDatabase
             std::vector<JDObject> getObjects() const;
 
             void clearObjects();
+
+            // Object locker interface
+            bool lockObject(const JDObject& obj, JDObjectLocker::Error& err);
+            bool unlockObject(const JDObject& obj, JDObjectLocker::Error& err);
+            bool unlockAllObjs(JDObjectLocker::Error& err);
+            bool isObjectLocked(const JDObject& obj, JDObjectLocker::Error& err) const;
+            bool isObjectLockedByMe(const JDObject& obj, JDObjectLocker::Error& err) const;
+            bool isObjectLockedByOther(const JDObject& obj, JDObjectLocker::Error& err) const;
+            bool getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, JDObjectLocker::Error& err) const;
+            int removeInactiveObjectLocks() const;
+
+
+
+
         protected:
+            void onDatabasePathChange(const std::string& oldPath, const std::string& newPath);
 
             bool objectIDIsValid(const JDObjectIDptr& id) const;
             bool objectIDIsValid(const JDObject& obj) const;
-            //void checkObjectIDAndFix_internal(const JDObject& obj);
-            //void newObjectInstantiated_internal(const JDObject& obj);
+
             bool packAndAddObject_internal(const JDObject& obj);
             bool packAndAddObject_internal(const JDObject& obj, const JDObjectID::IDType& presetID);
             bool packAndAddObject_internal(const std::vector<JDObject> &objs);
             bool packAndAddObject_internal(const std::vector<JDObjectID::IDType> &ids, const std::vector<JDObject>& objs);
 
-            //bool addObject_internal(JDObjectManager *obj);
-            //bool addObject_internal(const std::vector<JDObjectManager*>& objs);
             JDObject replaceObject_internal(const JDObject& obj);
             void replaceObject_internal(const std::vector<JDObject>& objs);
             bool removeObject_internal(const JDObject& obj);
@@ -115,10 +128,6 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
             bool loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
-              //  bool hasOverrideChangeFromDatabaseSlots,
-              //  bool hasChangeFromDatabaseSlots,
-              //  bool hasObjectAddedToDatabaseSlots,
-              //  bool hasObjectRemovedFromDatabaseSlots,
                 std::vector<JDObject>& overridingObjs,
                 std::vector<JDObjectID::IDType>& newObjIDs,
                 std::vector<JDObject>& newObjInstances,
@@ -127,10 +136,6 @@ namespace JsonDatabase
 #else
             bool loadObjectFromJson_internal(const JsonValue& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
-               // bool hasOverrideChangeFromDatabaseSlots, 
-               // bool hasChangeFromDatabaseSlots,
-               // bool hasObjectAddedToDatabaseSlots,
-               // bool hasObjectRemovedFromDatabaseSlots,
                 std::vector<JDObject>& overridingObjs,
                 std::vector<JDObjectID::IDType>& newObjIDs,
                 std::vector<JDObject>& newObjInstances,
@@ -144,19 +149,17 @@ namespace JsonDatabase
 #else
 
 #endif
-
-            //void onObjectGotDeleted(const JDObjectInterface* obj);
-
             void update();
 
             
         private:
+            JDManager& m_manager;
             JDObjectIDDomain m_idDomain;
             std::mutex &m_mutex;
 
             mutable std::mutex m_objsMutex;
             JDObjectContainer m_objs;
-            
+            Internal::JDObjectLocker m_objLocker;
         };
 
 

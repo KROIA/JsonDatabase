@@ -1,4 +1,5 @@
 #include "manager/JDManagerObjectManager.h"
+#include "manager/JDManager.h"
 #include "utilities/JDUniqueMutexLock.h"
 #include "object/JDObjectInterface.h"
 #include "manager/async/WorkProgress.h"
@@ -8,8 +9,10 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        JDManagerObjectManager::JDManagerObjectManager(std::mutex& mtx)
-            : m_mutex(mtx)
+        JDManagerObjectManager::JDManagerObjectManager(JDManager& manager, std::mutex& mtx)
+            : m_manager(manager)
+            , m_mutex(mtx)
+            , m_objLocker(manager, mtx)
         {
 
         }
@@ -19,6 +22,10 @@ namespace JsonDatabase
         }
         bool JDManagerObjectManager::setup()
         {
+            m_objLocker.setDatabasePath(m_manager.getDatabasePath());
+            m_objLocker.createFiles();
+
+            m_objLocker.removeInactiveObjectLocks();
             return true;
         }
 
@@ -127,11 +134,52 @@ namespace JsonDatabase
             clearObjects_internal();
         }
 
+
+
+        bool JDManagerObjectManager::lockObject(const JDObject& obj, JDObjectLocker::Error& err)
+        {
+            return m_objLocker.lockObject(obj, err);
+        }
+        bool JDManagerObjectManager::unlockObject(const JDObject& obj, JDObjectLocker::Error& err)
+        {
+            return m_objLocker.unlockObject(obj, err);
+        }
+        bool JDManagerObjectManager::unlockAllObjs(JDObjectLocker::Error& err)
+        {
+            return m_objLocker.unlockAllObjs(err);
+        }
+        bool JDManagerObjectManager::isObjectLocked(const JDObject& obj, JDObjectLocker::Error& err) const
+        {
+            return m_objLocker.isObjectLocked(obj, err);
+        }
+        bool JDManagerObjectManager::isObjectLockedByMe(const JDObject& obj, JDObjectLocker::Error& err) const
+        {
+            return m_objLocker.isObjectLockedByMe(obj, err);
+        }
+        bool JDManagerObjectManager::isObjectLockedByOther(const JDObject& obj, JDObjectLocker::Error& err) const
+        {
+            return m_objLocker.isObjectLockedByOther(obj, err);
+        }
+        bool JDManagerObjectManager::getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, JDObjectLocker::Error& err) const
+        {
+            return m_objLocker.getLockedObjects(lockedObjectsOut, err);
+        }
+        int JDManagerObjectManager::removeInactiveObjectLocks() const
+        {
+            return m_objLocker.removeInactiveObjectLocks();
+        }
+
         /*
           -----------------------------------------------------------------------------------------------
           ------------------ I N T E R N A L ------------------------------------------------------------
           -----------------------------------------------------------------------------------------------
         */
+        void JDManagerObjectManager::onDatabasePathChange(const std::string& oldPath, const std::string& newPath)
+        {
+            JD_UNUSED(oldPath);
+            m_objLocker.setDatabasePath(newPath);
+        }
+
         bool JDManagerObjectManager::objectIDIsValid(const JDObjectIDptr& id) const
         {
             if (!id.get())
@@ -547,7 +595,7 @@ namespace JsonDatabase
 
         void JDManagerObjectManager::update()
         {
-
+            m_objLocker.update();
         }
 
     }

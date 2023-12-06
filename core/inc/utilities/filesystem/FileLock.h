@@ -38,6 +38,7 @@ namespace JsonDatabase
             const std::string& getFilePath() const;
             const std::string& getFileName() const;
 
+            bool tryGetLock(Error& err);
             bool lock(Error& err);
             bool lock(unsigned int timeoutMs, Error& err);
             bool unlock(Error& err);

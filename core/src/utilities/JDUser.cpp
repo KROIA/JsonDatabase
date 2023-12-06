@@ -11,6 +11,12 @@ namespace JsonDatabase
 	namespace Utilities
 	{
 
+        const std::string JDUser::JsonKeys::sessionID = "sessionID";
+        const std::string JDUser::JsonKeys::name = "name";
+                          
+        const std::string JDUser::JsonKeys::date = "date";
+        const std::string JDUser::JsonKeys::time = "time";
+
         // Default constructor
         JDUser::JDUser() {}
 

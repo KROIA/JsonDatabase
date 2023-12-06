@@ -101,7 +101,7 @@ namespace JsonDatabase
 			static ManagedLoadStatus managedLoad(
 				const QJsonObject& json, 
 				JDObjectManager* manager, 
-				ManagedLoadContainers& containers, 
+				ManagedLoadContainers& containers,
 				const ManagedLoadMode &loadMode,
 				const ManagedLoadMisc &misc);
 
@@ -115,8 +115,8 @@ namespace JsonDatabase
 			static ManagedLoadStatus managedLoad(
 				const JsonValue& json, 
 				JDObjectManager* manager, 
-				ManagedLoadContainers& containers/*,
-				const ManagedLoadMode& loadMode*/,
+				ManagedLoadContainers& containers,
+				const ManagedLoadMode& loadMode,
 				const ManagedLoadMisc& misc);
 
 			bool loadAndOverrideData(const JsonValue& json);
@@ -153,8 +153,8 @@ namespace JsonDatabase
 
 			static ManagedLoadStatus managedLoadNew_internal(
 				const JsonValue& json,
-				ManagedLoadContainers& containers,
-				const ManagedLoadMode& loadMode,
+				ManagedLoadContainers& containers/*,
+				const ManagedLoadMode& loadMode*/,
 				const ManagedLoadMisc& misc);
 
 			static bool deserializeOverrideFromJsonIfChanged_internal(const JsonValue& json, JDObject obj, bool& hasChangedOut);

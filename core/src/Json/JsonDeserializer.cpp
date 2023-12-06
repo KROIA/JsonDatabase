@@ -297,15 +297,16 @@ namespace JsonDatabase
         while (json[index] != '}') {
             std::pair<std::string, JsonValue> pair;
             deserializePair(json, index, pair, progress);
-            DEBUG_PRINT(value);
-            object.insert(std::move(pair));
+            //DEBUG_PRINT(value);
+           // object.insert(std::move(pair));
+            object.emplace(std::move(pair));
             if (json[index] == '}')
                 break;
             index++; // Move to the next character or skip ',' or '}'
-            if (progress)
-                progress->setProgress((double)index / (double)json.size());
+            //if (progress)
+            //   progress->setProgress((double)index / (double)json.size());
         }
-        
+        //valOut = std::move(object);
         index++; // Skip the '}' character
         if(progress)
             progress->setProgress((double)index / (double)json.size());
@@ -381,6 +382,7 @@ namespace JsonDatabase
         
 
         strOut = std::move(std::string(json.begin() + start, json.begin() + index));
+        //strOut = json.substr(start, index - start);
         index++; // Skip the closing double quote
     }
     /*void JsonDeserializer::deserializeString(const std::string& json, size_t& index, std::string& strOut, Internal::WorkProgress* progress)

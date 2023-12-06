@@ -34,9 +34,9 @@ namespace JsonDatabase
 
     JDManager::JDManager(const std::string& databasePath,
                          const std::string& databaseName)
-        : JDManagerObjectManager(m_mutex)
+        : JDManagerObjectManager(*this, m_mutex)
         , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
-        , JDObjectLocker(*this, m_mutex)
+        //, JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
@@ -48,9 +48,9 @@ namespace JsonDatabase
     JDManager::JDManager(const std::string& databasePath,
         const std::string& databaseName,
         const std::string& user)
-        : JDManagerObjectManager(m_mutex)
+        : JDManagerObjectManager(*this, m_mutex)
         , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
-        , JDObjectLocker(*this, m_mutex)
+        //, JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
@@ -60,9 +60,9 @@ namespace JsonDatabase
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
     JDManager::JDManager(const JDManager &other)
-        : JDManagerObjectManager(m_mutex)
+        : JDManagerObjectManager(*this, m_mutex)
         , JDManagerFileSystem(other.getDatabaseFilePath(), other.getDatabaseName(), *this, m_mutex)
-        , JDObjectLocker(*this, m_mutex)
+        //, JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_user(other.m_user)
         , m_useZipFormat(other.m_useZipFormat)
@@ -82,14 +82,9 @@ JDManager::~JDManager()
 bool JDManager::setup()
 {
     bool success = true;
-    success &= JDManagerObjectManager::setup();
     success &= JDManagerFileSystem::setup();
+    success &= JDManagerObjectManager::setup();
     JDObjectLocker::Error lockerError;
-    success &= JDObjectLocker::setup(lockerError);
-    if (lockerError != JDObjectLocker::Error::none)
-    {
-        // Unhandled error
-    }
     JDManagerAsyncWorker::setup();
     return success;
 }
@@ -686,7 +681,7 @@ void JDManager::update()
     
     JDManagerFileSystem::update();
     JDManagerObjectManager::update();
-    JDObjectLocker::update();
+    //JDObjectLocker::update();
 
     
     m_signals.emitIfNotEmpty();

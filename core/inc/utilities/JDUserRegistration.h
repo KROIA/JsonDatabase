@@ -2,9 +2,8 @@
 
 #include "JD_base.h"
 #include "JDDeclaration.h"
-#include "JDSerializable.h"
 #include "JDUser.h"
-#include "utilities/filesystem/LockedFileAccessor.h"
+#include "utilities/filesystem/AbstractRegistry.h"
 
 #ifdef JD_USE_QJSON
 #include <QJsonObject>
@@ -21,14 +20,12 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSONDATABASE_EXPORT JDUserRegistration : public JDSerializable
+		class JSONDATABASE_EXPORT JDUserRegistration : public AbstractRegistry
 		{
 		public:
 
-			JDUserRegistration(JDManager& manager);
+			JDUserRegistration();
 			~JDUserRegistration();
-
-			bool setup();
 
 			bool registerUser(const JDUser& user, std::string &generatedSessionIDOut);
 			bool unregisterUser();
@@ -40,30 +37,61 @@ namespace JsonDatabase
 			std::vector<JDUser> getRegisteredUsers() const;
 			int unregisterInactiveUsers() const;
 
-#ifdef JD_USE_QJSON
-			bool load(const QJsonObject& obj) override;
-			bool save(QJsonObject& obj) const override;
-#else
-			bool load(const JsonObject& obj) override;
-			bool save(JsonObject& obj) const override;
-#endif
 		private:
-			bool unregisterUser_internal();
-			std::vector<JDUser> getRegisteredUsers_internal(Internal::LockedFileAccessor& registerFile) const;
-			int unregisterInactiveUsers_internal(Internal::LockedFileAccessor& registerFile) const;
-			bool isSessionIDActive(const std::string &sessionID) const;
-			bool tryToDeleteSessionFile(const std::string &sessionID) const;
+			class JSONDATABASE_EXPORT LockEntryObjectImpl : public LockEntryObject
+			{
+			public:
+				LockEntryObjectImpl(const std::string& key);
+				LockEntryObjectImpl(const std::string& key, const JDUser &user);
+				~LockEntryObjectImpl();
 
-			std::string getPath() const;
-			std::string getRegisterFilePath() const;
 
-			JDManager &m_manager;
+				void setUser(const JDUser& user);
+				const JDUser& getUser() const;
+
+#ifdef JD_USE_QJSON
+				bool load(const QJsonObject& obj) override;
+				bool save(QJsonObject& obj) const override;
+#else
+				bool load(const JsonObject& obj) override;
+				bool save(JsonObject& obj) const override;
+#endif
+
+				struct JsonKeys
+				{
+					static const std::string user;
+				};
+			private:
+				JDUser m_user;
+			};
+
+
+			void onCreateFiles() override;
+			void onDatabasePathChangeStart(const std::string& newPath) override;
+			void onDatabasePathChangeEnd() override;
+			void onNameChange(const std::string& newName) override;
+
+
+			//bool unregisterUser_internal();
+			//std::vector<JDUser> getRegisteredUsers_internal(Internal::LockedFileAccessor& registerFile) const;
+			//int unregisterInactiveUsers_internal(Internal::LockedFileAccessor& registerFile) const;
+			//bool isSessionIDActive(const std::string &sessionID) const;
+			//bool tryToDeleteSessionFile(const std::string &sessionID) const;
+
+			//std::string getPath() const;
+			//std::string getRegisterFilePath() const;
+
+			//JDManager &m_manager;
+			std::shared_ptr<LockEntryObjectImpl> m_registeredUser;
 			std::string m_registeredSessionID;
-			Internal::FileLock *m_registeredFileLock;
-			
+			bool m_isRegistered;
+			unsigned int m_registryOpenTimeoutMs;
+			//Internal::FileLock *m_registeredFileLock;
+			/*
+			std::string m_registrationPath;
 			std::string m_registrationSubFolder;
 			std::string m_registrationFileName;
-			std::string m_registrationFileEnding;
+			std::string m_registrationFileEnding;*/
 
 		};
 	}

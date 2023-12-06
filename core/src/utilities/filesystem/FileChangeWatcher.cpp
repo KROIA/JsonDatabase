@@ -152,11 +152,15 @@ namespace JsonDatabase
                     JD_GENERAL_PROFILING_BLOCK("readFileChange", JD_COLOR_STAGE_9);
 
                     bool res = FindNextChangeNotification(m_eventHandle);
+#ifdef JD_DEBUG
                     if (!res)
                     {
                         DWORD error = GetLastError();
                         JD_CONSOLE_FUNCTION("Error FindNextChangeNotification. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
                     }
+#else
+                    JD_UNUSED(res);
+#endif
                    
 
                     if (fileChanged() && !m_paused.load())
@@ -174,10 +178,12 @@ namespace JsonDatabase
                         }
                     }
                 }
+#ifdef JD_DEBUG
                 else {
                     DWORD error = GetLastError();
                     JD_CONSOLE_FUNCTION("Error waiting for file changes. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
                 }
+#endif
             }
         exitThread:;
         }
@@ -280,6 +286,7 @@ namespace JsonDatabase
             m_databaseFileWatcher = new FileChangeWatcher(targetFile);
             bool success = m_databaseFileWatcher->setup();
             DWORD lastError = m_databaseFileWatcher->getSetupError();
+            JD_UNUSED(lastError);
             if (!success)
             {
 				JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << lastError << " : " << Utilities::getLastErrorString(lastError) << "\n");

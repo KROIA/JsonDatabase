@@ -36,7 +36,7 @@ namespace JsonDatabase
             , m_mutex(mtx)
             , m_fileLock(nullptr)
             , m_slowUpdateCounter(-1) // -1 to trigger first update
-            , m_userRegistration(manager)
+            , m_userRegistration()
            // , m_databaseLoginFileLock(nullptr)
 		{
             
@@ -58,7 +58,8 @@ namespace JsonDatabase
             success &= makeDatabaseFiles();
             
             restartDatabaseFileWatcher();
-            m_userRegistration.setup();
+            m_userRegistration.setDatabasePath(m_manager.getDatabasePath());
+            m_userRegistration.createFiles();
 
             logOnDatabase();
             return success;
@@ -77,13 +78,13 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK_P;
             if (path == m_databasePath)
                 return;
-            JDObjectLocker::Error lockerError;
-            m_manager.onDatabasePathChange(m_databasePath, path, lockerError);
+            m_manager.onDatabasePathChange(m_databasePath, path);
             logOffDatabase();
             m_databasePath = path;
             makeDatabaseDirs();
             makeDatabaseFiles();
-            
+            m_userRegistration.setDatabasePath(m_manager.getDatabasePath());
+            m_userRegistration.createFiles();
             logOnDatabase();
             restartDatabaseFileWatcher();
         }

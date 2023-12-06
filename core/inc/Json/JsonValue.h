@@ -18,7 +18,7 @@ namespace JsonDatabase
 	
 
 	using JsonArray = JsonArrayType<JsonValue>;
-	using JsonObject = JsonMapType<std::string_view, JsonValue>;
+	using JsonObject = JsonMapType<std::string, JsonValue>;
 
 	class JSONDATABASE_EXPORT JsonValue
 	{

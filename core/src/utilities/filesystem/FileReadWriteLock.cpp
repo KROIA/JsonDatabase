@@ -135,15 +135,19 @@ namespace JsonDatabase
             m_access = Access::unknown;
 
             size_t readerCount = 0;
+            bool deletedSuccessfully = tryDeleteLocks();
+            JD_UNUSED(deletedSuccessfully);
             switch (getAccessStatus(readerCount))
             {
-            case Access::readWrite:
-            case Access::write:
-            {
-                wasLockedByOtherUserOut = true;
-                // Some are writing, can't read or write
-                return FileLock::Error::alreadyLockedForWritingByOther;
-            }
+                case Access::readWrite:
+                case Access::write:
+                {
+                    
+                   // if(isFileLocked )
+                    wasLockedByOtherUserOut = true;
+                    // Some are writing, can't read or write
+                    return FileLock::Error::alreadyLockedForWritingByOther;
+                }
             }
 
             if (direction == Access::write && readerCount != 0)
@@ -249,6 +253,25 @@ namespace JsonDatabase
             if (readerCount > 0)
                 return Access::read;
             return Access::unknown;
+        }
+        bool FileReadWriteLock::tryDeleteLocks()
+        {
+            std::vector<std::string> files = FileLock::getFileNamesInDirectory(m_directory, FileLock::s_lockFileEnding);
+            bool success = true;
+            for (const std::string& file : files)
+            {
+                // Check the filename to see if it matches the file we want to lock
+                size_t pos = file.find_last_of("_");
+                if (pos == std::string::npos)
+                    continue;
+                std::string fileName = file.substr(0, pos);
+
+                if (fileName != m_fileName)
+                    continue;
+
+                success &= FileLock::deleteFile(m_directory, file);
+            }
+            return success;
         }
 
         const std::string& FileReadWriteLock::accessTypeToString(Access access)

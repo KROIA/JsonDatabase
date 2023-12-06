@@ -34,7 +34,7 @@ typedef std::chrono::system_clock::time_point TimePoint;
 	If commented out, the Builtin by this library Json structure will be used.
 	QJson is slower.
 */
-#define JD_USE_QJSON
+//#define JD_USE_QJSON
 
 /*
 	Enable multithreading for work that can be done in parallel.

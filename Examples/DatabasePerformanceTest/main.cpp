@@ -248,8 +248,8 @@ void saveObjectsSlot(bool success)
 void threadFunction1() {
     EASY_THREAD("Thread 1");
     auto start = std::chrono::high_resolution_clock::now();
-    bool hasLocked = false;
-    JDObject lockedPerson = nullptr;
+    //bool hasLocked = false;
+    //JDObject lockedPerson = nullptr;
 
     
 
@@ -276,7 +276,7 @@ void threadFunction1() {
         finishSave = false;
         manager1->saveObjectsAsync();
         {
-            EASY_BLOCK("Wait for save");
+            EASY_BLOCK("Wait for save", profiler::colors::Red50);
             while (!finishSave)
             {
                 manager1->update();
@@ -350,8 +350,8 @@ void onObjectChange(const std::vector<JDObjectPair>& list)
 void threadFunction2() {
     EASY_THREAD("Thread 2");
     JDObject obj = globalTable[0];
-    bool hasLocked = false;
-    JDObject lockedPerson = nullptr;
+    //bool hasLocked = false;
+    //JDObject lockedPerson = nullptr;
     auto start = std::chrono::high_resolution_clock::now();
 
     manager2->getSignals().connect_databaseFileChanged_slot(callback);
@@ -405,8 +405,8 @@ void threadFunction2() {
 void threadFunction3() {
     EASY_THREAD("Thread 3");
     auto start = std::chrono::high_resolution_clock::now();
-    bool hasLocked = false;
-    JDObject lockedPerson = nullptr;
+   // bool hasLocked = false;
+    //JDObject lockedPerson = nullptr;
 
     manager3->getSignals().connect_databaseFileChanged_slot([] {
         //manager3->loadObjectsAsync();
@@ -446,8 +446,8 @@ void threadFunction3() {
 void threadFunction4() {
     EASY_THREAD("Thread 4");
     auto start = std::chrono::high_resolution_clock::now();
-    bool hasLocked = false;
-    JDObject lockedPerson = nullptr;
+    //bool hasLocked = false;
+    //JDObject lockedPerson = nullptr;
 
     manager4->getSignals().connect_databaseFileChanged_slot([] {
         //manager4->loadObjectsAsync(); 
@@ -488,8 +488,8 @@ void threadFunction4() {
 void threadFunction5() {
     EASY_THREAD("Thread 5");
     auto start = std::chrono::high_resolution_clock::now();
-    bool hasLocked = false;
-    JDObject lockedPerson = nullptr;
+    //bool hasLocked = false;
+    //JDObject lockedPerson = nullptr;
 
     manager5->getSignals().connect_databaseFileChanged_slot([] {
         //manager5->loadObjectsAsync();
@@ -532,14 +532,13 @@ void threadFunction5() {
 
 void collisionChecker() {
     auto start = std::chrono::high_resolution_clock::now();
-    bool hasLocked = false;
-    JDObject lockedPerson = nullptr;
+    //bool hasLocked = false;
+    //JDObject lockedPerson = nullptr;
 
    // watcher->startWatching();
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS+1) {
         
-        std::vector<std::string>  files = Internal::FileReadWriteLock::
-            ("database", ".clk");
+        std::vector<std::string>  files = Internal::FileLock::getFileNamesInDirectory("database", ".clk");
         size_t wCount = 0;
         size_t rCount = 0;
         for (const std::string& file : files)
@@ -576,7 +575,7 @@ void collisionChecker() {
             }
             case Internal::FileReadWriteLock::Access::unknown:
             {
-                int a = 0;
+               // int a = 0;
 
             }
             }
@@ -584,7 +583,7 @@ void collisionChecker() {
 
         if (wCount > 1)
         {
-            int a = 0;
+          //  int a = 0;
             std::cout << "Collision detected\n";
         }
         if (rCount > 0 && wCount > 0)

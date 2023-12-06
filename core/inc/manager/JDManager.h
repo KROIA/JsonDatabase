@@ -9,7 +9,7 @@
 #include "JDManagerSignals.h"
 #include "JDManagerFileSystem.h"
 #include "JDManagerObjectManager.h"
-#include "JDObjectLocker.h"
+
 
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
@@ -29,7 +29,7 @@ namespace JsonDatabase
 class JSONDATABASE_EXPORT JDManager: 
     public Internal::JDManagerObjectManager, 
     public Internal::JDManagerFileSystem,
-    public Internal::JDObjectLocker,
+    //public Internal::JDObjectLocker,
     public Internal::JDManagerAsyncWorker
 {
     friend class Internal::JDManagerFileSystem;

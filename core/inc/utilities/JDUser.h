@@ -64,11 +64,11 @@ namespace JsonDatabase
 
 			struct JsonKeys
 			{
-				static constexpr std::string_view sessionID = "sessionID";
-				static constexpr std::string_view name      = "name";
-
-				static constexpr std::string_view date      = "date";
-				static constexpr std::string_view time      = "time";
+				static const std::string sessionID;
+				static const std::string name;
+					    
+				static const std::string date;
+				static const std::string time;
 			};
 
 			static std::string getHostName();

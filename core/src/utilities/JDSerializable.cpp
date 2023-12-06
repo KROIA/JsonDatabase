@@ -146,7 +146,7 @@ namespace JsonDatabase
 #ifdef JD_USE_QJSON
                 value = static_cast<float>(obj[key].toDouble(static_cast<double>(value)));
 #else
-                value = obj.find(key)->second.getDouble();
+                value = static_cast<float>(obj.find(key)->second.getDouble());
 #endif
                 return true;
             }

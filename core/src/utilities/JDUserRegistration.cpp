@@ -8,337 +8,231 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
+		const std::string JDUserRegistration::LockEntryObjectImpl::JsonKeys::user = "user";
 
-
-		JDUserRegistration::JDUserRegistration(JDManager& manager)
-			: m_manager(manager)
-			, m_registeredFileLock(nullptr)
-			, m_registrationSubFolder("users")
-			, m_registrationFileName("users")
-			, m_registrationFileEnding(".json")
+		JDUserRegistration::JDUserRegistration()
+			: m_isRegistered(false)
+			, m_registryOpenTimeoutMs(100)
+			, m_registeredUser(nullptr)
 		{
-
+			AbstractRegistry::setName("users");
 		}
 		JDUserRegistration::~JDUserRegistration()
 		{
 			unregisterUser();
 		}
 
-		bool JDUserRegistration::setup()
-		{
-			std::string path = getPath();
-			QDir dir1(path.c_str());
-			if (!dir1.exists())
-			{
-				QDir dir2;
-				if (!dir2.mkdir(path.c_str()))
-				{
-					JD_DEBUG("JDUserRegistration::setup() - Failed to create directory: " + getPath());
-					return false;
-				}
-			}
-			QFile file1(getRegisterFilePath().c_str());
-			if(!file1.exists())
-			{
-				Internal::LockedFileAccessor registerFile(path, m_registrationFileName, m_registrationFileEnding);
-				Internal::LockedFileAccessor::Error err;
-				if ((err = registerFile.lock(Internal::LockedFileAccessor::AccessMode::write)) != Internal::LockedFileAccessor::Error::none)
-				{
-					return false;
-				}
-				if ((err = registerFile.writeJsonFile(std::vector<QJsonObject>())) != Internal::LockedFileAccessor::Error::none)
-				{
-					JD_DEBUG("JDUserRegistration::setup() - Failed to write to file: " + getRegisterFilePath() + " Error: " + registerFile.getErrorStr(err));
-					return false;
-				}
-			}
-
-			return true;
-		}
 
 		bool JDUserRegistration::registerUser(const JDUser& user, std::string& generatedSessionIDOut)
 		{
-			if (m_registeredFileLock)
+			m_registeredUser.reset();
+			if (m_isRegistered)
 				return false;
 
-			Internal::LockedFileAccessor::Error err;
-			Internal::LockedFileAccessor registerFile(getPath(), m_registrationFileName, m_registrationFileEnding);
-			err = registerFile.lock(Internal::LockedFileAccessor::AccessMode::readWrite, 100);
-			if (err != Internal::LockedFileAccessor::Error::none)
-			{
+			if(!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
-			}
+			AbstractRegistry::AutoClose autoClose(this);
 
-			unregisterInactiveUsers_internal(registerFile);
+			AbstractRegistry::removeInactiveObjects();
 
-			std::vector<JDUser> activeUsers = getRegisteredUsers_internal(registerFile);
-			std::string generatedSessionID = user.getSessionID();
-			std::unordered_map<std::string, JDUser> userMap;
-			for (auto& user : activeUsers)
+			std::string newSessionID = user.getSessionID();
+			if (newSessionID.size() == 0)
+				newSessionID = JDUser::generateSessionID();
+
+			size_t tryCount = 0;
+			while(AbstractRegistry::lockExists(newSessionID))
 			{
-				userMap[user.getSessionID()] = user;
+				newSessionID = JDUser::generateSessionID();
+				++tryCount;
 			}
-			
-			Internal::FileLock::Error lockErr;
-			do
-			{
-				if(m_registeredFileLock)
-				{
-					delete m_registeredFileLock;
-					m_registeredFileLock = nullptr;
-				}
-				// Generate new session ID if the generated one is already in use
-				while (userMap.find(generatedSessionID) != userMap.end())
-				{
-					generatedSessionID = JDUser::generateSessionID();
-				}
-
-				m_registeredFileLock = new Internal::FileLock(getPath(), generatedSessionID);
-				m_registeredFileLock->lock(lockErr);
-
-			} while (lockErr != Internal::FileLock::Error::none);
-			m_registeredSessionID = generatedSessionID;
-
-
+				
 			JDUser newUser = user;
-			newUser.setSessionID(generatedSessionID);
-			generatedSessionIDOut = generatedSessionID;
-			activeUsers.push_back(newUser);
-#ifdef JD_USE_QJSON
-			std::vector<QJsonObject> userJsons;
-#else
-			JsonArray userJsons;
-#endif
-			for (auto& user : activeUsers)
+			newUser.setSessionID(newSessionID);
+			auto newEntry = std::make_shared<LockEntryObjectImpl>(newUser.getSessionID(), newUser);
+			m_registeredUser = newEntry;
+			int ret = 0;
+			while((ret = AbstractRegistry::addObjects({ newEntry })) != 1)
 			{
-#ifdef JD_USE_QJSON
-				QJsonObject obj;
-#else
-				JsonValue obj;
-#endif
-				user.save(obj);
-				userJsons.push_back(obj);
+				newSessionID = JDUser::generateSessionID();
+				while (AbstractRegistry::lockExists(newSessionID))
+				{
+					newSessionID = JDUser::generateSessionID();
+					++tryCount;
+				}
+				++tryCount;
+				if (tryCount > 100)
+					return false;
+				newUser.setSessionID(newSessionID);
+				newEntry = std::make_shared<LockEntryObjectImpl>(newUser.getSessionID(), newUser);
+				m_registeredUser = newEntry;
 			}
-			
-			err = registerFile.writeJsonFile(userJsons);
-			if (err != Internal::LockedFileAccessor::Error::none)
-			{
-				return false;
-			}
+
+			generatedSessionIDOut  = newSessionID;
+			m_registeredSessionID = newSessionID;
+			m_isRegistered = true;
 			return true;
 		}
 		bool JDUserRegistration::unregisterUser()
 		{
-			return unregisterUser_internal();
+			if (!m_isRegistered)
+				return false;
+
+			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
+				return false;
+			AbstractRegistry::AutoClose autoClose(this);
+
+			if(AbstractRegistry::removeObjects({ m_registeredSessionID }) == 1)
+			{
+				m_isRegistered = false;
+				m_registeredUser.reset();
+				return true;
+			}
+			return false;
 		}
 
 		bool JDUserRegistration::isUserRegistered() const
 		{
-			return isSessionIDActive(m_registeredSessionID);
+			return m_isRegistered;
 		}
 		bool JDUserRegistration::isUserRegistered(const JDUser& user) const
 		{
-			return isSessionIDActive(user.getSessionID());
+			return AbstractRegistry::isObjectActive(user.getSessionID());
 		}
 		bool JDUserRegistration::isUserRegistered(const std::string& sessionID) const
 		{
-			return isSessionIDActive(sessionID);
+			return AbstractRegistry::isObjectActive(sessionID);
 		}
 
 
 		std::vector<JDUser> JDUserRegistration::getRegisteredUsers() const
 		{
-			Internal::LockedFileAccessor::Error err;
-			Internal::LockedFileAccessor registerFile(getPath(), m_registrationFileName, m_registrationFileEnding);
-			err = registerFile.lock(Internal::LockedFileAccessor::AccessMode::read, 100);
-			if (err != Internal::LockedFileAccessor::Error::none)
-			{
+			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return std::vector<JDUser>();
-			}
+			AbstractRegistry::AutoClose autoClose(this);
 
-			std::vector<JDUser> activeUsers = getRegisteredUsers_internal(registerFile);
-			return activeUsers;
-		}
-		int JDUserRegistration::unregisterInactiveUsers() const 
-		{
-			Internal::LockedFileAccessor::Error err;
-			Internal::LockedFileAccessor registerFile(getPath(), m_registrationFileName, m_registrationFileEnding);
-			err = registerFile.lock(Internal::LockedFileAccessor::AccessMode::readWrite, 100);
-			if (err != Internal::LockedFileAccessor::Error::none)
+			std::vector<std::shared_ptr<LockEntryObjectImpl>> userObjs; 
+			AbstractRegistry::readObjects<LockEntryObjectImpl>(userObjs);
+
+			std::vector<JDUser> users;
+			for (auto& userObj : userObjs)
 			{
-				return 0;
+				users.push_back(userObj->getUser());
 			}
-			return unregisterInactiveUsers_internal(registerFile);
-			
+			return users;
+		}
+		int JDUserRegistration::unregisterInactiveUsers() const
+		{
+			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
+				return 0;
+			AbstractRegistry::AutoClose autoClose(this);
+			return AbstractRegistry::removeInactiveObjects();
 		}
 
 
 		
 
 
-		std::vector<JDUser> JDUserRegistration::getRegisteredUsers_internal(Internal::LockedFileAccessor& registerFile) const
+
+		JDUserRegistration::LockEntryObjectImpl::LockEntryObjectImpl(const std::string& key)
+			: LockEntryObject(key)
 		{
-			std::vector<JDUser> users;
+
+		}
+		JDUserRegistration::LockEntryObjectImpl::LockEntryObjectImpl(const std::string& key, const JDUser& user)
+			: LockEntryObject(key)
+			, m_user(user)
+		{
+
+		}
+		JDUserRegistration::LockEntryObjectImpl::~LockEntryObjectImpl()
+		{
+
+		}
+
+
+		void JDUserRegistration::LockEntryObjectImpl::setUser(const JDUser& user)
+		{
+			m_user = user;
+		}
+		const JDUser& JDUserRegistration::LockEntryObjectImpl::getUser() const
+		{
+			return m_user;
+		}
 
 #ifdef JD_USE_QJSON
-			std::vector<QJsonObject> userJsons;
+		bool JDUserRegistration::LockEntryObjectImpl::load(const QJsonObject& obj) 
 #else
-			JsonArray userJsons;
+		bool JDUserRegistration::LockEntryObjectImpl::load(const JsonObject& obj) 
 #endif
-			Internal::LockedFileAccessor::Error err;
-			err = registerFile.readJsonFile(userJsons);
-			if (err != Internal::LockedFileAccessor::Error::none)
+		{
+			bool success = LockEntryObject::load(obj);
+#ifdef JD_USE_QJSON
+			if(obj.contains(LockEntryObjectImpl::JsonKeys::user.c_str()))
 			{
-				return users;
-			}
-			for (auto& userJson : userJsons)
+				QJsonValue userValue = obj[JsonKeys::user.c_str()];
+#else
+			if (obj.contains(LockEntryObjectImpl::JsonKeys::user))
 			{
+				JsonValue userValue = obj.at(JsonKeys::user);
+#endif
+				if(!userValue.isObject())
+					return false;
 				JDUser user;
-				if (user.load(userJson))
-				{
-					if (isSessionIDActive(user.getSessionID()))
-						users.push_back(user);
-				}
-			}
-
-			return users;
-		} 
-		bool JDUserRegistration::unregisterUser_internal()
-		{
-			if (!m_registeredFileLock)
-				return false;
-			Internal::LockedFileAccessor::Error err;
-			Internal::LockedFileAccessor registerFile(getPath(), m_registrationFileName, m_registrationFileEnding);
-			err = registerFile.lock(Internal::LockedFileAccessor::AccessMode::readWrite, 100);
-			if (err != Internal::LockedFileAccessor::Error::none)
-			{
-				return false;
-			}
-
-			std::vector<JDUser> activeUsers = getRegisteredUsers_internal(registerFile);
-			for(size_t i=0; i<activeUsers.size(); ++i)
-			{
-				if (activeUsers[i].getSessionID() == m_registeredSessionID)
-				{
-					activeUsers.erase(activeUsers.begin() + i);
-					break;
-				}
-			}
-			#ifdef JD_USE_QJSON
-			std::vector<QJsonObject> userJsons;
-			#else
-			JsonArray userJsons;
-			#endif
-			for (auto& user : activeUsers)
-			{
-				#ifdef JD_USE_QJSON
-				QJsonObject obj;
-				#else
-				JsonValue obj;
-				#endif
-				user.save(obj);
-				userJsons.push_back(obj);
-			}
-			err = registerFile.writeJsonFile(userJsons);
-
-			Internal::FileLock::Error unlockErr;
-			m_registeredFileLock->unlock(unlockErr);
-			delete m_registeredFileLock;
-			m_registeredFileLock = nullptr;
-
-			if (err != Internal::LockedFileAccessor::Error::none ||
-				unlockErr != Internal::FileLock::Error::none)
-			{
-				return false;
-			}
-			return true;
-		}
-		int JDUserRegistration::unregisterInactiveUsers_internal(Internal::LockedFileAccessor& registerFile) const
-		{
-			std::vector<JDUser> users;
-#ifdef JD_USE_QJSON
-			std::vector<QJsonObject> userJsons;
-#else
-			JsonArray userJsons;
-#endif
-
-			auto err = registerFile.readJsonFile(userJsons);
-			if (err != Internal::LockedFileAccessor::Error::none)
-			{
-				return 0;
-			}
-			int removed = 0;
-			for (auto& userJson : userJsons)
-			{
-				JDUser user;
-				if (user.load(userJson))
-				{
-					if (!isSessionIDActive(user.getSessionID()))
-					{
-						removed += (tryToDeleteSessionFile(user.getSessionID()) == true);
-					}
-					else
-						users.push_back(user);
-				}
-			}
-			err = registerFile.writeJsonFile(userJsons);
-
-			std::vector<std::string> lockFiles = Internal::FileLock::getLockFileNamesInDirectory(getPath());
-			for (size_t i = 0; i < lockFiles.size(); ++i)
-			{
-				bool found = false;
-				for (auto& user : users)
-				{
-					if (user.getSessionID() == lockFiles[i])
-						found = true;
-				}
-				if (!found)
-				{
-					removed += (tryToDeleteSessionFile(lockFiles[i]) == true);
-				}
-			}
-
-			return removed;
-		}
-
-		bool JDUserRegistration::isSessionIDActive(const std::string& sessionID) const
-		{
-			return Internal::FileLock::isLockInUse(getPath(), sessionID);
-		}
-		bool JDUserRegistration::tryToDeleteSessionFile(const std::string& sessionID) const
-		{
-			return Internal::FileLock::deleteFile(getPath(), sessionID);
-		}
-
-		std::string JDUserRegistration::getPath() const
-		{
-			return m_manager.getDatabasePath() + "\\" + m_registrationSubFolder;
-		}
-		std::string JDUserRegistration::getRegisterFilePath() const
-		{
-			return getPath() +"\\"+m_registrationFileName + ".json";
-		}
-
 
 #ifdef JD_USE_QJSON
-		bool JDUserRegistration::load(const QJsonObject& obj)
+				QJsonObject userObj = userValue.toObject();
 #else
-		bool JDUserRegistration::load(const JsonObject& obj)
+				JsonObject userObj = userValue.getObject();
 #endif
-		{
-			JD_UNUSED(obj);
-			return false;
+
+				if (user.load(userObj))
+				{
+					setUser(user);
+					success = true;
+				}
+			}
+			return success;
 		}
 
-
 #ifdef JD_USE_QJSON
-		bool JDUserRegistration::save(QJsonObject& obj) const
+		bool JDUserRegistration::LockEntryObjectImpl::save(QJsonObject& obj) const
 #else
-		bool JDUserRegistration::save(JsonObject& obj) const
+		bool JDUserRegistration::LockEntryObjectImpl::save(JsonObject& obj) const
 #endif
 		{
-			JD_UNUSED(obj);
-			return false;
+			bool success = LockEntryObject::save(obj);
+#ifdef JD_USE_QJSON
+			QJsonObject userData;
+#else
+			JsonObject userData;
+#endif
+			m_user.save(userData);
+#ifdef JD_USE_QJSON
+			obj[JsonKeys::user.c_str()] = userData;
+#else
+			obj[JsonKeys::user] = userData;
+#endif
+			return success;
+		}
+
+		void JDUserRegistration::onCreateFiles()
+		{
+
+		}
+
+		void JDUserRegistration::onDatabasePathChangeStart(const std::string& newPath)
+		{
+
+			JD_UNUSED(newPath);
+		}
+		void JDUserRegistration::onDatabasePathChangeEnd()
+		{
+
+		}
+
+		void JDUserRegistration::onNameChange(const std::string& newName)
+		{
+			JD_UNUSED(newName);
 		}
 	}
 }

@@ -40,6 +40,7 @@ namespace JsonDatabase
 
 			Access getAccessStatus() const;
 			Access getAccessStatus(size_t& readerCount) const;
+			bool tryDeleteLocks();
 
 			
 			static const std::string& accessTypeToString(Access access);

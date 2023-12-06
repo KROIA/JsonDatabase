@@ -40,6 +40,37 @@ namespace JsonDatabase
         {
             return m_fileName;
         }
+        bool FileLock::tryGetLock(Error& err)
+        {
+            HANDLE fileHandle = CreateFile(
+                m_lockFilePathName.c_str(),
+                GENERIC_WRITE,
+                0,
+                nullptr,
+                OPEN_EXISTING,  // Use OPEN_EXISTING instead of CREATE_ALWAYS
+                FILE_ATTRIBUTE_NORMAL,
+                nullptr
+            );
+
+            if (fileHandle == INVALID_HANDLE_VALUE) {
+                // Failed to open the file, indicating it might be locked
+                m_locked = false;
+                err = Error::alreadyLocked;
+                return false; // File is possibly locked
+            }
+
+            if (!LockFile(fileHandle, 0, 0, MAXDWORD, MAXDWORD))
+            {
+                m_locked = false;
+                CloseHandle(fileHandle);
+               
+                err = Error::unableToLock;
+            }
+            m_fileHandle = fileHandle;
+            m_locked = true;
+            err = Error::none;
+            return true;            
+        }
         bool FileLock::lock(Error& err)
         {
             err = Error::alreadyLocked;
