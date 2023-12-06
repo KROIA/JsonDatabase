@@ -315,16 +315,21 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
 
 void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
 {
+    JDObjectIDptr id = nullptr;
     if (m_manager)
     {
-        if(!manager)
-            m_shallowID = m_manager->getID()->get();
+        if (!manager)
+            id = m_manager->getID();
         else
-            m_shallowID = manager->getID()->get();
+            id = manager->getID();
     }
     else
-        if(manager)
-			m_shallowID = manager->getID()->get();
+        if (manager)
+        {
+            id = manager->getID();
+        }
+    if (id.get())
+        m_shallowID = id->get();
 	m_manager = manager;
 }
 Internal::JDObjectManager* JDObjectInterface::getManager() const

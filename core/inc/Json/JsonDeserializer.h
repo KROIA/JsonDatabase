@@ -34,17 +34,20 @@ namespace JsonDatabase
 		static void nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut);
 	private:
 
-		//static void deserializeValue_internal(const std::string& json, size_t& index, JsonValue &out);
-		//static void deserializeObject_internal(const std::string& json, size_t& index, JsonValue& out);
-		//static void deserializeArray_internal(const std::string& json, size_t& index, JsonValue& out);
+		//static void deserializeValue_internal(const std::string& json, size_t& index, JsonValue& out);
 		static void deserializeValue_internal(const std::string& json, size_t& index, JsonValue& out, Internal::WorkProgress* progress);
+		//static void deserializeValueSplitted_internal(const std::string& json, size_t& index, JsonValue& out);
+		static void deserializeValueSplitted_internal(const std::string& json, size_t& index, JsonValue& out, Internal::WorkProgress* progress);
+		//static void deserializeObject_internal(const std::string& json, size_t& index, JsonValue& out);
 		static void deserializeObject_internal(const std::string& json, size_t& index, JsonValue& out, Internal::WorkProgress* progress);
+		//static void deserializeArray_internal(const std::string& json, size_t& index, JsonValue& out);
 		static void deserializeArray_internal(const std::string& json, size_t& index, JsonValue& out, Internal::WorkProgress* progress);
+		//static void deserializeArraySplitted_internal(const std::string& json, size_t& index, JsonValue& out);
+		static void deserializeArraySplitted_internal(const std::string& json, size_t& index, JsonValue& out, Internal::WorkProgress* progress);
 
 		//static void deserializePair(const std::string& json, size_t& index, std::pair<std::string, JsonValue> &pairOut);
 		static void deserializePair(const std::string& json, size_t& index, std::pair<std::string, JsonValue> &pairOut, Internal::WorkProgress* progress);
 		static void deserializeString(const std::string& json, size_t& index, std::string &strOut);
-		//static void deserializeString(const std::string& json, size_t& index, std::string &strOut, Internal::WorkProgress* progress);
 		static double deserializeNumber(const std::string& json, size_t& index, int &intValue, bool &isInt);
 		
 		static bool deserializeBool(const std::string& json, size_t& index);
@@ -57,20 +60,14 @@ namespace JsonDatabase
 		static void removeSpecificChars(const std::string& jsonString, std::string& jsonStringOut);
 
 		static std::string unescapeString(const std::string &str);
-		/*JsonValue parseValue(const std::string& jsonString);
-        void skipWhiteSpace(const std::string& jsonString);
-
-		JsonValue parseObject(const std::string& jsonString);
-		JsonValue parseArray(const std::string& jsonString);
-		JsonValue parseString(const std::string& jsonString);
-		JsonValue parseBoolean(const std::string& jsonString);
-		JsonValue parseNull(const std::string& jsonString);
-		JsonValue parseInt(const std::string& jsonString);
-		JsonValue parseDouble(const std::string& jsonString);*/
 
 
-		//size_t position; // Helper variable to keep track of parsing position
-
+		struct ArrayObjectRange
+		{
+			size_t start;
+			size_t end;
+		};
+		static void findArrayObjectRange(const std::string& json, size_t index, std::vector<ArrayObjectRange> &rangeList);
 	};
 
 }

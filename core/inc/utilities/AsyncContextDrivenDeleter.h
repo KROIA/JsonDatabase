@@ -22,7 +22,7 @@ namespace JsonDatabase
 		class AsyncContextDrivenDeleter
 		{
 		public:
-			AsyncContextDrivenDeleter(T*& objectToDelete)
+			AsyncContextDrivenDeleter(T* objectToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
 				: m_deleterThread(nullptr)
 #endif
@@ -31,7 +31,7 @@ namespace JsonDatabase
 				addObjectsToDelete(objectToDelete);
 			}
 
-			AsyncContextDrivenDeleter(std::shared_ptr<T>& objectToDelete)
+			AsyncContextDrivenDeleter(const std::shared_ptr<T>& objectToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
 				: m_deleterThread(nullptr)
 #endif
@@ -39,16 +39,16 @@ namespace JsonDatabase
 			{
 				addObjectsToDelete(objectToDelete);
 			}
-			AsyncContextDrivenDeleter(std::vector<T*> &objectsToDelete)
+			AsyncContextDrivenDeleter(const std::vector<T*> &objectsToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
 				: m_deleterThread(nullptr)
 #endif
 			{
 				addObjectsToDelete(objectsToDelete);
-				objectsToDelete.clear();
+				//objectsToDelete.clear();
 			}
 
-			AsyncContextDrivenDeleter(std::vector<std::shared_ptr<T>> &objectsToDelete)
+			AsyncContextDrivenDeleter(const std::vector<std::shared_ptr<T>> &objectsToDelete)
 #ifdef JD_ENABLE_MULTITHREADING
 				: m_deleterThread(nullptr)
 #endif
@@ -69,24 +69,24 @@ namespace JsonDatabase
 #endif
 			}
 
-			void addObjectsToDelete(T*& objectToDelete)
+			void addObjectsToDelete(T* objectToDelete)
 			{
 				m_objectsToDelete.push_back(objectToDelete);
 				//objectToDelete = nullptr;
 			}
-			void addObjectsToDelete(std::vector<T*>& objectsToDelete)
+			void addObjectsToDelete(const std::vector<T*>& objectsToDelete)
 			{
 				m_objectsToDelete.insert(m_objectsToDelete.end(), objectsToDelete.begin(), objectsToDelete.end());
 				//objectsToDelete.clear();
 			}
 
-			void addObjectsToDelete(std::shared_ptr<T> &objectToDelete)
+			void addObjectsToDelete(const std::shared_ptr<T> &objectToDelete)
 			{
 				//m_objectsToDelete.push_back(objectToDelete);
 				m_sharedPtrObjectsToDelete.push_back(objectToDelete);
 				//objectToDelete.reset();
 			}
-			void addObjectsToDelete(std::vector<std::shared_ptr<T>>& objectsToDelete)
+			void addObjectsToDelete(const std::vector<std::shared_ptr<T>>& objectsToDelete)
 			{
 				m_sharedPtrObjectsToDelete.insert(m_sharedPtrObjectsToDelete.end(), objectsToDelete.begin(), objectsToDelete.end());
 			}

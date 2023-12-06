@@ -76,6 +76,8 @@ namespace JsonDatabase
 			if (threadCount > 100)
 				threadCount = 100;
 			size_t objCount = objs.size();
+			if (threadCount > objCount)
+				threadCount = objCount;
 			if (objCount > 100 && threadCount)
 			{
 				struct ThreadData

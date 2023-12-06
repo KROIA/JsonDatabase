@@ -72,27 +72,10 @@ namespace JsonDatabase
 			void onNameChange(const std::string& newName) override;
 
 
-			//bool unregisterUser_internal();
-			//std::vector<JDUser> getRegisteredUsers_internal(Internal::LockedFileAccessor& registerFile) const;
-			//int unregisterInactiveUsers_internal(Internal::LockedFileAccessor& registerFile) const;
-			//bool isSessionIDActive(const std::string &sessionID) const;
-			//bool tryToDeleteSessionFile(const std::string &sessionID) const;
-
-			//std::string getPath() const;
-			//std::string getRegisterFilePath() const;
-
-			//JDManager &m_manager;
 			std::shared_ptr<LockEntryObjectImpl> m_registeredUser;
 			std::string m_registeredSessionID;
 			bool m_isRegistered;
 			unsigned int m_registryOpenTimeoutMs;
-			//Internal::FileLock *m_registeredFileLock;
-			/*
-			std::string m_registrationPath;
-			std::string m_registrationSubFolder;
-			std::string m_registrationFileName;
-			std::string m_registrationFileEnding;*/
-
 		};
 	}
 }

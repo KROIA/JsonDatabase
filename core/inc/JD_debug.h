@@ -170,7 +170,7 @@
 #define JD_ASYNC_WORKER_PROFILING_TEXT(name, value) JD_PROFILING_TEXT(name, value)
 
 // Json Serializer/Deserializer
-//#define JD_JSON_PROFILING_ENABED
+#define JD_JSON_PROFILING_ENABED
 #ifdef JD_JSON_PROFILING_ENABED
 #define JD_JSON_PROFILING_COLORBASE Teal
 #define JD_JSON_PROFILING_BLOCK_C(text, color) JD_PROFILING_BLOCK_C(text, color)
@@ -182,6 +182,7 @@
 #define JD_JSON_PROFILING_FUNCTION(colorStage) JD_PROFILING_FUNCTION(CONCAT_SYMBOLS(JD_JSON_PROFILING_COLORBASE, colorStage))
 #define JD_JSON_PROFILING_VALUE(name, value) JD_PROFILING_VALUE(name, value)
 #define JD_JSON_PROFILING_TEXT(name, value) JD_PROFILING_TEXT(name, value)
+#define JD_JSON_PROFILING_THREAD(name) JD_PROFILING_THREAD(name)
 #else
 #define JD_JSON_PROFILING_BLOCK_C(text, color) 
 #define JD_JSON_PROFILING_NONSCOPED_BLOCK_C(text, color) 
@@ -192,6 +193,7 @@
 #define JD_JSON_PROFILING_FUNCTION(colorStage) 
 #define JD_JSON_PROFILING_VALUE(name, value) 
 #define JD_JSON_PROFILING_TEXT(name, value)
+#define JD_JSON_PROFILING_THREAD(name)
 #endif
 
 // JDObjectIDDomain
