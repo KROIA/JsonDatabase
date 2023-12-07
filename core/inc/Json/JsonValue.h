@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <map>
 
 namespace JsonDatabase
 {
@@ -13,7 +14,7 @@ namespace JsonDatabase
 	using JsonArrayType = std::vector<T>;
 
 	template<class K, class V>
-	using JsonMapType = std::unordered_map<K, V>;
+	using JsonMapType = std::map<K, V>;
 
 	
 

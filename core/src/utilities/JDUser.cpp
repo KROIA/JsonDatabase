@@ -225,7 +225,7 @@ namespace JsonDatabase
 
         bool JDUser::save(JsonObject& obj) const 
         {
-            obj.reserve(5);
+            //obj.reserve(5);
             obj[JsonKeys::sessionID] = m_sessionID;
             obj[JsonKeys::name] = m_name;
 

@@ -291,7 +291,7 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
     obj[s_tag_data] = data;
     return ret;
 #else
-    obj.reserve(3);
+    //obj.reserve(3);
     JDObjectIDptr id = getObjectID();
     JDObjectID::IDType idVal = JDObjectID::invalidID;
     if(id)

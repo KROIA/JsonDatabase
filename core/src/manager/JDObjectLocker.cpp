@@ -747,7 +747,8 @@ namespace JsonDatabase
 			obj[JsonKeys::lockDate.data()] = Utilities::qDateToString(data.lockDate).c_str();
 			obj[JsonKeys::lockTime.data()] = Utilities::qTimeToString(data.lockTime).c_str();
 #else
-			obj.reserve(5);
+
+			//obj.reserve(5);
 			obj[JsonKeys::objectID] = data.objectID;
 			JsonObject userObj;
 			success &= data.user.save(userObj);
