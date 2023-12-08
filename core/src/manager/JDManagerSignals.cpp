@@ -8,11 +8,11 @@ namespace JsonDatabase
 #define DEFINE_SIGNAL_CONNECT_DISCONNECT(signalName, ...) \
         void JDManagerSignals::connect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction) \
         { \
-            ##signalName##.connectSlot(slotFunction); \
+            ##signalName.connectSlot(slotFunction); \
         } \
         void JDManagerSignals::disconnect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction) \
         { \
-            ##signalName##.disconnectSlot(slotFunction); \
+            ##signalName.disconnectSlot(slotFunction); \
         }
 
         JDManagerSignals::JDManagerSignals(JDManager& manager, std::mutex& mtx)

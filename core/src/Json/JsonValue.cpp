@@ -14,8 +14,8 @@ namespace JsonDatabase
     // Default constructor
     JsonValue::JsonValue() 
         : m_value(std::monostate{}) 
-        , m_type(Type::Null) 
-        , m_objElement(nullptr)
+       // , m_type(Type::Null) 
+       // , m_objElement(nullptr)
     {
         // Implement default constructor logic here
     }
@@ -23,30 +23,30 @@ namespace JsonDatabase
     // Copy constructor
     JsonValue::JsonValue(const JsonValue& other) 
         : m_value(other.m_value) 
-        , m_type(other.m_type)
-        , m_objElement(nullptr)
+       // , m_type(other.m_type)
+       // , m_objElement(nullptr)
     {
         // Implement copy constructor logic here
-        if (m_type == Type::Object)
-            m_objElement = &std::get<JsonObject>(m_value);
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
     }
 
     // Move constructor
     JsonValue::JsonValue(JsonValue&& other) noexcept 
         : m_value(std::move(other.m_value)) 
-        , m_type(std::move(other.m_type))
-        , m_objElement(nullptr)
+       // , m_type(std::move(other.m_type))
+       // , m_objElement(nullptr)
     {
-        if (m_type == Type::Object)
-            m_objElement = &std::get<JsonObject>(m_value);
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
         // Implement move constructor logic here
     }
 
     // Constructor with std::string value
     JsonValue::JsonValue(const std::string& value) 
         : m_value(value) 
-        , m_type(Type::String)
-        , m_objElement(nullptr)
+        //, m_type(Type::String)
+        //, m_objElement(nullptr)
     {
         // Implement constructor with std::string logic here
     }
@@ -54,8 +54,8 @@ namespace JsonDatabase
     // Constructor with const char* value
     JsonValue::JsonValue(const char* value) 
         : m_value(std::string(value)) 
-        , m_type(Type::String)
-        , m_objElement(nullptr)
+        //, m_type(Type::String)
+        //, m_objElement(nullptr)
     {
         // Implement constructor with const char* logic here
     }
@@ -63,8 +63,8 @@ namespace JsonDatabase
     // Constructor with int value
     JsonValue::JsonValue(const int& value) 
         : m_value(value) 
-        , m_type(Type::Int)
-        , m_objElement(nullptr)
+        //, m_type(Type::Int)
+        //, m_objElement(nullptr)
     {
         // Implement constructor with int logic here
     }
@@ -72,8 +72,8 @@ namespace JsonDatabase
     // Constructor with double value
     JsonValue::JsonValue(const double& value) 
         : m_value(value) 
-        , m_type(Type::Double)
-        , m_objElement(nullptr)
+        //, m_type(Type::Double)
+        //, m_objElement(nullptr)
     {
         // Implement constructor with double logic here
     }
@@ -81,35 +81,35 @@ namespace JsonDatabase
     // Constructor with bool value
     JsonValue::JsonValue(const bool& value) 
         : m_value(value) 
-        , m_type(Type::Bool)
-        , m_objElement(nullptr)
+        //, m_type(Type::Bool)
+        //, m_objElement(nullptr)
     {
         // Implement constructor with bool logic here
     }
 
     // Constructor with std::vector<JsonValue> value
     JsonValue::JsonValue(const JsonArray& value) 
-        : m_value(value) 
-        , m_type(Type::Array)
-        , m_objElement(nullptr)
+        : m_value(std::make_shared<JsonArray>(value))
+        //, m_type(Type::Array)
+        //, m_objElement(nullptr)
     {
         // Implement constructor with std::vector<JsonValue> logic here
     }
 
     // Constructor with std::map<std::string, JsonValue> value
     JsonValue::JsonValue(const JsonObject& value) 
-        : m_value(value) 
-        , m_type(Type::Object)
-        , m_objElement(&std::get<JsonObject>(m_value))
+        : m_value(std::make_shared<JsonObject>(value))
+        //, m_type(Type::Object)
+        //, m_objElement(&std::get<JsonObject>(m_value))
     {
         // Implement constructor with std::map<std::string, JsonValue> logic here
     }
 
     // Move constructor with std::map<std::string, JsonValue> value
     JsonValue::JsonValue(JsonObject&& value) noexcept 
-        : m_value(std::move(value))
-        , m_type(Type::Object)
-        , m_objElement(&std::get<JsonObject>(m_value))
+        : m_value(std::make_shared<JsonObject>(std::move(value)))
+        //, m_type(Type::Object)
+        //, m_objElement(&std::get<JsonObject>(m_value))
     {
         // Implement move constructor with std::map<std::string, JsonValue> logic here
     }
@@ -125,11 +125,11 @@ namespace JsonDatabase
     JsonValue& JsonValue::operator=(const JsonValue& other) 
     {
         m_value = other.m_value;
-        m_type = other.m_type;
-        if (m_type == Type::Object)
-            m_objElement = &std::get<JsonObject>(m_value);
-        else
-            m_objElement = nullptr;
+        //m_type = other.m_type;
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
+        //else
+        //    m_objElement = nullptr;
         return *this;
     }
 
@@ -137,11 +137,11 @@ namespace JsonDatabase
     JsonValue& JsonValue::operator=(JsonValue&& other) noexcept 
     {
         m_value = std::move(other.m_value);
-        m_type = std::move(other.m_type);
-        if (m_type == Type::Object)
-            m_objElement = &std::get<JsonObject>(m_value);
-        else
-            m_objElement = nullptr;
+        //m_type = std::move(other.m_type);
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
+        //else
+        //    m_objElement = nullptr;
         return *this;
     }
 
@@ -149,8 +149,8 @@ namespace JsonDatabase
     JsonValue& JsonValue::operator=(const std::string& value) 
     {
         m_value = value;
-        m_type = Type::String;
-        m_objElement = nullptr;
+        //m_type = Type::String;
+        //m_objElement = nullptr;
         return *this;
     }
 
@@ -158,8 +158,8 @@ namespace JsonDatabase
     JsonValue& JsonValue::operator=(const char* value)
     {
         m_value = std::string(value);
-        m_type = Type::String;
-        m_objElement = nullptr;
+        //m_type = Type::String;
+        //m_objElement = nullptr;
         return *this;
     }
 
@@ -167,8 +167,8 @@ namespace JsonDatabase
     JsonValue& JsonValue::operator=(const int& value)
     {
         m_value = value;
-        m_type = Type::Int;
-        m_objElement = nullptr;
+        //m_type = Type::Int;
+        //m_objElement = nullptr;
         return *this;
     }
 
@@ -176,8 +176,8 @@ namespace JsonDatabase
     JsonValue& JsonValue::operator=(const double& value)
     {
         m_value = value;
-        m_type = Type::Double;
-        m_objElement = nullptr;
+        //m_type = Type::Double;
+        //m_objElement = nullptr;
         return *this;
     }
 
@@ -185,35 +185,64 @@ namespace JsonDatabase
     JsonValue& JsonValue::operator=(const bool& value) 
     {
         m_value = value;
-        m_type = Type::Bool;
-        m_objElement = nullptr;
+        //m_type = Type::Bool;
+        //m_objElement = nullptr;
         return *this;
     }
 
     // Assignment operator with JsonArray value
     JsonValue& JsonValue::operator=(const JsonArray& value) 
     {
-        m_value = value;
-        m_type = Type::Array;
-        m_objElement = nullptr;
+        std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(value);
+            return *this;
+        }
+        m_value = std::make_shared<JsonArray>(value);
         return *this;
     }
 
     // Assignment operator with JsonObject value
     JsonValue& JsonValue::operator=(const JsonObject& value)
     {
-        m_value = value;
-        m_type = Type::Object;
-        m_objElement = &std::get<JsonObject>(m_value);
+        std::shared_ptr<JsonObject> *ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(value);
+            return *this;
+        }
+        m_value = std::make_shared<JsonObject>(value);
         return *this;
     }
 
     // Move assignment operator with JsonObject value
     JsonValue& JsonValue::operator=(JsonObject&& value) noexcept 
     {
-        m_value = std::move(value);
-        m_type = Type::Object;
-        m_objElement = &std::get<JsonObject>(m_value);
+        std::shared_ptr<JsonObject>* ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(std::move(value));
+            return *this;
+        }
+        m_value = std::make_shared<JsonObject>(std::move(value));
+        //m_value = std::move(value);
+        //m_type = Type::Object;
+        //m_objElement = &std::get<JsonObject>(m_value);
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(JsonArray&& value) noexcept
+    {
+        std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(std::move(value));
+            return *this;
+        }
+        m_value = std::make_shared<JsonArray>(std::move(value));
+        //m_value = std::move(value);
+        //m_type = Type::Object;
+        //m_objElement = &std::get<JsonObject>(m_value);
         return *this;
     }
 
@@ -224,14 +253,14 @@ namespace JsonDatabase
     // Equality comparison operator
     bool JsonValue::operator==(const JsonValue& other) const 
     {
-        if(m_type != other.m_type) return false;
+        //if(m_type != other.m_type) return false;
         return m_value == other.m_value;
     }
 
     // Inequality comparison operator
     bool JsonValue::operator!=(const JsonValue& other) const 
     {
-        if (m_type == other.m_type) return false;
+        //if (m_type == other.m_type) return false;
         return !(*this == other);
     }
 
@@ -296,7 +325,7 @@ namespace JsonDatabase
     }
     */
 
-    JsonValue::Type JsonValue::getType() const
+    /*JsonValue::Type JsonValue::getType() const
     {
 		return m_type;
     }
@@ -346,9 +375,9 @@ namespace JsonDatabase
     bool JsonValue::isObject() const
     {
         return m_type == Type::Object;
-    }
+    }*/
 
-    bool JsonValue::contains(const std::string& key) const
+    /*bool JsonValue::contains(const std::string& key) const
     {
         if (m_type != Type::Object)
             return false;
@@ -364,8 +393,8 @@ namespace JsonDatabase
         }
         return (*m_objElement)[key];
     }
-
-
+    */
+/*
     std::string& JsonValue::getString()
     {
         return std::get<std::string>(m_value);
@@ -414,8 +443,8 @@ namespace JsonDatabase
     const JsonObject& JsonValue::getObject() const
     {
         return *m_objElement;
-    }
-
+    }*/
+    /*
     bool JsonValue::extractString(std::string& valueOut) const
     {
         if(m_type != Type::String)
@@ -423,16 +452,16 @@ namespace JsonDatabase
         valueOut = std::get<std::string>(m_value);
 		return true;
     }
-    /*bool JsonValue::getString(JsonValue& objOut, const std::string& key) const
-    {
-        if (m_type != Type::Object)
-			return false;
-        const auto &it = m_objElement->find(key);
-        if (it == m_objElement->end())
-			return false;
-        objOut = it->second;
-        return true;
-    }*/
+    //bool JsonValue::getString(JsonValue& objOut, const std::string& key) const
+    //{
+    //    if (m_type != Type::Object)
+	//		return false;
+    //    const auto &it = m_objElement->find(key);
+    //    if (it == m_objElement->end())
+	//		return false;
+    //    objOut = it->second;
+    //    return true;
+    //}
     bool JsonValue::extractInt(int& valueOut) const
     {
         if (m_type != Type::Int)
@@ -669,16 +698,16 @@ namespace JsonDatabase
         const auto& it = m_objElement->find(key);
         return it->second.m_objElement;
     }
+    */
 
-
-    JsonValue::JsonVariantType& JsonValue::getVariant()
+    /*JsonValue::JsonVariantType& JsonValue::getVariant()
     {
         return m_value;
     }
     const JsonValue::JsonVariantType& JsonValue::getConstVariant() const
     {
         return m_value;
-    }
+    }*/
 
     // Convert value to string representation
     std::string JsonValue::toString() const 

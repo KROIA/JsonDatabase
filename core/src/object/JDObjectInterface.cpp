@@ -123,9 +123,33 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
     for (size_t i = 0; i < jsons.size(); ++i)
     {
         int id;
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
-        if (jsons[i].extractInt(id, s_tag_objID))
+        auto o = jsons[i].get_if<JsonObject>();
+        const JsonObject* obj = jsons[i].get_if<JsonObject>();
+        if (!obj)
+            continue;
+        const auto& it = obj->find(s_tag_objID);
+        if(it == obj->end())
+			continue;
+        const auto& value = it->second;
+        
+//#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+        const int *idPtr = value.get_if<int>();
+        if (!idPtr)
         {
+            const double* idPtrD = value.get_if<double>();
+            if(!idPtrD)
+				continue;
+            id = static_cast<int>(*idPtrD);
+        }
+		else
+			id = *idPtr;
+
+
+        if (id == objID->get())
+            return i;
+/*
+        {
+            id = jsons[i].get<int>();
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE
         if (!jsons[i].contains(s_tag_objID))
         {
@@ -137,6 +161,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
                     return i;
             }
         }
+        */
     }
     return std::string::npos;
 }

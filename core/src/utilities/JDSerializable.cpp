@@ -19,18 +19,16 @@ namespace JsonDatabase
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 const JsonValue& val = obj.find(key)->second;
 #endif
-#if JD_ACTIVE_JSON == JD_JSON_QT || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#if JD_ACTIVE_JSON == JD_JSON_QT
                 if (val.isObject())
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 if (val.holds<JsonObject>())
 #endif
                 {
                     JD_GENERAL_PROFILING_BLOCK("is object", JD_COLOR_STAGE_7);
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     value = val.toObject();
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                    value = val.getObject();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
                     value = val.get<JsonObject>();
 #endif
                     return true;
@@ -62,9 +60,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 value = obj[key].toString();
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                value = QString::fromStdString(obj.find(key)->second.getString());
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE 
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE 
                 value = QString::fromStdString(obj.find(key)->second.get<std::string>());
 #endif
                 return true;
@@ -81,9 +77,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 value = obj[key].toString().toStdString();
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                value = obj.find(key)->second.getString();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
                 value = obj.find(key)->second.get<std::string>();
 #endif
                 return true;
@@ -139,9 +133,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 value = obj[key].toDouble(value);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                value = obj.find(key)->second.getDouble();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
 				value = obj.find(key)->second.get<double>();
 #endif
                 return true;
@@ -176,9 +168,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 value = obj[key].toBool(value);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                value = obj.find(key)->second.getBool();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
 				value = obj.find(key)->second.get<bool>();
 #endif
                 return true;

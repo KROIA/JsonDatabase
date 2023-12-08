@@ -191,7 +191,8 @@ namespace JsonDatabase
             serializer.enableNewLinesInObjects(false);
             serializer.enableNewLineAfterObject(true);
             serializer.enableSpaces(false);
-            data = QByteArray::fromStdString(serializer.serializeArray(jsons, m_progress));
+            std::string bufferStr = serializer.serializeArray(jsons, m_progress);
+            data = QByteArray::fromStdString(bufferStr);
 #endif
             JD_GENERAL_PROFILING_END_BLOCK;
 
@@ -263,7 +264,8 @@ namespace JsonDatabase
             serializer.enableNewLinesInObjects(false);
             serializer.enableNewLineAfterObject(true);
             serializer.enableSpaces(false);
-            data = QByteArray::fromStdString(serializer.serializeObject(json));
+            std::string fileBuffer = serializer.serializeObject(json);
+            data = QByteArray::fromStdString(fileBuffer);
 #endif
             JD_GENERAL_PROFILING_END_BLOCK;
             if (m_progress)
@@ -331,7 +333,7 @@ namespace JsonDatabase
             QJsonDocument jsonDocument;
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonDeserializer deserializer;
-            JsonArray deserialized;
+            JsonArray deserialized{};
 #endif
             if (m_progress)
             {
@@ -349,10 +351,11 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+                    std::string converted = uncompressed.toUtf8().toStdString();
                     if (m_progress)
-                        deserialized = deserializer.deserializeArray(uncompressed.toUtf8().toStdString(), m_progress);
+                        deserialized = deserializer.deserializeArray(converted, m_progress);
                     else
-                        deserialized = deserializer.deserializeArray(uncompressed.toUtf8().toStdString());
+                        deserialized = deserializer.deserializeArray(converted);
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -363,10 +366,11 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     jsonDocument = QJsonDocument::fromJson(fileData);
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+                    std::string converted = fileData.toStdString();
                     if (m_progress)
-                        deserialized = deserializer.deserializeArray(fileData.toStdString(), m_progress);
+                        deserialized = deserializer.deserializeArray(converted, m_progress);
                     else
-                        deserialized = deserializer.deserializeArray(fileData.toStdString());
+                        deserialized = deserializer.deserializeArray(converted);
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -401,7 +405,7 @@ namespace JsonDatabase
                 return Error::json_isNotAnArray;
             }
 #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
-            //if (!deserialized.holds<JsonArray>())
+
 #endif
             
 #if JD_ACTIVE_JSON == JD_JSON_QT
@@ -418,7 +422,6 @@ namespace JsonDatabase
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JD_GENERAL_PROFILING_BLOCK("Move JsonArray", JD_COLOR_STAGE_6);
             {
-                //jsonsOut = std::move(deserialized.get<JsonArray>());
                 jsonsOut = std::move(deserialized);
             }
 #endif
@@ -462,7 +465,7 @@ namespace JsonDatabase
             QJsonDocument document;
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonDeserializer deserializer;
-            JsonObject deserialized;
+            JsonObject deserialized{};
 #endif
             if (m_progress)
             {
@@ -480,10 +483,11 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     document = QJsonDocument::fromJson(uncompressed.toUtf8());
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+                    std::string bufferStr = uncompressed.toUtf8().toStdString();
                     if (m_progress)
-                        deserialized = deserializer.deserializeObject(uncompressed.toUtf8().toStdString(), m_progress);
+                        deserialized = deserializer.deserializeObject(bufferStr, m_progress);
                     else
-                        deserialized = deserializer.deserializeObject(uncompressed.toUtf8().toStdString());
+                        deserialized = deserializer.deserializeObject(bufferStr);
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -494,10 +498,11 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     document = QJsonDocument::fromJson(fileData);
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+                    std::string bufferStr = fileData.toStdString();
                     if (m_progress)
-                        deserialized = deserializer.deserializeObject(fileData.toStdString(), m_progress);
+                        deserialized = deserializer.deserializeObject(bufferStr, m_progress);
                     else
-                        deserialized = deserializer.deserializeObject(fileData.toStdString());
+                        deserialized = deserializer.deserializeObject(bufferStr);
 #endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
@@ -511,10 +516,11 @@ namespace JsonDatabase
                 if (m_progress)
                     m_progress->setProgress(1);
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+                std::string bufferStr = fileData.toStdString();
                 if (m_progress)
-                    deserialized = deserializer.deserializeObject(fileData.toStdString(), m_progress);
+                    deserialized = deserializer.deserializeObject(bufferStr, m_progress);
                 else
-					deserialized = deserializer.deserializeObject(fileData.toStdString());
+                    deserialized = deserializer.deserializeObject(bufferStr);
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
@@ -535,20 +541,10 @@ namespace JsonDatabase
                 objOut = document.object();
                 return Error::none;
             }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-            //if (deserialized)
-            {
-                //objOut = std::move(deserialized);
-                objOut = deserialized;
-                return Error::none;
-            }
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
-            //if (!deserialized.holds<JsonObject>())
-            {
-                //objOut = std::move(deserialized);
-                objOut = deserialized;
-                return Error::none;
-            }
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
+            
+            objOut = std::move(deserialized);
+            return Error::none;
 #endif
             return Error::json_isNotAnObject;
         }

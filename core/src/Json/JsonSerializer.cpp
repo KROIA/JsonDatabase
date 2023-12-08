@@ -85,22 +85,22 @@ void JsonSerializer::serializeValue(const JsonValue& value, std::string& seriali
 void JsonSerializer::serializeValue(const JsonValue& value, std::string& serializedOut, int& indent)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-    switch (value.m_type)
+    switch (value.m_value.index())
     {
-    case JsonValue::Type::Null:
+    case (size_t)JsonValue::Type::Null:
         serializedOut = serializeNull(); break;
-    case JsonValue::Type::String:
-        serializeString(std::get<std::string>(value.m_value), serializedOut); break;
-    case JsonValue::Type::Int:
-        serializeInt(std::get<int>(value.m_value), serializedOut); break;
-    case JsonValue::Type::Double:
-        serializeDouble(std::get<double>(value.m_value), serializedOut); break;
-    case JsonValue::Type::Bool:
-        serializeBool(std::get<bool>(value.m_value), serializedOut); break;
-    case JsonValue::Type::Array:
-        serializeArray(std::get<JsonArray>(value.m_value), serializedOut, indent); break;
-    case JsonValue::Type::Object:
-        serializeObject(*value.m_objElement, serializedOut, indent); break;
+    case (size_t)JsonValue::Type::String:
+        serializeString(value.get<std::string>(), serializedOut); break;
+    case (size_t)JsonValue::Type::Int:
+        serializeInt(value.get<int>(), serializedOut); break;
+    case (size_t)JsonValue::Type::Double:
+        serializeDouble(value.get<double>(), serializedOut); break;
+    case (size_t)JsonValue::Type::Bool:
+        serializeBool(value.get<bool>(), serializedOut); break;
+    case (size_t)JsonValue::Type::Array:
+        serializeArray(value.get<JsonArray>(), serializedOut, indent); break;
+    case (size_t)JsonValue::Type::Object:
+        serializeObject(value.get<JsonObject>(), serializedOut, indent); break;
     }
 }
 
