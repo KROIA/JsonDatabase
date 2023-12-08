@@ -2,18 +2,18 @@
 #include "object/JDObjectRegistry.h"
 #include "object/JDObjectManager.h"
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QVariant>
 #endif
 
 namespace JsonDatabase
 {
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     const QString JDObjectInterface::s_tag_objID = "objID";
     const QString JDObjectInterface::s_tag_className = "class";
     const QString JDObjectInterface::s_tag_data = "Data";
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     const std::string JDObjectInterface::s_tag_objID = "objID";
     const std::string JDObjectInterface::s_tag_className = "class";
     const std::string JDObjectInterface::s_tag_data = "Data";
@@ -103,7 +103,7 @@ std::vector<JDObject> JDObjectInterface::reinstantiate(const std::vector<JDObjec
 	}
 	return ret;
 }*/
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr&objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
@@ -117,16 +117,25 @@ size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons
     }
     return std::string::npos;
 }
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
         int id;
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
         if (jsons[i].extractInt(id, s_tag_objID))
         {
-            if (id == objID->get())
-                return i;
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+        if (!jsons[i].contains(s_tag_objID))
+        {
+            auto value = jsons[i].get<double>();
+            id = static_cast<int>(value);
+#endif
+            {
+                if (id == objID->get())
+                    return i;
+            }
         }
     }
     return std::string::npos;
@@ -136,9 +145,9 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
 bool JDObjectInterface::loadFrom(const JDObject& source)
 {
     bool success = true;
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     QJsonObject data;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonObject data;
 #endif
     success &= source->save(data);
@@ -149,9 +158,9 @@ bool JDObjectInterface::loadFrom(const JDObject& source)
 bool JDObjectInterface::loadFrom(const JDObjectInterface* source)
 {
     bool success = true;
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     QJsonObject data;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonObject data;
 #endif
     success &= source->save(data);
@@ -180,14 +189,14 @@ const JDObjectID::IDType& JDObjectInterface::getShallowObjectID() const
     m_objID = id;
 }*/
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 bool JDObjectInterface::equalData(const QJsonObject& obj) const
-#else
-bool JDObjectInterface::equalData(const JsonValue& obj) const
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+bool JDObjectInterface::equalData(const JsonObject& obj) const
 #endif
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     QJsonObject data1;
     QJsonObject data2;
     bool equal = getJsonValue(obj, data1, s_tag_data);
@@ -201,14 +210,17 @@ bool JDObjectInterface::equalData(const JsonValue& obj) const
     }
 
     return equal;
-#else
+ #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     bool equal = true;
-    const JsonObject& valueObject = std::get<JsonObject>(obj.getConstVariant());
-    auto it = valueObject.find(s_tag_data);
-    if(it == valueObject.end())
+   // const JsonObject& valueObject = obj.get<JsonObject>();
+
+    auto it = obj.find(s_tag_data);
+    if(it == obj.end())
 		return false;
 
-    const JsonObject &data1 = valueObject.find(s_tag_data)->second.getObject();
+
+    const JsonObject &data1 = obj.find(s_tag_data)->second.get<JsonObject>();
+
     JsonObject data2;
 
     {
@@ -224,15 +236,15 @@ bool JDObjectInterface::equalData(const JsonValue& obj) const
 #endif
     
 }
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 bool JDObjectInterface::loadInternal(const QJsonObject &obj)
-#else
-bool JDObjectInterface::loadInternal(const JsonValue& obj)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+bool JDObjectInterface::loadInternal(const JsonObject& obj)
 #endif
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     QJsonObject data;
     bool success = getJsonValue(obj, data, s_tag_data);
     
@@ -242,8 +254,8 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
     }
     //setObjectID(obj[s_tag_objID].toInt());
     return success;
-#else
-    const JsonObject *data = obj.getObjectPtr(s_tag_data);
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+    const JsonObject *data = obj.at(s_tag_data).get_if<JsonObject>();
     bool success = true;
 
     if (data)
@@ -257,22 +269,22 @@ bool JDObjectInterface::loadInternal(const JsonValue& obj)
 #endif
 }
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 bool JDObjectInterface::saveInternal(QJsonObject &obj)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool JDObjectInterface::saveInternal(JsonObject& obj)
 #endif
 {
     return getSaveData(obj);
 }
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 bool JDObjectInterface::getSaveData(QJsonObject& obj) const
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool JDObjectInterface::getSaveData(JsonObject& obj) const
 #endif
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     JDObjectIDptr id = getObjectID();
     JDObjectID::IDType idVal = JDObjectID::invalidID;
     if (id)
@@ -290,7 +302,7 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
 
     obj[s_tag_data] = data;
     return ret;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     //obj.reserve(3);
     JDObjectIDptr id = getObjectID();
     JDObjectID::IDType idVal = JDObjectID::invalidID;

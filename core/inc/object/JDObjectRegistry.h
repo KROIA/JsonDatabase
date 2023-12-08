@@ -26,12 +26,12 @@ namespace JsonDatabase
 
             static Error registerType(const JDObject& obj);
             static const std::map<std::string, JDObject>& getRegisteredTypes();
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
             static const JDObject& getObjectDefinition(const QJsonObject& json);
             static std::string getObjectTypeString(const QJsonObject& json);
-#else
-            static const JDObject& getObjectDefinition(const JsonValue& json);
-            static std::string getObjectTypeString(const JsonValue& json);
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+            static const JDObject& getObjectDefinition(const JsonObject& json);
+            static std::string getObjectTypeString(const JsonObject& json);
 #endif
             static const JDObject& getObjectDefinition(const std::string& className);
 

@@ -10,10 +10,10 @@
 
 #include <string>
 #include <vector>
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
 #include <QString>
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 #include <mutex>
@@ -95,11 +95,11 @@ namespace JsonDatabase
 				std::string toString() const;
 				
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 				bool load(const QJsonObject& obj) override;
 				bool save(QJsonObject& obj) const override;
 				static bool isValid(const QJsonObject& lock);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				bool load(const JsonObject& obj) override;
 				bool save(JsonObject& obj) const override;
 				static bool isValid(const JsonObject& lock);
@@ -128,12 +128,12 @@ namespace JsonDatabase
 				ObjectLockData();
 				ObjectLockData(const JDObject & obj, const JDManager &manager);
 				void setObject(const JDObject & obj, const JDManager& manager);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 				bool load(const QJsonObject& obj) override;
 				bool save(QJsonObject& obj) const override;
 
 				static bool isValid(const QJsonObject& lock);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				bool load(const JsonObject& obj) override;
 				bool save(JsonObject &obj) const override;
 

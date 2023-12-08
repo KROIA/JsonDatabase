@@ -16,9 +16,9 @@ A::~A()
 
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 bool A::load(const QJsonObject& obj)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool A::load(const JsonDatabase::JsonObject& obj)
 #endif
 {
@@ -29,9 +29,9 @@ bool A::load(const JsonDatabase::JsonObject& obj)
         qDebug() << "AValue is: "<<value;
     return true;
 }
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 bool A::save(QJsonObject& obj) const
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool A::save(JsonDatabase::JsonObject& obj) const
 #endif
 {

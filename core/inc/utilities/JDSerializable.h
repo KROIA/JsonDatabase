@@ -3,12 +3,8 @@
 #include "JD_base.h"
 #include "JDDeclaration.h"
 #include "object/JDObjectID.h"
-
-#ifdef JD_USE_QJSON
-#include <QJsonObject>
-#else
 #include "Json/JsonValue.h"
-#endif
+
 
 
 
@@ -23,7 +19,7 @@ namespace JsonDatabase
 
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			virtual bool load(const QJsonObject& obj) = 0;
 			virtual bool save(QJsonObject& obj) const = 0;
 
@@ -36,8 +32,7 @@ namespace JsonDatabase
 			static bool getJsonValue(const QJsonObject& obj, double& value, const QString& key);
 			static bool getJsonValue(const QJsonObject& obj, float& value, const QString& key);
 			static bool getJsonValue(const QJsonObject& obj, bool& value, const QString& key);
-#else
-
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			virtual bool load(const JsonObject& obj) = 0;
 			virtual bool save(JsonObject& obj) const = 0;
 

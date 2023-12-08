@@ -4,12 +4,8 @@
 #include "JDSerializable.h"
 #include <string>
 #include <QDateTime>
+#include "json/JsonValue.h"
 
-#ifdef JD_USE_QJSON
-#include <QJsonObject>
-#else
-#include <json/JsonValue.h>
-#endif
 
 namespace JsonDatabase
 {
@@ -54,10 +50,10 @@ namespace JsonDatabase
 
 			std::string toString() const;
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			bool load(const QJsonObject& obj) override;
 			bool save(QJsonObject& obj) const override;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			bool load(const JsonObject& obj) override;
 			bool save(JsonObject& obj) const override;
 #endif

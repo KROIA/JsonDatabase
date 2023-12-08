@@ -6,10 +6,10 @@
 
 
 #include <QFile>
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
 #include <QJsonArray>
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonSerializer.h"
 #include "Json/JsonDeserializer.h"
 #endif
@@ -708,45 +708,49 @@ namespace JsonDatabase
 			data.lockDate  = QDate::currentDate();
 			data.lockTime  = QTime::currentTime();
 		}
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectLocker::LockEntryObjectImpl::load(const QJsonObject& obj)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::load(const JsonObject& obj)
 #endif
 		{
 			bool success = LockEntryObject::load(obj);
 			if(!isValid(obj))
 				return false;
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			data.objectID = obj[JsonKeys::objectID.data()].toInt();
 			data.user.load(obj[JsonKeys::user.data()].toObject());
 			data.lockDate = Utilities::stringToQDate(obj[JsonKeys::lockDate.data()].toString().toStdString());
 			data.lockTime = Utilities::stringToQTime(obj[JsonKeys::lockTime.data()].toString().toStdString());
-#else
-
-			data.objectID = obj.at(JsonKeys::objectID).getInt();
-			data.user.load(obj.at(JsonKeys::user).getObject());
-			data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).toString());
-			data.lockTime = Utilities::stringToQTime(obj.at(JsonKeys::lockTime).toString());
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+			data.objectID = obj.at(JsonKeys::objectID).get<int>();
+			data.user.load(obj.at(JsonKeys::user).get<JsonObject>());
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+			data.objectID = static_cast<int>(obj.at(JsonKeys::objectID).get<double>());
+			data.user.load(obj.at(JsonKeys::user).get<JsonObject>());
+#endif
+			data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).get<std::string>());
+			data.lockTime = Utilities::stringToQTime(obj.at(JsonKeys::lockTime).get<std::string>());
 #endif
 			return success;
 		}
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectLocker::LockEntryObjectImpl::save(QJsonObject& obj) const
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::save(JsonObject& obj) const
 #endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			bool success = LockEntryObject::save(obj);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			obj[JsonKeys::objectID.data()] = data.objectID;
 			QJsonObject userObj;
 			success &= data.user.save(userObj);
 			obj[JsonKeys::user.data()] = userObj;
 			obj[JsonKeys::lockDate.data()] = Utilities::qDateToString(data.lockDate).c_str();
 			obj[JsonKeys::lockTime.data()] = Utilities::qTimeToString(data.lockTime).c_str();
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 			//obj.reserve(5);
 			obj[JsonKeys::objectID] = data.objectID;
@@ -759,9 +763,9 @@ namespace JsonDatabase
 			return true;
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectLocker::LockEntryObjectImpl::isValid(const QJsonObject& lock)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::isValid(const JsonObject& lock)
 #endif
 		{
@@ -775,19 +779,19 @@ namespace JsonDatabase
 		}
 		std::string JDObjectLocker::LockEntryObjectImpl::toString() const
 		{
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonObject obj;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonObject obj;
 #endif
 			save(obj);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonDocument jsonDoc(obj);
 
 			// Convert the JSON document to a string
 			QString jsonString = jsonDoc.toJson(QJsonDocument::Indented);
 			return jsonString.toStdString();
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonSerializer serializer;
 			return serializer.serializeObject(obj);
 #endif
@@ -818,7 +822,7 @@ namespace JsonDatabase
 			}
 
 			std::string jsonData = file.readAll().constData();
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData.c_str());
 			if (!jsonDoc.isNull()) {
 				if (!jsonDoc.isArray())
@@ -848,7 +852,7 @@ namespace JsonDatabase
 					locks[locks.size()-1].load(lock);
 				}
 			}
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonDeserializer deserializer;
 			JsonValue deserialized = deserializer.deserializeValue(jsonData);
 			if (!deserialized.isNull()) {
@@ -894,18 +898,18 @@ namespace JsonDatabase
 				err = Error::cantOpenTableFile;
 				return false;
 			}
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonArray array;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray array;
 			array.reserve(locks.size());
 #endif
 			for (const ObjectLockData& lock : locks)
 			{
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject sav;
 				lock.save(sav);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JsonObject sav;
 				lock.save(sav);
 #endif
@@ -915,18 +919,18 @@ namespace JsonDatabase
 					JD_CONSOLE_FUNCTION("Programming error!!! ajust the ObjectLockData::isValid(const QJsonObject&) function\n");
 					return false;
 				}
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 				array.append(sav);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				array.emplace_back(sav);
 #endif
 			}
 
 			QByteArray transmittStr;
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonDocument jsonDoc(array);
 			transmittStr = jsonDoc.toJson(QJsonDocument::Indented);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonSerializer serializer;
 			transmittStr = QByteArray::fromStdString(serializer.serializeArray(array));
 #endif

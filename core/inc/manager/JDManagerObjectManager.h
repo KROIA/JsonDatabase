@@ -9,9 +9,9 @@
 #include <vector>
 #include <mutex>
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include <json/JsonValue.h>
 #endif
 
@@ -39,16 +39,16 @@ namespace JsonDatabase
             std::shared_ptr<T> createShallowClone(const std::shared_ptr<T>& source);
 
             template<typename T>
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data);
 #endif
 
      /*       template<typename T>
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr &id);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id);
 #endif*/
             
@@ -125,7 +125,7 @@ namespace JsonDatabase
 
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
             bool loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
                 std::vector<JDObject>& overridingObjs,
@@ -133,8 +133,8 @@ namespace JsonDatabase
                 std::vector<JDObject>& newObjInstances,
                 std::vector<JDObject>& removedObjs,
                 std::vector<JDObjectPair>& changedPairs);
-#else
-            bool loadObjectFromJson_internal(const JsonValue& json, const JDObject& obj);
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+            bool loadObjectFromJson_internal(const JsonObject& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
                 std::vector<JDObject>& overridingObjs,
                 std::vector<JDObjectID::IDType>& newObjIDs,
@@ -144,9 +144,9 @@ namespace JsonDatabase
 #endif
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 #endif
             void update();
@@ -197,9 +197,9 @@ namespace JsonDatabase
         }
         
         template<typename T>
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data)
 #endif
         {
@@ -213,9 +213,9 @@ namespace JsonDatabase
 
         }
         /*template<typename T>
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr& id)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id)
 #endif
         {

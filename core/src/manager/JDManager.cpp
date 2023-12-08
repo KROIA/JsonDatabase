@@ -172,9 +172,9 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     const JDObjectIDptr &id = obj->getObjectID();
 
     
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     std::vector<QJsonObject> jsons; 
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
 #endif
 
@@ -206,10 +206,10 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
         JD_CONSOLE("bool JDManager::loadObject_internal(JDObject) Object with ID: \"" << id << "\" not found");
         return false;
     }
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     const QJsonObject& objData = jsons[index];
-#else
-    const JsonValue &objData = jsons[index];
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+    const JsonObject &objData = jsons[index].get<JsonObject>();
 #endif
     if (progress) progress->setComment("Deserializing object");
     success &= JDManagerObjectManager::loadObjectFromJson_internal(objData, obj);
@@ -259,9 +259,9 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
 
     
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     std::vector<QJsonObject> *jsons = new std::vector<QJsonObject>();
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray *jsons = new JsonArray();
 #endif
     AsyncContextDrivenDeleter asyncDeleter(jsons);
@@ -413,10 +413,10 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     if (progress) progress->setComment("Serializing object");
     JDObjectIDptr ID = obj->getObjectID();
     
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     std::vector<QJsonObject> jsons;
     QJsonObject data;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
     JsonObject data;
 #endif
@@ -533,9 +533,9 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     bool success = true;
 
     if (progress) progress->setComment("Serializing objects");
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     std::vector<QJsonObject>* jsonData = new std::vector<QJsonObject>();
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray *jsonData = new JsonArray;
 #endif
     AsyncContextDrivenDeleter asyncDeleter(jsonData);
@@ -601,7 +601,7 @@ void JDManager::onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> wo
     {
 		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectsDone, saveList->hasSucceeded(), true);
 	}
-
+    m_signals.lockedObjectsChanged.emitSignal();
     if (!work->hasSucceeded())
         onAsyncWorkError(work);
 }

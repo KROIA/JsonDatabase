@@ -164,31 +164,34 @@ namespace JsonDatabase
 			return m_user;
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDUserRegistration::LockEntryObjectImpl::load(const QJsonObject& obj) 
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDUserRegistration::LockEntryObjectImpl::load(const JsonObject& obj) 
 #endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			bool success = LockEntryObject::load(obj);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			if(obj.contains(LockEntryObjectImpl::JsonKeys::user.c_str()))
 			{
 				QJsonValue userValue = obj[JsonKeys::user.c_str()];
-#else
+				if (!userValue.isObject())
+					return false;
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			if (obj.contains(LockEntryObjectImpl::JsonKeys::user))
 			{
 				JsonValue userValue = obj.at(JsonKeys::user);
-#endif
-				if(!userValue.isObject())
+
+				if(!userValue.holds<JsonObject>())
 					return false;
+#endif
 				JDUser user;
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject userObj = userValue.toObject();
-#else
-				JsonObject userObj = userValue.getObject();
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+				JsonObject userObj = userValue.get<JsonObject>();
 #endif
 
 				if (user.load(userObj))
@@ -200,23 +203,23 @@ namespace JsonDatabase
 			return success;
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDUserRegistration::LockEntryObjectImpl::save(QJsonObject& obj) const
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDUserRegistration::LockEntryObjectImpl::save(JsonObject& obj) const
 #endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			bool success = LockEntryObject::save(obj);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonObject userData;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonObject userData;
 #endif
 			m_user.save(userData);
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 			obj[JsonKeys::user.c_str()] = userData;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			obj[JsonKeys::user] = userData;
 #endif
 			return success;

@@ -19,20 +19,20 @@ namespace JsonDatabase
 		/*
 	{
         /*
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
 #endif
         {
             return getJsonArray(objs, jsonOut, nullptr, 0.0);
         }
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs, 
                                          std::vector<QJsonObject>& jsonOut, 
                                          WorkProgress* progress,
                                          double deltaProgress)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JsonUtilities::getJsonArray(const std::vector<JDObject>& objs,
             JsonArray& jsonOut,
             WorkProgress* progress,
@@ -76,9 +76,9 @@ namespace JsonDatabase
                             ThreadData& data = threadData[i];
                             for (size_t j = data.start; j < data.end; ++j)
                             {
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
                                 QJsonObject data;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                                 JsonObject data;
 #endif
                                 objs[j]->saveInternal(data);
@@ -103,9 +103,9 @@ namespace JsonDatabase
                 jsonOut.reserve(objs.size());
                 for (auto o : objs)
                 {
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
                     QJsonObject data;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JsonObject data;
 #endif
                     success &= o->saveInternal(data);
@@ -117,7 +117,7 @@ namespace JsonDatabase
             return success;
         }*/
         /*
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JsonUtilities::serializeObject(JDObject obj, std::string& serializedOut)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
@@ -142,9 +142,9 @@ namespace JsonDatabase
 #endif*/
 
         /*
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObject obj, bool& hasChangedOut)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObject obj, bool& hasChangedOut)
 #endif
         {
@@ -158,9 +158,9 @@ namespace JsonDatabase
             }
             return true;
         }
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JsonUtilities::deserializeOverrideFromJson(const QJsonObject& json, JDObject obj)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JsonUtilities::deserializeOverrideFromJson(const JsonValue& json, JDObject obj)
 #endif
         {
@@ -195,7 +195,7 @@ namespace JsonDatabase
             JDObject& objOut,
             JDObjectIDDomain& idDomain,
             JDManager& manager)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JsonUtilities::deserializeJson(const QJsonObject& json, JDObject objOriginal,
             JDObject& objOut, JDObjectIDDomain& idDomain, JDManager& manager)
 #endif
@@ -207,7 +207,7 @@ namespace JsonDatabase
                 JDObjectID::IDType id;
 #ifndef JD_USE_QJSON
                 if (json.getInt(id, JDObjectInterface::s_tag_objID))
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 if (JDSerializable::getJsonValue(json, id, JDObjectInterface::s_tag_objID))
 #endif
                 {
@@ -225,7 +225,7 @@ namespace JsonDatabase
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \"" 
                     						<< JDObjectInterface::s_tag_objID << "\" is missed\n" 
                     						<< "Object: " << json);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
 #endif
@@ -250,7 +250,7 @@ namespace JsonDatabase
                     std::string className;
 #ifndef JD_USE_QJSON
                     if (!json.getString(className, JDObjectInterface::s_tag_className))
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     if(!JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
 #endif
                     {
@@ -258,7 +258,7 @@ namespace JsonDatabase
                         JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                             <<JDObjectInterface::s_tag_className<< "\" is missed\n" 
                             <<"Object: "<<json);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                         JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                             << JDObjectInterface::s_tag_className.toStdString() << "\" is missed\n");
 #endif
@@ -274,7 +274,7 @@ namespace JsonDatabase
                 JDObjectID::IDType id;
 #ifndef JD_USE_QJSON
                 if (json.getInt(id, JDObjectInterface::s_tag_objID))
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 if(JDSerializable::getJsonValue(json, id, JDObjectInterface::s_tag_objID))
 #endif
                 {
@@ -293,7 +293,7 @@ namespace JsonDatabase
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID << "\" is missed\n"
                         << "Object: " << json);
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
 #endif

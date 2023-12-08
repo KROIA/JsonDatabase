@@ -13,13 +13,13 @@
     template<typename ObjectType> \
     void connect_##signalName##_slot(ObjectType* obj, void(ObjectType::* memberFunc)(__VA_ARGS__)) \
     { \
-        ##signalName##.connectSlot(obj, memberFunc); \
+        ##signalName## . connectSlot(obj, memberFunc); \
     } \
     void disconnect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction); \
     template<typename ObjectType> \
     void disconnect_##signalName##_slot(ObjectType* obj, void(ObjectType::* memberFunc)(__VA_ARGS__)) \
     { \
-        ##signalName##.disconnectSlot(obj, memberFunc); \
+        ##signalName## . disconnectSlot(obj, memberFunc); \
     } 
 
 

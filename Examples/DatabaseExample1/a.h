@@ -12,10 +12,10 @@ private:
         ~A();
 
     private:
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool load(const QJsonObject& obj) override;
         bool save(QJsonObject& obj) const override;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool load(const JsonDatabase::JsonObject& obj) override;
         bool save(JsonDatabase::JsonObject& obj) const override;
 #endif

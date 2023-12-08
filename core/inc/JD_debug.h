@@ -2,6 +2,7 @@
 
 
 
+
 // Debugging
 #ifdef NDEBUG
 #define JD_CONSOLE(msg)

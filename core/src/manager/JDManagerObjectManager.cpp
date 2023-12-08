@@ -371,10 +371,10 @@ namespace JsonDatabase
             m_objs.clear();
         }
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JDManagerObjectManager::loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj)
-#else
-        bool JDManagerObjectManager::loadObjectFromJson_internal(const JsonValue& json, const JDObject& obj)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+        bool JDManagerObjectManager::loadObjectFromJson_internal(const JsonObject& json, const JDObject& obj)
 #endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
@@ -388,7 +388,7 @@ namespace JsonDatabase
 
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JDManagerObjectManager::loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
            // bool hasOverrideChangeFromDatabaseSlots,
            // bool hasChangeFromDatabaseSlots,
@@ -399,7 +399,7 @@ namespace JsonDatabase
             std::vector<JDObject>& newObjInstances,
             std::vector<JDObject>& removedObjs,
             std::vector<JDObjectPair>& changedPairs)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDManagerObjectManager::loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
            // bool hasOverrideChangeFromDatabaseSlots,
            // bool hasChangeFromDatabaseSlots,
@@ -474,21 +474,32 @@ namespace JsonDatabase
             for (size_t i = 0; i < jsons.size(); ++i)
             {
                 JDObjectManager::ManagedLoadMisc loaderMisc;
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
                 const QJsonObject& json = jsons[i];
                 if (!Utilities::JDSerializable::getJsonValue(json, loaderMisc.id, JDObjectInterface::s_tag_objID))
-#else
-                const JsonValue& json = jsons[i];
-                if (!jsons[i].extractInt(loaderMisc.id, JDObjectInterface::s_tag_objID))
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+                const JsonObject& json = jsons[i].get<JsonObject>();
+                bool loaded = false;
+                if (json.contains(JDObjectInterface::s_tag_objID))
+                {
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+                    loaderMisc.id = json.at(JDObjectInterface::s_tag_objID).get<int>();
+#else JD_ACTIVE_JSON == JD_JSON_GLAZE
+                    loaderMisc.id = static_cast<int>(json.at(JDObjectInterface::s_tag_objID).get<double>());
+#endif
+
+                    loaded = true;
+                }
+				if (!loaded)
 #endif
                 {
-#ifndef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_USE_QJSON
+                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
+                        << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID << "\" is missed\n"
                         << "Object: \"" << json << "\"\n");
-#else
-                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
-                        << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
 #endif
                     success = false;
                     continue;

@@ -1,9 +1,9 @@
 #include "utilities/JDUser.h"
 #include "utilities/JDUtilities.h"
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonSerializer.h"
 #endif
 namespace JsonDatabase
@@ -137,11 +137,11 @@ namespace JsonDatabase
 
         std::string JDUser::toString() const
         {
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
             QJsonObject obj;
 			save(obj);
 			return QJsonDocument(obj).toJson().toStdString();
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonObject obj;
 			save(obj);
             JsonSerializer serializer;
@@ -150,7 +150,7 @@ namespace JsonDatabase
         }
 
         // Implement load and save functions based on JD_USE_QJSON flag
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
         bool JDUser::load(const QJsonObject& obj) 
         {
             bool success = true;
@@ -191,7 +191,7 @@ namespace JsonDatabase
             obj[JsonKeys::time.data()] = qTimeToString(m_loginTime).c_str();
             return true; 
         }
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDUser::load(const JsonObject& obj) 
         {
             bool success = true;
@@ -200,26 +200,27 @@ namespace JsonDatabase
             auto dateIt = obj.find(JsonKeys::date);
             auto timeIt = obj.find(JsonKeys::time);
 
-            if (sessionIt == obj.end() || !sessionIt->second.isString()) 
-				success = false;
-
-			if (nameIt == obj.end() || !nameIt->second.isString())
+            if (sessionIt == obj.end() || !sessionIt->second.holds<std::string>())
                 success = false;
 
-            if (dateIt == obj.end() || !dateIt->second.isString()) 
+            if (nameIt == obj.end() || !nameIt->second.holds<std::string>())
                 success = false;
-			            
-            if (timeIt == obj.end() || !timeIt->second.isString()) 
+
+            if (dateIt == obj.end() || !dateIt->second.holds<std::string>())
                 success = false;
-			            
-            if (!success) 
+
+            if (timeIt == obj.end() || !timeIt->second.holds<std::string>())
+                success = false;
+
+            if (!success)
                 return false;
-			            
-            m_sessionID = sessionIt->second.getString();
-            m_name      = nameIt->second.getString();
 
-            m_loginDate = stringToQDate(dateIt->second.getString());
-            m_loginTime = stringToQTime(timeIt->second.getString());
+            m_sessionID = sessionIt->second.get<std::string>();
+            m_name = nameIt->second.get<std::string>();
+
+            m_loginDate = stringToQDate(dateIt->second.get<std::string>());
+            m_loginTime = stringToQTime(timeIt->second.get<std::string>());
+
             return success;
         }
 

@@ -5,10 +5,10 @@
 #include "utilities/JDUniqueMutexLock.h"
 
 #include <QtZlib/zlib.h>
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
 #include <QJsonArray>
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #include "Json/JsonDeserializer.h"
 #include "Json/JsonSerializer.h"
@@ -170,9 +170,9 @@ namespace JsonDatabase
                     return false;
                 }
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
                 std::vector<QJsonObject> jsonData;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JsonArray jsonData;
 #endif
                 fileError = fileAccessor.writeJsonFile(jsonData);

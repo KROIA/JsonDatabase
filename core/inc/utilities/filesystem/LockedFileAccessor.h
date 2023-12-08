@@ -4,9 +4,9 @@
 #include "JDDeclaration.h"
 #include "FileReadWriteLock.h"
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 
@@ -74,7 +74,7 @@ namespace JsonDatabase
 			std::string getFullFileName() const;
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
             Error writeJsonFile(const std::vector<QJsonObject>& jsons) const;
             Error writeJsonFile(const QJsonObject& json) const;
 
@@ -82,13 +82,13 @@ namespace JsonDatabase
             Error readJsonFile(std::vector<QJsonObject>& jsonsOut) const;
             Error readJsonFile(QJsonObject& objOut) const;
 
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
             Error writeJsonFile(const JsonArray& jsons) const;
-            Error writeJsonFile(const JsonValue& json) const;
+            Error writeJsonFile(const JsonObject& json) const;
 
 
             Error readJsonFile(JsonArray& jsonsOut) const;
-            Error readJsonFile(JsonValue& objOut) const;
+            Error readJsonFile(JsonObject& objOut) const;
 #endif
 			Error readFile(QByteArray& fileDataOut) const;
 			Error writeFile(const QByteArray& fileData) const;

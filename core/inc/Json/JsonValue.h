@@ -1,5 +1,27 @@
 #pragma once
 #include "JD_base.h"
+
+#if JD_ACTIVE_JSON == JD_JSON_QT
+#include <QJsonObject>
+
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+#include "glaze/glaze.hpp"
+
+namespace JsonDatabase
+{
+	using JsonValue = glz::json_t;
+	using JsonObject = glz::json_t::object_t;
+	using JsonArray = glz::json_t::array_t;
+
+	std::ostream& operator<<(std::ostream& os, const JsonValue& json);
+	std::ostream& operator<<(std::ostream& os, const JsonObject& json);
+	std::ostream& operator<<(std::ostream& os, const JsonArray& json);
+	QDebug operator<<(QDebug debug, const JsonValue& json);
+	QDebug operator<<(QDebug debug, const JsonObject& json);
+	QDebug operator<<(QDebug debug, const JsonArray& json);
+}
+
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include <variant>
 #include <string>
 #include <vector>
@@ -70,6 +92,12 @@ namespace JsonDatabase
 		// bool operator<=(const JsonValue& other) const;
 		// bool operator>=(const JsonValue& other) const;
 
+		template <class T>
+		bool holds() const noexcept
+		{
+			return std::holds_alternative<T>(m_value);
+		}
+
 		Type getType() const;
 		bool isNull() const;
 		bool isString() const;
@@ -83,7 +111,28 @@ namespace JsonDatabase
 		bool contains(const std::string& key) const; // returns true if this is an object and contains the key
 		JsonValue& operator[](const std::string& key); // returns the value of the key if this is an object
 
+		template <class T>
+		T& get()
+		{
+			return std::get<T>(m_value);
+		}
+		template <class T>
+		const T& get() const
+		{
+			return std::get<T>(m_value);
+		}
 
+		template <class T>
+		T* get_if() noexcept
+		{
+			return std::get_if<T>(&m_value);
+		}
+
+		template <class T>
+		const T* get_if() const noexcept
+		{
+			return std::get_if<T>(&m_value);
+		}
 		std::string &getString();
 		int& getInt();
 		double& getDouble();
@@ -157,3 +206,4 @@ namespace JsonDatabase
 		
 	};
 }
+#endif

@@ -81,9 +81,9 @@ public:
 
 private:
    
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     bool load(const QJsonObject& obj) override 
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     bool load(const JsonObject& obj) override
 #endif
     {
@@ -103,9 +103,9 @@ private:
         return true;
     }
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
     bool save(QJsonObject& obj) const override
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     bool save(JsonObject& obj) const override
 #endif
     {

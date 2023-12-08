@@ -43,19 +43,19 @@ namespace JsonDatabase
 			return m_changestate;
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
 #endif
 		{
 			return getJsonArray(objs, jsonOut, nullptr);
 		}
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
 			std::vector<QJsonObject>& jsonOut,
 			WorkProgress* progress)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
 			JsonArray& jsonOut,
 			WorkProgress* progress)
@@ -108,9 +108,9 @@ namespace JsonDatabase
 							std::atomic<int> & finishCount = threadData[i].finishCount;
 							for (size_t j = data.start; j < data.end; ++j)
 							{
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 								QJsonObject jsonData;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 								JsonObject jsonData;
 #endif
 								objs[j]->saveInternal(jsonData);
@@ -164,9 +164,9 @@ namespace JsonDatabase
 				jsonOut.reserve(objs.size());
 				for (auto o : objs)
 				{
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 					QJsonObject data;
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject data;
 #endif
 					success &= o->saveInternal(data);
@@ -207,16 +207,16 @@ namespace JsonDatabase
 			return s_undef;
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoad(
 			const QJsonObject& json, 
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers, 
 			const ManagedLoadMode& loadMode,
 			const ManagedLoadMisc& misc)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoad(
-			const JsonValue& json, 
+			const JsonObject& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers, 
 			const ManagedLoadMode& loadMode,
@@ -228,16 +228,16 @@ namespace JsonDatabase
 			return managedLoadNew_internal(json, containers, misc);
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadExisting_internal(
 			const QJsonObject& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers,
 			const ManagedLoadMode& loadMode/*,
 			const ManagedLoadMisc& misc*/)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadExisting_internal(
-			const JsonValue& json,
+			const JsonObject& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers,
 			const ManagedLoadMode& loadMode/*,
@@ -294,15 +294,15 @@ namespace JsonDatabase
 			return ManagedLoadStatus::success;
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadNew_internal(
 			const QJsonObject& json,
 			ManagedLoadContainers& containers/*,
 			const ManagedLoadMode& loadMode*/,
 			const ManagedLoadMisc& misc)
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadNew_internal(
-			const JsonValue& json,
+			const JsonObject& json,
 			ManagedLoadContainers& containers/*,
 			const ManagedLoadMode& loadMode*/,
 			const ManagedLoadMisc& misc)
@@ -321,7 +321,7 @@ namespace JsonDatabase
 			/*JDObjectID::IDType id;
 #ifndef JD_USE_QJSON
 			if (!json.getInt(id, JDObjectInterface::s_tag_objID))
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			if (!JDSerializable::getJsonValue(json, id, JDObjectInterface::s_tag_objID))
 #endif
 			{
@@ -329,7 +329,7 @@ namespace JsonDatabase
 				JD_CONSOLE_FUNCTION("Objet has incomplete data. Type: \""<< templateObj->className()<<"\" Key: \""
 					<< JDObjectInterface::s_tag_objID << "\" is missed\n"
 					<< "Object: \"" << json<< "\"\n");
-#else
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JD_CONSOLE_FUNCTION("Objet has incomplete data. Type: \"" << templateObj->className() << "\" Key: \""
 					<< JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
 #endif
@@ -345,30 +345,30 @@ namespace JsonDatabase
 		}
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::loadAndOverrideData(const QJsonObject& json)
-#else
-		bool JDObjectManager::loadAndOverrideData(const JsonValue& json)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+		bool JDObjectManager::loadAndOverrideData(const JsonObject& json)
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			return deserializeOverrideFromJson_internal(json, m_obj);
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::loadAndOverrideDataIfChanged(const QJsonObject& json, bool& hasChangesOut)
-#else
-		bool JDObjectManager::loadAndOverrideDataIfChanged(const JsonValue& json, bool& hasChangesOut)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+		bool JDObjectManager::loadAndOverrideDataIfChanged(const JsonObject& json, bool& hasChangesOut)
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			return deserializeOverrideFromJsonIfChanged_internal(json, m_obj, hasChangesOut);
 		}
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const QJsonObject& json, const JDObjectIDptr& id)
-#else
-		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonValue& json, const JDObjectIDptr& id)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id)
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
@@ -387,10 +387,10 @@ namespace JsonDatabase
 
 			return cloneAndLoadObject(templateObj, json, id);
 		}
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const QJsonObject& json, const JDObjectIDptr& id)
-#else
-		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const JsonValue& json, const JDObjectIDptr& id)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const JsonObject& json, const JDObjectIDptr& id)
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
@@ -405,10 +405,10 @@ namespace JsonDatabase
 		}
 
 
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const QJsonObject& json, JDObject obj, bool& hasChangedOut)
-#else
-		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const JsonValue& json, JDObject obj, bool& hasChangedOut)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut)
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
@@ -424,10 +424,10 @@ namespace JsonDatabase
 			}
 			return true;
 		}
-#ifdef JD_USE_QJSON
+#if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::deserializeOverrideFromJson_internal(const QJsonObject& json, JDObject obj)
-#else
-		bool JDObjectManager::deserializeOverrideFromJson_internal(const JsonValue& json, JDObject obj)
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+		bool JDObjectManager::deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj)
 #endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);

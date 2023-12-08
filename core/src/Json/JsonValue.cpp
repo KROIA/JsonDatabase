@@ -1,9 +1,16 @@
 #include "Json/JsonValue.h"
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
 #include "Json/JsonSerializer.h"
 #include <QDebug>
 
+#endif
+
+
+
 namespace JsonDatabase
 {
+
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
     // Default constructor
     JsonValue::JsonValue() 
         : m_value(std::monostate{}) 
@@ -684,8 +691,6 @@ namespace JsonDatabase
 		return serializer.serializeValue(*this);
     }
 
-
-
     // Overloading << operator for std::cout
     std::ostream& operator<<(std::ostream& os, const JsonValue& json)
     {
@@ -700,6 +705,61 @@ namespace JsonDatabase
         debug << json.toString().c_str(); 
         return debug;
     }
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
 
+    // Overloading << operator for std::cout
+    std::ostream& operator<<(std::ostream& os, const JsonValue& json)
+    {
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeValue(json, buff);
+        os << buff;
+        return os;
+    }
+    std::ostream& operator<<(std::ostream& os, const JsonObject& json)
+    {
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeObject(json, buff);
+        os << buff;
+        return os;
+    }
+    std::ostream& operator<<(std::ostream& os, const JsonArray& json)
+    {
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeArray(json, buff);
+        os << buff;
+        return os;
+    }
 
+    // Overloading << operator for qDebug()
+    QDebug operator<<(QDebug debug, const JsonValue& json)
+    {
+        QDebugStateSaver saver(debug);
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeValue(json, buff);
+        debug << buff.c_str();
+        return debug;
+    }
+    QDebug operator<<(QDebug debug, const JsonObject& json)
+    {
+        QDebugStateSaver saver(debug);
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeObject(json, buff);
+        debug << buff.c_str();
+        return debug;
+    }
+    QDebug operator<<(QDebug debug, const JsonArray& json)
+    {
+        QDebugStateSaver saver(debug);
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeArray(json, buff);
+        debug << buff.c_str();
+        return debug;
+    }
+#endif
 }
