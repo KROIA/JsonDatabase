@@ -277,6 +277,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			obj["key"] = QString::fromStdString(m_key);
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+			
 			obj["key"] = m_key;
 #endif
 			return true;
@@ -378,14 +379,14 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject jsonObj;
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
-				JsonObject jsonObj;
+				std::shared_ptr<JsonObject> jsonObj = std::make_shared<JsonObject>();
 #endif
 				if (!createSelfOwnedLock(obj->getKey()))
 				{
 					// Can't create lock
 					continue;
 				}
-				if (obj->save(jsonObj))
+				if (obj->save(*jsonObj))
 				{
 					++added;
 					jsons.push_back(std::move(jsonObj));
@@ -664,7 +665,7 @@ namespace JsonDatabase
 				{
 					if (it != objectsFromFile.end())
 					{
-						jsonsOut.push_back(it->second);
+						jsonsOut.emplace_back(std::move(it->second));
 					}
 				}
 			}

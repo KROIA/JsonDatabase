@@ -1,6 +1,7 @@
 #pragma once
 #include "JD_base.h"
 #include <type_traits>
+#include <QDebug>
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
@@ -31,20 +32,145 @@ namespace JsonDatabase
 
 namespace JsonDatabase
 {
+
+
 	class JsonValue;
 	
 	template<class T>
 	using JsonArrayType = std::vector<T>;
 
-	template<class K, class V>
-	using JsonMapType = std::map<K, V>;
 
-	
+	using JsonArray = JsonArrayType< JsonValue>;
+	using JsonObject = std::map<std::string, JsonValue>;
 
-	using JsonArray = JsonArrayType<JsonValue>;
-	using JsonObject = JsonMapType<std::string, JsonValue>;
+	/*
+	class JsonObject {
+	public:
+		// Alias for the underlying map type
+		using MapType = std::map<std::string, std::shared_ptr<JsonValue>>;
+
+		// Iterator types
+		using iterator = typename MapType::iterator;
+		using const_iterator = typename MapType::const_iterator;
+
+		bool operator==(const JsonObject& other) const
+		{
+			return m_map == other.m_map;
+		}
+		bool operator!=(const JsonObject& other) const
+		{
+			return m_map != other.m_map;
+		}
+
+		// Methods similar to std::map
+		std::pair<iterator, bool> insert(const std::pair<std::string, std::shared_ptr<JsonValue>>& value) {
+			return m_map.insert(value);
+		}
+
+		size_t erase(const std::string& key) {
+			return m_map.erase(key);
+		}
 
 
+
+		std::shared_ptr<JsonValue> operator[](const std::string& key) {
+			if (m_map.find(key) == m_map.end())
+			{
+				std::shared_ptr<JsonValue> newVal = std::make_shared<JsonValue>();
+				m_map.emplace(key, newVal);
+				return newVal;
+			}
+			return m_map[key];
+		}
+
+		size_t size() const {
+			return m_map.size();
+		}
+
+		iterator begin() {
+			return m_map.begin();
+		}
+
+		iterator end() {
+			return m_map.end();
+		}
+
+		const_iterator begin() const {
+			return m_map.begin();
+		}
+
+		const_iterator end() const {
+			return m_map.end();
+		}
+
+		// Emplace function to add elements in place
+		template <typename... Args>
+		std::pair<iterator, bool> emplace(Args&&... args) {
+			return m_map.emplace(std::forward<Args>(args)...);
+		}
+
+		// .at() function to retrieve a reference to the mapped value
+		std::shared_ptr<JsonValue>& at(const std::string& key) {
+			const auto &it = m_map.find(key);
+
+			if (it == m_map.end())
+			{
+				static std::shared_ptr<JsonValue> nullVal;
+				nullVal.reset();
+				return nullVal;
+			}
+			
+			return it->second;
+		}
+
+		// .at() function to retrieve a reference to the mapped value
+		const std::shared_ptr<JsonValue>& at(const std::string& key) const {
+			const auto& it = m_map.find(key);
+
+			if (it == m_map.end())
+			{
+				static std::shared_ptr<JsonValue> nullVal;
+				nullVal.reset();
+				return nullVal;
+			}
+
+			return it->second;
+		}
+
+		// Check if the specified key exists in the map
+		bool contains(const std::string& key) const {
+			return (m_map.find(key) != m_map.end());
+		}
+
+		// Find an element with the given key
+		iterator find(const std::string& key) {
+			return m_map.find(key);
+		}
+
+		const_iterator find(const std::string& key) const {
+			return m_map.find(key);
+		}
+
+		friend std::ostream& operator<<(std::ostream& os, const JsonObject& json)
+		{
+			os << "not implemented: " << __FILE__ << " : "<< __LINE__;
+			//os << json.toString();
+			return os;
+		}
+
+		// Overloading << operator for qDebug()
+		friend QDebug operator<<(QDebug debug, const JsonObject& json)
+		{
+			debug << "not implemented: " << __FILE__ << " : " << __LINE__;;
+			//QDebugStateSaver saver(debug);
+			//debug << json.toString().c_str();
+			return debug;
+		}
+
+	private:
+		MapType m_map;
+	};
+	*/
 	class JSONDATABASE_EXPORT JsonValue
 	{
 		friend class JsonSerializer;
@@ -67,26 +193,39 @@ namespace JsonDatabase
 		JsonValue(const JsonValue& other);
 		JsonValue(JsonValue&& other) noexcept;
 		JsonValue(const std::string& value);
+		JsonValue(std::string&& value) noexcept;
 		JsonValue(const char* value);
 		JsonValue(const int& value);
 		JsonValue(const double& value);
 		JsonValue(const bool& value);
 		JsonValue(const JsonArray& value);
+		JsonValue(JsonArray&& value);
+		JsonValue(const std::shared_ptr<JsonArray> &valuePtr);
+		JsonValue(std::shared_ptr<JsonArray> &&valuePtr) noexcept;
 		JsonValue(const JsonObject& value);
 		JsonValue(JsonObject&& value) noexcept;
+		JsonValue(const std::shared_ptr<JsonObject>& valuePtr);
+		JsonValue(std::shared_ptr<JsonObject>&& valuePtr) noexcept;
+		
 		~JsonValue();
 
 		JsonValue& operator=(const JsonValue& other);
 		JsonValue& operator=(JsonValue&& other) noexcept;
 		JsonValue& operator=(const std::string& value);
+		JsonValue& operator=(std::string&& value) noexcept;
 		JsonValue& operator=(const char* value);
 		JsonValue& operator=(const int& value);
 		JsonValue& operator=(const double& value);
 		JsonValue& operator=(const bool& value);
 		JsonValue& operator=(const JsonArray& value);
 		JsonValue& operator=(const JsonObject& value);
+		JsonValue& operator=(const std::shared_ptr<JsonArray>& value);
+		JsonValue& operator=(const std::shared_ptr<JsonObject>& value);
 		JsonValue& operator=(JsonArray&& value) noexcept;
 		JsonValue& operator=(JsonObject&& value) noexcept;
+		JsonValue& operator=(std::shared_ptr<JsonArray>&& value) noexcept;
+		JsonValue& operator=(std::shared_ptr<JsonObject>&& value) noexcept;
+
 
 		bool operator==(const JsonValue& other) const;
 		bool operator!=(const JsonValue& other) const;

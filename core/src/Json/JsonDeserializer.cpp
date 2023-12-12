@@ -209,16 +209,16 @@ namespace JsonDatabase
         {
         case '{':
         {
-            JsonObject obj;
-            deserializeObject_internal(json, obj);
-            valOut = std::move(obj);
+            std::shared_ptr<JsonObject> objPtr = std::make_shared<JsonObject>();
+            deserializeObject_internal(json, *objPtr.get());
+            valOut = std::move(objPtr);
             return;
         }
         case '[':
         {
-            JsonArray arr;
-            deserializeArray_internal(json, arr);
-            valOut = std::move(arr);
+            std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+            deserializeArray_internal(json, *arrPtr.get());
+            valOut = std::move(arrPtr);
             return;
         }
         case '"':
@@ -270,16 +270,16 @@ namespace JsonDatabase
         {
         case '{':
         {
-            JsonObject obj;
-            deserializeObject_internal(json, obj, progress);
-            valOut = std::move(obj);
+            std::shared_ptr<JsonObject> objPtr = std::make_shared<JsonObject>();
+            deserializeObject_internal(json, *objPtr.get(), progress);
+            valOut = std::move(objPtr);
             return;
         }
         case '[':
         {
-            JsonArray arr;
-            deserializeArray_internal(json, arr, progress);
-            valOut = std::move(arr);
+            std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+            deserializeArray_internal(json, *arrPtr.get(), progress);
+            valOut = std::move(arrPtr);
             return;
         }
         case '"':
@@ -336,9 +336,9 @@ namespace JsonDatabase
         {
         case '[':
         {
-            JsonArray arr;
-            deserializeArraySplitted_internal(json, arr, nullptr);
-            valOut = std::move(arr);
+            std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+            deserializeArraySplitted_internal(json, *arrPtr.get(), nullptr);
+            valOut = std::move(arrPtr);
             return;
         }
         default:
@@ -352,9 +352,9 @@ namespace JsonDatabase
         {
         case '[':
         {
-            JsonArray arr;
-            deserializeArraySplitted_internal(json, arr, progress);
-            valOut = std::move(arr);
+            std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+            deserializeArraySplitted_internal(json, *arrPtr.get(), progress);
+            valOut = std::move(arrPtr);
             return;
         }
         default:
@@ -558,7 +558,7 @@ namespace JsonDatabase
 
                             deserializeObject_internal(data->data, value);
                             data->data.current++; // skip the ',' character
-                            data->array.emplace_back(std::move(JsonValue(value)));
+                            data->array.emplace_back(std::move(value));
                             processedCharCount += objectRange.end - objectRange.start;
                         }
                     });

@@ -418,9 +418,9 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     QJsonObject data;
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
-    JsonObject data;
+    std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
 #endif
-    success &= obj->saveInternal(data);
+    success &= obj->saveInternal(*data);
 
     if (progress)
     {
@@ -451,11 +451,11 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
 
     if (index == std::string::npos)
     {
-        jsons.push_back(data);
+        jsons.push_back(std::move(data));
     }
     else
     {
-        jsons[index] = data;
+        jsons[index] = std::move(data);
     }
 
     if (progress)

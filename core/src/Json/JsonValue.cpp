@@ -50,6 +50,11 @@ namespace JsonDatabase
     {
         // Implement constructor with std::string logic here
     }
+    JsonValue::JsonValue(std::string&& value) noexcept
+        : m_value(std::move(value))
+    {
+
+    }
 
     // Constructor with const char* value
     JsonValue::JsonValue(const char* value) 
@@ -95,6 +100,21 @@ namespace JsonDatabase
     {
         // Implement constructor with std::vector<JsonValue> logic here
     }
+    JsonValue::JsonValue(JsonArray&& value)
+        : m_value(std::make_shared<JsonArray>(std::move(value)))
+    {
+
+    }
+    JsonValue::JsonValue(const std::shared_ptr<JsonArray>& valuePtr)
+        : m_value(valuePtr)
+    {
+
+    }
+    JsonValue::JsonValue(std::shared_ptr<JsonArray>&& valuePtr) noexcept
+        : m_value(std::move(valuePtr))
+    {
+
+    }
 
     // Constructor with std::map<std::string, JsonValue> value
     JsonValue::JsonValue(const JsonObject& value) 
@@ -112,6 +132,16 @@ namespace JsonDatabase
         //, m_objElement(&std::get<JsonObject>(m_value))
     {
         // Implement move constructor with std::map<std::string, JsonValue> logic here
+    }
+    JsonValue::JsonValue(const std::shared_ptr<JsonObject>& valuePtr)
+        : m_value(valuePtr)
+    {
+
+    }
+    JsonValue::JsonValue(std::shared_ptr<JsonObject>&& valuePtr) noexcept
+        : m_value(std::move(valuePtr))
+    {
+
     }
 
     JsonValue::~JsonValue()
@@ -151,6 +181,11 @@ namespace JsonDatabase
         m_value = value;
         //m_type = Type::String;
         //m_objElement = nullptr;
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(std::string&& value) noexcept
+    {
+        m_value = std::move(value);
         return *this;
     }
 
@@ -216,6 +251,17 @@ namespace JsonDatabase
         return *this;
     }
 
+    JsonValue& JsonValue::operator=(const std::shared_ptr<JsonArray>& value)
+    {
+        m_value = value;
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(const std::shared_ptr<JsonObject>& value)
+    {
+        m_value = value;
+        return *this;
+    }
+
     // Move assignment operator with JsonObject value
     JsonValue& JsonValue::operator=(JsonObject&& value) noexcept 
     {
@@ -243,6 +289,16 @@ namespace JsonDatabase
         //m_value = std::move(value);
         //m_type = Type::Object;
         //m_objElement = &std::get<JsonObject>(m_value);
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(std::shared_ptr<JsonArray>&& value) noexcept
+    {
+        m_value = std::move(value);
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(std::shared_ptr<JsonObject>&& value) noexcept
+    {
+        m_value = std::move(value);
         return *this;
     }
 

@@ -11,6 +11,8 @@
 #include "Json/JsonSerializer.h"
 #endif
 
+#include <iostream>
+
 namespace JsonDatabase
 {
 	namespace Internal
@@ -386,10 +388,34 @@ namespace JsonDatabase
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
                 std::string str = std::move(fileData.toStdString());
-                if(m_progress)
-                    deserializer.deserializeArray(str, deserialized, m_progress);
+                
+                if (m_progress)
+                {
+
+                   // double timeMs = 0;
+                    //int iterations = 100;
+                    //for (int i = 0; i < iterations; ++i)
+                    //{
+                      //  JsonArray arr;
+                        //auto start = std::chrono::steady_clock::now();
+                        deserializer.deserializeArray(str, deserialized, m_progress);
+                        
+                        //deserializer.deserializeArray(str, arr);
+                        //auto end = std::chrono::steady_clock::now();
+                        
+                        //timeMs += (double)std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    //}
+                    //timeMs /= (iterations * 1000000.0);
+
+                    //std::cout << "Elapsed time in milliseconds: "
+                     //   << std::setprecision(9) << timeMs
+                       // << " ms\n";
+                }
                 else
                     deserializer.deserializeArray(str, deserialized);
+                
+
+             
 #endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }

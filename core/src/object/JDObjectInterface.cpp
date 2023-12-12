@@ -335,15 +335,15 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
         idVal = id->get();
     else
         idVal = m_shallowID;
-    obj[s_tag_objID] = idVal;
-    obj[s_tag_className] = className();
+    *obj[s_tag_objID] = idVal;
+    *obj[s_tag_className] = className();
     bool ret;
     {
         JD_OBJECT_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
        // JsonObject& data = std::get<JsonObject>(obj[s_tag_data].getVariant());
-        JsonObject data;
-        ret = save(data);
-        obj[s_tag_data] = std::move(data);
+        std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
+        ret = save(*data);
+        *obj[s_tag_data] = std::move(data);
     }
     return ret;
 #endif

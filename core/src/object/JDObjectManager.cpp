@@ -111,10 +111,10 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 								QJsonObject jsonData;
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
-								JsonObject jsonData;
+								std::shared_ptr<JsonObject> jsonData = std::make_shared<JsonObject>();
 #endif
-								objs[j]->saveInternal(jsonData);
-								jsonOut[j] = std::move(jsonData);
+								objs[j]->saveInternal(*jsonData);
+								*jsonOut[j] = std::move(jsonData);
 								finishCount++;
 							}
 						});

@@ -227,11 +227,11 @@ namespace JsonDatabase
         bool JDUser::save(JsonObject& obj) const 
         {
             //obj.reserve(5);
-            obj[JsonKeys::sessionID] = m_sessionID;
-            obj[JsonKeys::name] = m_name;
+            *obj[JsonKeys::sessionID] = m_sessionID;
+            *obj[JsonKeys::name] = m_name;
 
-            obj[JsonKeys::date] = qDateToString(m_loginDate);
-            obj[JsonKeys::time] = qTimeToString(m_loginTime);
+            *obj[JsonKeys::date] = qDateToString(m_loginDate);
+            *obj[JsonKeys::time] = qTimeToString(m_loginTime);
             return true; 
         }
 #endif

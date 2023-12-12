@@ -181,7 +181,7 @@ namespace JsonDatabase
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			if (obj.contains(LockEntryObjectImpl::JsonKeys::user))
 			{
-				JsonValue userValue = obj.at(JsonKeys::user);
+				const auto& userValue = obj.at(JsonKeys::user);
 
 				if(!userValue.holds<JsonObject>())
 					return false;
@@ -191,7 +191,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject userObj = userValue.toObject();
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
-				JsonObject userObj = userValue.get<JsonObject>();
+				const JsonObject &userObj = userValue.get<JsonObject>();
 #endif
 
 				if (user.load(userObj))

@@ -478,6 +478,7 @@ namespace JsonDatabase
                 const QJsonObject& json = jsons[i];
                 if (!Utilities::JDSerializable::getJsonValue(json, loaderMisc.id, JDObjectInterface::s_tag_objID))
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+              
                 const JsonObject& json = jsons[i].get<JsonObject>();
                 bool loaded = false;
                 if (json.contains(JDObjectInterface::s_tag_objID))
