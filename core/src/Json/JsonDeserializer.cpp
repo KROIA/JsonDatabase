@@ -115,7 +115,7 @@ namespace JsonDatabase
 #endif
         return valOut;
     }
-    void JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut)
+    bool JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
@@ -123,19 +123,19 @@ namespace JsonDatabase
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeValueSplitted_internal(buff, valueOut);
+        return deserializeValueSplitted_internal(buff, valueOut);
 #else
-        deserializeValue_internal(buff, valueOut);
+        return deserializeValue_internal(buff, valueOut);
 #endif
     }
-    void JsonDeserializer::deserializeObject(const std::string& json, JsonObject& valueOut)
+    bool JsonDeserializer::deserializeObject(const std::string& json, JsonObject& valueOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
 
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
-        deserializeObject_internal(buff, valueOut);
+        return deserializeObject_internal(buff, valueOut);
         /*
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         deserializeValueSplitted_internal(buff, valueOut);
@@ -143,7 +143,7 @@ namespace JsonDatabase
         deserializeObject_internal(buff, valueOut);
 #endif*/
     }
-    void JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut)
+    bool JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
@@ -151,12 +151,12 @@ namespace JsonDatabase
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeArraySplitted_internal(buff, valueOut, nullptr);
+        return deserializeArraySplitted_internal(buff, valueOut, nullptr);
 #else
-        deserializeArray_internal(buff, valueOut);
+        return deserializeArray_internal(buff, valueOut);
 #endif
     }
-    void JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
@@ -164,20 +164,20 @@ namespace JsonDatabase
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeValueSplitted_internal(buff, valueOut, progress);
+        return deserializeValueSplitted_internal(buff, valueOut, progress);
 #else
-        deserializeValue_internal(buff, valueOut, progress);
+        return deserializeValue_internal(buff, valueOut, progress);
 #endif
         progress->setProgress(1);
     }
-    void JsonDeserializer::deserializeObject(const std::string& json, JsonObject& valueOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializeObject(const std::string& json, JsonObject& valueOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
 
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
-        deserializeObject_internal(buff, valueOut, progress);
+        return deserializeObject_internal(buff, valueOut, progress);
         /*
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         deserializeValueSplitted_internal(buff, valueOut, progress);
@@ -185,7 +185,7 @@ namespace JsonDatabase
         deserializeObject_internal(buff, valueOut, progress);
 #endif*/
     }
-    void JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
@@ -193,220 +193,265 @@ namespace JsonDatabase
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeArraySplitted_internal(buff, valueOut, progress);
+        return deserializeArraySplitted_internal(buff, valueOut, progress);
 #else
-        deserializeArray_internal(buff, valueOut, progress);
+        return deserializeArray_internal(buff, valueOut, progress);
 #endif
     }
 
 
 
 
-    void JsonDeserializer::deserializeValue_internal(Buffer& json, JsonValue& valOut)
+    bool JsonDeserializer::deserializeValue_internal(Buffer& json, JsonValue& valOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        switch (*json.current)
+        switch (json.peek())
         {
-        case '{':
-        {
-            std::shared_ptr<JsonObject> objPtr = std::make_shared<JsonObject>();
-            deserializeObject_internal(json, *objPtr.get());
-            valOut = std::move(objPtr);
-            return;
-        }
-        case '[':
-        {
-            std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
-            deserializeArray_internal(json, *arrPtr.get());
-            valOut = std::move(arrPtr);
-            return;
-        }
-        case '"':
-        {
-            // valOut = JsonValue(std::move(std::string()));
-            // std::string& str = std::get<std::string>(valOut.getVariant());
-            // deserializeString(json, str);
-
-            std::string str;
-            deserializeString(json, str);
-            valOut = std::move(str);
-            return;
-        }
-        case 't':
-        case 'f':
-        {
-            valOut = false;
-            bool& value = valOut.get<bool>();
-            value = deserializeBool(json);
-            return;
-        }
-        case 'n':
-        {
-            json.current += 4; // Skip the "null" keyword
-            valOut = std::move(JsonValue());
-            return;
-        }
-        default:
-        {
-            int intValue = 0;
-            double doubleValue = 0;
-
-            int result = deserializeNumber(json, intValue, doubleValue);
-            if (result == 1)
+            case '{':
             {
-                valOut = intValue;
-                return;
+                std::shared_ptr<JsonObject> objPtr = std::make_shared<JsonObject>();
+                if (deserializeObject_internal(json, *objPtr.get()))
+                {
+                    valOut = std::move(objPtr);
+                    return true;
+                }
+                break;
             }
-
-            valOut = doubleValue;
-            return;
-        }
-        }
-    }
-    void JsonDeserializer::deserializeValue_internal(Buffer& json, JsonValue& valOut, Internal::WorkProgress* progress)
-    {
-        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        switch (*json.current)
-        {
-        case '{':
-        {
-            std::shared_ptr<JsonObject> objPtr = std::make_shared<JsonObject>();
-            deserializeObject_internal(json, *objPtr.get(), progress);
-            valOut = std::move(objPtr);
-            return;
-        }
-        case '[':
-        {
-            std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
-            deserializeArray_internal(json, *arrPtr.get(), progress);
-            valOut = std::move(arrPtr);
-            return;
-        }
-        case '"':
-        {
-            // valOut = JsonValue(std::move(std::string()));
-            // std::string& str = std::get<std::string>(valOut.getVariant());
-            // deserializeString(json, str);
-
-            std::string str;
-            deserializeString(json, str);
-            valOut = std::move(str);
-            return;
-        }
-        case 't':
-        case 'f':
-        {
-            valOut = false;
-            bool& value = valOut.get<bool>();
-            value = deserializeBool(json);
-            return;
-        }
-        case 'n':
-        {
-            json.current += 4; // Skip the "null" keyword
-            valOut = std::move(JsonValue());
-            return;
-        }
-        default:
-        {
-            int intValue = 0;
-            double doubleValue = 0;
-
-            int result = deserializeNumber(json, intValue, doubleValue);
-            if (result == 1)
+            case '[':
             {
-                valOut = intValue;
-                return;
+                std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+                if (deserializeArray_internal(json, *arrPtr.get()))
+                {
+                    valOut = std::move(arrPtr);
+                    return true;
+                }
+                break;
             }
+            case '"':
+            {
+                // valOut = JsonValue(std::move(std::string()));
+                // std::string& str = std::get<std::string>(valOut.getVariant());
+                // deserializeString(json, str);
 
-            valOut = doubleValue;
-            return;
+                std::string str;
+                if (deserializeString(json, str))
+                {
+                    valOut = std::move(str);
+                    return true;
+                }
+                break;
+            }
+            case 't':
+            case 'f':
+            {
+                bool value;
+                if (deserializeBool(json, value))
+                {
+                    valOut = value;
+                    return true;
+                }
+                break;
+            }
+            case 'n':
+            {
+                json.skip(4); // Skip the "null" keyword
+                valOut = std::move(JsonValue());
+                return json.getRemainingSize();
+            }
+            default:
+            {
+                int intValue = 0;
+                double doubleValue = 0;
+
+                int result = deserializeNumber(json, intValue, doubleValue);
+                if (result == 1)
+                {
+                    valOut = intValue;
+                    return json.getRemainingSize();;
+                }
+
+                valOut = doubleValue;
+                return json.getRemainingSize();
+            }
         }
+        return false;
+    }
+    bool JsonDeserializer::deserializeValue_internal(Buffer& json, JsonValue& valOut, Internal::WorkProgress* progress)
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+        switch (json.peek())
+        {
+            case '{':
+            {
+                std::shared_ptr<JsonObject> objPtr = std::make_shared<JsonObject>();
+                if (deserializeObject_internal(json, *objPtr.get(), progress))
+                {
+                    valOut = std::move(objPtr);
+                    return true;
+                }
+                break;
+            }
+            case '[':
+            {
+                std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+                if (deserializeArray_internal(json, *arrPtr.get(), progress))
+                {
+                    valOut = std::move(arrPtr);
+                    return true;
+                }
+                break;
+            }
+            case '"':
+            {
+                // valOut = JsonValue(std::move(std::string()));
+                // std::string& str = std::get<std::string>(valOut.getVariant());
+                // deserializeString(json, str);
+
+                std::string str;
+                if (deserializeString(json, str))
+                {
+                    valOut = std::move(str);
+                    return true;
+                }
+                break;
+            }
+            case 't':
+            case 'f':
+            {
+                
+                bool value;
+                if (deserializeBool(json, value))
+                {
+                    valOut = value;
+                    return true;
+                }
+                break;
+            }
+            case 'n':
+            {
+                json.skip(4); // Skip the "null" keyword
+                valOut = std::move(JsonValue());
+                return json.getRemainingSize();
+            }
+            default:
+            {
+                int intValue = 0;
+                double doubleValue = 0;
+
+                int result = deserializeNumber(json, intValue, doubleValue);
+                if (result == 1)
+                {
+                    valOut = intValue;
+                    return json.getRemainingSize();
+                }
+
+                valOut = doubleValue;
+                return json.getRemainingSize();
+            }
         }
+        return false;
     }
 
 
 
 
 
-    void JsonDeserializer::deserializeValueSplitted_internal(Buffer& json, JsonValue& valOut)
+    bool JsonDeserializer::deserializeValueSplitted_internal(Buffer& json, JsonValue& valOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        switch (*json.current)
+        switch (json.peek())
         {
         case '[':
         {
             std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
-            deserializeArraySplitted_internal(json, *arrPtr.get(), nullptr);
-            valOut = std::move(arrPtr);
-            return;
+            if (deserializeArraySplitted_internal(json, *arrPtr.get(), nullptr))
+            {
+                valOut = std::move(arrPtr);
+                return true;
+            }
+            return false;
         }
         default:
-            deserializeValue_internal(json, valOut);
+            return deserializeValue_internal(json, valOut);
         }
+        return false;
     }
-    void JsonDeserializer::deserializeValueSplitted_internal(Buffer& json, JsonValue& valOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializeValueSplitted_internal(Buffer& json, JsonValue& valOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        switch (*json.current)
+        switch (json.peek())
         {
         case '[':
         {
             std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
-            deserializeArraySplitted_internal(json, *arrPtr.get(), progress);
-            valOut = std::move(arrPtr);
-            return;
+            if (deserializeArraySplitted_internal(json, *arrPtr.get(), progress))
+            {
+                valOut = std::move(arrPtr);
+                return true;
+            }
+            return false;
         }
         default:
-            deserializeValue_internal(json, valOut, progress);
+            return deserializeValue_internal(json, valOut, progress);
         }
+        return false;
     }
 
 
 
 
 
-    void JsonDeserializer::deserializeObject_internal(Buffer& json, JsonObject& valOut)
+    bool JsonDeserializer::deserializeObject_internal(Buffer& json, JsonObject& valOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        const char*& current = json.current;
-        ++current; // Skip the '{' character
-        if (*current != '}')
+       // const char*& current = json.current;
+        json.skip(); // Skip the '{' character
+        if (json.peek() != '}')
         {
             while (true)
             {
                 std::pair<std::string, JsonValue> pair;
-                deserializePair(json, pair);
-                DEBUG_PRINT(value);
-                valOut.emplace(std::move(pair));
-                if (*current == '}')
+                if (deserializePair(json, pair))
+                {
+                    DEBUG_PRINT(value);
+                    valOut.emplace(std::move(pair));
+                    if (json.peek() == '}')
+                        break;
+                    json.skip(); // Move to the next character or skip ',' or '}'
+                }
+                else
                     break;
-                ++current; // Move to the next character or skip ',' or '}'
             }
         }
-        ++current; // Skip the '}' character
+        json.skip(); // Skip the '}' character
+        return json.getRemainingSize();
     }
-    void JsonDeserializer::deserializeObject_internal(Buffer& json, JsonObject& valOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializeObject_internal(Buffer& json, JsonObject& valOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        const char*& current = json.current;
-        ++current; // Skip the '{' character
-        if (*current != '}')
+        //const char*& current = json.current;
+        json.skip(); // Skip the '{' character
+        if (json.peek() != '}')
         {
             while (true)
             {
                 std::pair<std::string, JsonValue> pair;
-                deserializePair(json, pair, progress);
-                DEBUG_PRINT(value);
-                valOut.emplace(std::move(pair));
-                if (*current == '}')
+                if (deserializePair(json, pair, progress))
+                {
+                    DEBUG_PRINT(value);
+                    valOut.emplace(std::move(pair));
+                    if (json.peek() == '}')
+                        break;
+                    json.skip(); // Move to the next character or skip ',' or '}'
+                }
+                else
                     break;
-                ++current; // Move to the next character or skip ',' or '}'
             }
         }
-        ++current; // Skip the '}' character
-        double progressValue = (double)(current - json.start) / (double)json.size;
+        json.skip(); // Skip the '}' character
+        double progressValue = (double)(json.getIndex()) / (double)json.size();
         progress->setProgress(progressValue);
+        return json.getRemainingSize();
     }
 
 
@@ -434,65 +479,72 @@ namespace JsonDatabase
 
 
 
-    void JsonDeserializer::deserializeArray_internal(Buffer& json, JsonArray& valOut)
+    bool JsonDeserializer::deserializeArray_internal(Buffer& json, JsonArray& valOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         valOut.reserve(1000);
 
-        const char*& current = json.current;
-        ++current;
-        if (*current != ']')
+        //const char*& current = json.current;
+        json.skip();
+        if (json.peek() != ']')
         {
             while (true)
             {
                 JsonValue value;
-                deserializeValue_internal(json, value);
-                DEBUG_PRINT(value);
-                valOut.emplace_back(std::move(value));
-                if (*current == ']')
+                if (deserializeValue_internal(json, value))
+                {
+                    DEBUG_PRINT(value);
+                    valOut.emplace_back(std::move(value));
+                    if (json.peek() == ']')
+                        break;
+                    json.skip(); // Skip the ']' character
+                }
+                else
                     break;
-                ++current; // Skip the ']' character
             }
         }
-        ++current; // Skip the ']' character
+        json.skip(); // Skip the ']' character
+        return json.getRemainingSize();
     }
-    void JsonDeserializer::deserializeArray_internal(Buffer& json, JsonArray& valOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializeArray_internal(Buffer& json, JsonArray& valOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         valOut.reserve(1000);
 
-        const char*& current = json.current;
-        ++current;
-        if (*current != ']')
+       // const char*& current = json.current;
+        json.skip();
+        bool eof = false;
+        if (json.peek() != ']')
         {
             while (true)
             {
                 JsonValue value;
-                deserializeValue_internal(json, value, progress);
-                DEBUG_PRINT(value);
-                valOut.emplace_back(std::move(value));
-                if (*current == ']')
-                    break;
-                ++current; // Skip the ']' character
+                if (deserializeValue_internal(json, value, progress))
+                {
+                    DEBUG_PRINT(value);
+                    valOut.emplace_back(std::move(value));
+                    if (json.peek() == ']')
+                        break;
+                    json.skip(); // Skip the ']' character
+                }
+                else
+                    break;                
             }
         }
-        ++current; // Skip the ']' character
-        double progressValue = (double)(current - json.start) / (double)json.size;
+        json.skip(); // Skip the ']' character
+        double progressValue = (double)(json.getIndex()) / (double)json.size();
         progress->setProgress(progressValue);
-
+        return json.getRemainingSize();
     }
-    void JsonDeserializer::deserializeArraySplitted_internal(Buffer& json, JsonArray& valOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializeArraySplitted_internal(Buffer& json, JsonArray& valOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-        json.current++; // Skip the '[' character
-
+        json.skip(); // Skip the '[' character
+#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         std::vector<ArrayObjectRange> rangeList;
         rangeList.reserve(1000);
         // Get individual object ranges
         findArrayObjectRange(json, rangeList);
-
-
-#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         unsigned int threadCount = std::thread::hardware_concurrency() / 2;
         if (threadCount > 100)
             threadCount = 100;
@@ -633,55 +685,71 @@ namespace JsonDatabase
         else
 #endif
         {
-            json.current--;
+            json.skipBack();
             if (progress)
-                deserializeArray_internal(json, valOut, progress);
+                return deserializeArray_internal(json, valOut, progress);
             else
-                deserializeArray_internal(json, valOut);
+                return deserializeArray_internal(json, valOut);
         }
+        return false;
     }
 
 
-    void JsonDeserializer::deserializePair(Buffer& json, std::pair<std::string, JsonValue>& pairOut)
+    bool JsonDeserializer::deserializePair(Buffer& json, std::pair<std::string, JsonValue>& pairOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
-        deserializeString(json, pairOut.first);
-        json.current++; // Skip the colon ':'
-        deserializeValue_internal(json, pairOut.second);
+        bool result = deserializeString(json, pairOut.first);
+        if (result)
+        {
+            json.skip(); // Skip the colon ':'
+            return deserializeValue_internal(json, pairOut.second);
+        }
+        return false;
     }
-    void JsonDeserializer::deserializePair(Buffer& json, std::pair<std::string, JsonValue>& pairOut, Internal::WorkProgress* progress)
+    bool JsonDeserializer::deserializePair(Buffer& json, std::pair<std::string, JsonValue>& pairOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
-        deserializeString(json, pairOut.first);
-        json.current++; // Skip the colon ':'
-        deserializeValue_internal(json, pairOut.second, progress);
+        bool success = deserializeString(json, pairOut.first);
+        if (success)
+        {
+            json.skip(); // Skip the colon ':'
+            return deserializeValue_internal(json, pairOut.second, progress);
+        }
+        return false;
     }
-    void JsonDeserializer::deserializeString(Buffer& json, std::string& strOut)
+    bool JsonDeserializer::deserializeString(Buffer& json, std::string& strOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-        const char*& current = json.current;
+        //const char*& current = json.current;
 
-        ++current; // Skip the opening double quote
-        const char* startOfText = json.current;
+        json.skip(); // Skip the opening double quote
+        const char* startOfText = json.getCurrent();
         // size_t start = current - json.start;
         bool isString = true;
         //bool lastCharWasNotEscape = true;
+        bool eof = false;
         while (isString)
         {
             // Find the end of the string (the closing double quote)
-            while (*current != '"')
+            int count = 0;
+            while (json.peek() != '"' && !eof)
             {
-                ++current;
+                eof = !json.getRemainingSize();
+                if (eof)
+                {
+                    return false;
+                }
+                json.skip();
             }
             // gfdjgfdgfd "Te\\"xt" fdsfes
-            if (*(current - 1) != '\\')
+            if (*(json.getCurrent() - 1) != '\\')
             {
                 break;
             }
 
             // Search backwards to check if
-            int count = 0;
-            for (const char* c = current - 1; c >= startOfText; --c)
+            
+            for (const char* c = json.getCurrent() - 1; c >= startOfText; --c)
             {
                 if (*c == '\\')
                 {
@@ -693,11 +761,12 @@ namespace JsonDatabase
                 goto skip;
             }
         skip:;
-            ++current;
+            json.skip();
         }
-        std::string escapedString(startOfText, current);
+        std::string escapedString(startOfText, json.getCurrent());
         strOut = std::move(unescapeString(escapedString));
-        ++current;
+        json.skip();
+        return json.getRemainingSize();
     }
 
     int JsonDeserializer::deserializeNumber(const std::string& jsonString, int& intValue, double& doubleValue)
@@ -711,17 +780,17 @@ namespace JsonDatabase
         intValue = 0;
         doubleValue = 0;
         // std::size_t found = std::find_first_not_of("-0123456789.eE", index);
-        const char* found = findFirstNotOfNumberStr(json.current);
+        const char* found = findFirstNotOfNumberStr(json.getCurrent());
         std::string subStr;
         if (found != nullptr)
         {
-            subStr = std::move(std::string(json.current, found));
-            json.current = found;
+            subStr = std::move(std::string(json.getCurrent(), found));
+            json.setCurrent(found);
         }
         else
         {
-            subStr = std::move(std::string(json.current, json.end));
-            json.current++;
+            subStr = std::move(std::string(json.getCurrent(), json.end()));
+            json.skip();
         }
         if (found == 0 || subStr.size() == 0)
         {
@@ -741,18 +810,19 @@ namespace JsonDatabase
         return 2;
     }
 
-    bool JsonDeserializer::deserializeBool(Buffer& json)
+    bool JsonDeserializer::deserializeBool(Buffer& json, bool& valueOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
         std::string str;
-        if (*json.current == 't') {
-            json.current += 4;
-            return true;
+        if (json.peek() == 't') {
+            json.skip(4);
+            valueOut = true;
         }
         else {
-            json.current += 5;
-            return false;
+            json.skip(5);
+            valueOut = true;
         }
+        return json.getRemainingSize();
     }
 
     void JsonDeserializer::skipWhiteSpace(const std::string& jsonString, size_t& index)
@@ -878,7 +948,7 @@ namespace JsonDatabase
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         int contextCount = 0;
         ArrayObjectRange currentRange;
-        for (const char* c = json.current; c < json.end; ++c)
+        for (const char* c = json.getCurrent(); c < json.end(); ++c)
         {
             switch (*c)
             {
@@ -886,7 +956,7 @@ namespace JsonDatabase
             {
                 if (contextCount == 0)
                 {
-                    currentRange.start = c - json.start;
+                    currentRange.start = c - json.start();
                 }
                 contextCount++;
                 break;
@@ -896,7 +966,7 @@ namespace JsonDatabase
                 contextCount--;
                 if (contextCount == 0)
                 {
-                    currentRange.end = c - json.start;
+                    currentRange.end = c - json.start();
                     rangeList.push_back(currentRange);
                 }
                 break;

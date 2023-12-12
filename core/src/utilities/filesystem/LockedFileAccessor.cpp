@@ -388,7 +388,7 @@ namespace JsonDatabase
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
                 std::string str = std::move(fileData.toStdString());
-                
+                bool success = false;
                 if (m_progress)
                 {
 
@@ -398,7 +398,11 @@ namespace JsonDatabase
                     //{
                       //  JsonArray arr;
                         //auto start = std::chrono::steady_clock::now();
-                        deserializer.deserializeArray(str, deserialized, m_progress);
+             
+                    success = deserializer.deserializeArray(str, deserialized, m_progress);
+                    
+
+                        
                         
                         //deserializer.deserializeArray(str, arr);
                         //auto end = std::chrono::steady_clock::now();
@@ -412,7 +416,7 @@ namespace JsonDatabase
                        // << " ms\n";
                 }
                 else
-                    deserializer.deserializeArray(str, deserialized);
+                    success = deserializer.deserializeArray(str, deserialized);
                 
 
              

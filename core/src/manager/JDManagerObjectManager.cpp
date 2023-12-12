@@ -474,13 +474,30 @@ namespace JsonDatabase
             for (size_t i = 0; i < jsons.size(); ++i)
             {
                 JDObjectManager::ManagedLoadMisc loaderMisc;
+                bool loaded = false;
 #if JD_ACTIVE_JSON == JD_JSON_QT
+
+                if (!jsons[i].isObject())
+                {
+                    JD_CONSOLE_FUNCTION("Json data is not an object: \""<< jsons[i] << "\"");
+                    success = false;
+                    continue;
+                }
                 const QJsonObject& json = jsons[i];
-                if (!Utilities::JDSerializable::getJsonValue(json, loaderMisc.id, JDObjectInterface::s_tag_objID))
+                if (Utilities::JDSerializable::getJsonValue(json, loaderMisc.id, JDObjectInterface::s_tag_objID))
+                {
+                    loaded = true;
+                }
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
               
+                if(!jsons[i].holds<JsonObject>())
+				{
+					JD_CONSOLE_FUNCTION("Json data is not an object: \"" << jsons[i] << "\"");
+					success = false;
+					continue;
+				}
                 const JsonObject& json = jsons[i].get<JsonObject>();
-                bool loaded = false;
+                
                 if (json.contains(JDObjectInterface::s_tag_objID))
                 {
 #if JD_ACTIVE_JSON == JD_JSON_INTERNAL
@@ -491,8 +508,9 @@ namespace JsonDatabase
 
                     loaded = true;
                 }
-				if (!loaded)
+				
 #endif
+                if (!loaded)
                 {
 #if JD_ACTIVE_JSON == JD_USE_QJSON
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
