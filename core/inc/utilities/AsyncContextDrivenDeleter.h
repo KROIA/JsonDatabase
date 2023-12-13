@@ -99,7 +99,8 @@ namespace JsonDatabase
 			static void deleteObjects(std::vector<T*> ptrList,
 				std::vector<std::shared_ptr<T>> sharedList)
 			{
-				JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+				JD_ASYNC_DELETER_PROFILING_THREAD("Async deleter");
+				JD_ASYNC_DELETER_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 				deleteObjects_internal(ptrList);
 				for(auto &obj : sharedList)
 				{
@@ -118,7 +119,7 @@ namespace JsonDatabase
 
 			static void deleteObjects_internal(std::vector<T*> objectsToDelete)
 			{
-				JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
+				JD_ASYNC_DELETER_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 				for (size_t i = 0; i < objectsToDelete.size(); ++i)
 					delete objectsToDelete[i];
 			}

@@ -68,6 +68,13 @@ namespace JsonDatabase
                 return;
             m_stopFlag.store(false);
             m_thread = new std::thread(&JDManagerAsyncWorker::threadLoop, this);
+
+            DWORD_PTR dw = SetThreadAffinityMask(m_thread->native_handle(), DWORD_PTR(1));
+            if (dw == 0)
+            {
+                DWORD dwErr = GetLastError();
+                JD_CONSOLE_FUNCTION("SetThreadAffinityMask failed, GLE=" << dwErr << '\n');
+            }
         }
         void JDManagerAsyncWorker::stop()
         {

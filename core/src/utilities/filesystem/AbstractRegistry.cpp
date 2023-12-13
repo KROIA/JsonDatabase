@@ -386,7 +386,11 @@ namespace JsonDatabase
 					// Can't create lock
 					continue;
 				}
+#if JD_ACTIVE_JSON == JD_JSON_QT
+				if (obj->save(jsonObj))
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				if (obj->save(*jsonObj))
+#endif
 				{
 					++added;
 					jsons.push_back(std::move(jsonObj));

@@ -416,11 +416,13 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
 #if JD_ACTIVE_JSON == JD_JSON_QT
     std::vector<QJsonObject> jsons;
     QJsonObject data;
+    success &= obj->saveInternal(data);
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
     std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
-#endif
     success &= obj->saveInternal(*data);
+#endif
+    
 
     if (progress)
     {

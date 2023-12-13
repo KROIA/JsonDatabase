@@ -6,13 +6,14 @@ namespace JsonDatabase
     {
 #ifdef JD_PROFILING
         EASY_PROFILER_ENABLE;
+        JD_PROFILING_THREAD("Main Thread");
 #endif
     }
     void Profiler::stopProfiler(const std::string &profileFilePath)
     {
 #ifdef JD_PROFILING
         profiler::dumpBlocksToFile(profileFilePath.c_str());
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#else
         JD_UNUSED(profileFilePath);
 #endif
     }

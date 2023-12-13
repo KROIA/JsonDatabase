@@ -5,6 +5,7 @@
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
 #include <thread>
 #include "utilities/AsyncContextDrivenDeleter.h"
+#include <windows.h>
 #endif
 
 #elif JD_ACTIVE_JSON == JD_JSON_GLAZE
@@ -23,10 +24,10 @@ namespace JsonDatabase
     JsonValue JsonDeserializer::deserializeValue(const std::string& json)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-        std::string normalized;
-
-        nornmalizeJsonString(json, normalized);
         JsonValue valOut;
+        
+        std::string normalized;
+        nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         deserializeValueSplitted_internal(buff, valOut);
@@ -45,21 +46,17 @@ namespace JsonDatabase
         JsonObject valOut;
         Buffer buff(normalized);
         deserializeObject_internal(buff, valOut);
-/*#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeObjectSplitted_internal(buff, valOut);
-#else
-        deserializeObject_internal(buff, valOut);
-#endif*/
         return valOut;
     }
 
     JsonArray JsonDeserializer::deserializeArray(const std::string& json)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-        std::string normalized;
-
-        nornmalizeJsonString(json, normalized);
+        
         JsonArray valOut;
+        
+        std::string normalized;
+        nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         deserializeArraySplitted_internal(buff, valOut, nullptr);
@@ -71,10 +68,11 @@ namespace JsonDatabase
     JsonValue JsonDeserializer::deserializeValue(const std::string& json, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-        std::string normalized;
-
-        nornmalizeJsonString(json, normalized);
+        
         JsonValue valOut;
+        
+        std::string normalized;
+        nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         deserializeValueSplitted_internal(buff, valOut, progress);
@@ -93,20 +91,16 @@ namespace JsonDatabase
         JsonObject valOut;
         Buffer buff(normalized);
         deserializeObject_internal(buff, valOut, progress);
-/*#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeValueSplitted_internal(buff, valOut, progress);
-#else
-        deserializeObject_internal(buff, valOut, progress);
-#endif*/
         return valOut;
     }
     JsonArray JsonDeserializer::deserializeArray(const std::string& json, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-        std::string normalized;
-
-        nornmalizeJsonString(json, normalized);
+        
         JsonArray valOut;
+        
+        std::string normalized;
+        nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
         deserializeArraySplitted_internal(buff, valOut, progress);
@@ -118,8 +112,8 @@ namespace JsonDatabase
     bool JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+        
         std::string normalized;
-
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
@@ -136,18 +130,12 @@ namespace JsonDatabase
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
         return deserializeObject_internal(buff, valueOut);
-        /*
-#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeValueSplitted_internal(buff, valueOut);
-#else
-        deserializeObject_internal(buff, valueOut);
-#endif*/
     }
     bool JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+        
         std::string normalized;
-
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
@@ -160,7 +148,6 @@ namespace JsonDatabase
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
-
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
@@ -178,18 +165,11 @@ namespace JsonDatabase
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
         return deserializeObject_internal(buff, valueOut, progress);
-        /*
-#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        deserializeValueSplitted_internal(buff, valueOut, progress);
-#else
-        deserializeObject_internal(buff, valueOut, progress);
-#endif*/
     }
     bool JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut, Internal::WorkProgress* progress)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
         std::string normalized;
-
         nornmalizeJsonString(json, normalized);
         Buffer buff(normalized);
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
@@ -220,6 +200,7 @@ namespace JsonDatabase
             case '[':
             {
                 std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+                arrPtr->reserve(100);
                 if (deserializeArray_internal(json, *arrPtr.get()))
                 {
                     valOut = std::move(arrPtr);
@@ -234,6 +215,7 @@ namespace JsonDatabase
                 // deserializeString(json, str);
 
                 std::string str;
+                str.reserve(100);
                 if (deserializeString(json, str))
                 {
                     valOut = std::move(str);
@@ -294,6 +276,7 @@ namespace JsonDatabase
             case '[':
             {
                 std::shared_ptr<JsonArray> arrPtr = std::make_shared<JsonArray>();
+                arrPtr->reserve(100);
                 if (deserializeArray_internal(json, *arrPtr.get(), progress))
                 {
                     valOut = std::move(arrPtr);
@@ -308,6 +291,7 @@ namespace JsonDatabase
                 // deserializeString(json, str);
 
                 std::string str;
+                str.reserve(100);
                 if (deserializeString(json, str))
                 {
                     valOut = std::move(str);
@@ -540,30 +524,54 @@ namespace JsonDatabase
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
         json.skip(); // Skip the '[' character
+
+       /* std::string normalized;
+        const std::string rawJson(json.start(), json.size());
+        nornmalizeJsonString(rawJson, normalized);
+        Buffer buff(normalized);
+        buff.skip();*/
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
+
+        
+
         std::vector<ArrayObjectRange> rangeList;
         rangeList.reserve(1000);
         // Get individual object ranges
         findArrayObjectRange(json, rangeList);
-        unsigned int threadCount = std::thread::hardware_concurrency() / 2;
+        //unsigned int threadCount = 2;// std::thread::hardware_concurrency();
+        unsigned int threadCount = std::thread::hardware_concurrency();
         if (threadCount > 100)
             threadCount = 100;
         size_t objCount = rangeList.size();
         if (threadCount > objCount / 10)
             threadCount = objCount / 10;
+
+        //constexpr size_t padding = 128;
+        //constexpr size_t spacing = 128;
         //threadCount = 0;
         if (threadCount > 1)
         {
+            //threadCount = 5;
             // threadCount = 2;
+            
+
 
             struct ThreadData
             {
                 JsonArray array;
-                size_t start; // Index in rangeList
-                size_t end;
+                size_t start = 0; // Index in rangeList
+                size_t end = 0;
+                const char* rawInputData = nullptr;
+                size_t rawInputDataSize = 0;
+
                 Buffer data;
-                // std::string data;
+                char *dataStr = nullptr;
                 std::atomic<unsigned long> processedCharCount;
+
+                ~ThreadData()
+				{
+					delete[] dataStr;
+				}
             };
 
             JD_JSON_PROFILING_BLOCK("Starting threads", JD_COLOR_STAGE_3);
@@ -572,10 +580,12 @@ namespace JsonDatabase
             size_t chunkSize = objCount / threadCount;
             size_t remainder = objCount % threadCount;
             size_t start = 0;
-            size_t startIndex = json.current - json.start;
+            size_t startIndex = json.getIndex();
             for (size_t i = 0; i < threadCount; ++i)
             {
-                ThreadData* data = new ThreadData();
+                size_t currentIndex =  i;
+                ThreadData *data = new ThreadData;
+                
                 data->start = start;
                 data->end = start + chunkSize;
                 data->processedCharCount = 0;
@@ -584,24 +594,47 @@ namespace JsonDatabase
                 if (i == threadCount - 1)
                     data->end += remainder;
 
+                data->rawInputData = json.start() + rangeList[data->start].start;
+                data->rawInputDataSize = rangeList[data->end - 1].end - rangeList[data->start].start + 1;
+
+                //data.dataStr = std::move(std::string(json.start() + rangeList[data.start].start, rangeList[data.end - 1].end - rangeList[data.start].start + 1));
                 // data->data = std::move(std::string(json.begin() + rangeList[data->start].start, json.begin() + rangeList[data->end-1].end+1));
-                data->data.current = json.start + rangeList[data->start].start;
-                data->data.start = data->data.current;
-                data->data.size = rangeList[data->end - 1].end - rangeList[data->start].start + 1;
-                data->data.end = data->data.start + data->data.size;
+                
+                //JD_JSON_PROFILING_BLOCK("Copy string", JD_COLOR_STAGE_4);
+                //data->dataStr = new char[data->rawInputDataSize];
+                //memcpy(data->dataStr, data->rawInputData, data->rawInputDataSize);
+                //JD_JSON_PROFILING_END_BLOCK;
+                //data->data.setString(data->dataStr, data->rawInputDataSize);
 
 
-                threadData[i] = data;
-                threads[i] = new std::thread([data, &rangeList, i]()
+                //data->data.setString(json.start() + rangeList[data->start].start, size);
+                //data->data.current = json.start + rangeList[data->start].start;
+                //data->data.start = data->data.current;
+                //data->data.size = rangeList[data->end - 1].end - rangeList[data->start].start + 1;
+                //data->data.end = data->data.start + data->data.size;
+
+
+                threadData[currentIndex] = data;
+                std::thread* newThread = new std::thread([data, &rangeList, i]()
                     {
 #if defined(JD_JSON_PROFILING_ENABED) && defined(JD_PROFILING)
                         std::string threadName = "Deserializer thread: " + std::to_string(i);
                         JD_JSON_PROFILING_THREAD(threadName.c_str());
 #endif
+                        
+                        JD_JSON_PROFILING_BLOCK("Copy string", JD_COLOR_STAGE_4);
+                        data->dataStr = new char[data->rawInputDataSize];
+                       // removeSpecificChars(data->rawInputData, data->dataStr, data->rawInputDataSize);
+                        memcpy(data->dataStr, data->rawInputData, data->rawInputDataSize);
+                        data->data.setString(data->dataStr, data->rawInputDataSize);
+                        JD_JSON_PROFILING_END_BLOCK;
+
+
                         std::atomic<unsigned long>& processedCharCount = data->processedCharCount;
-                        size_t objCount = data->end - data->start - 1;
+                        size_t objCount = data->end - data->start + 5;
                         data->array.reserve(objCount);
                         size_t rangeStart = 0;
+
                         for (size_t j = data->start; j < data->end; ++j)
                         {
                             const ArrayObjectRange& objectRange = rangeList[j];
@@ -609,11 +642,20 @@ namespace JsonDatabase
                             rangeStart = objectRange.start;
 
                             deserializeObject_internal(data->data, value);
-                            data->data.current++; // skip the ',' character
+                            data->data.skip(); // skip the ',' character
                             data->array.emplace_back(std::move(value));
                             processedCharCount += objectRange.end - objectRange.start;
                         }
                     });
+
+                // Define on which cpu this thread is allowed to run
+                DWORD_PTR dw = SetThreadAffinityMask(newThread->native_handle(), DWORD_PTR(1) << i);
+                if (dw == 0)
+                {
+                    DWORD dwErr = GetLastError();
+                    JD_CONSOLE_FUNCTION("SetThreadAffinityMask failed, GLE=" << dwErr << '\n');
+                }
+                threads[i] = newThread;
             }
 
             Internal::AsyncContextDrivenDeleter deleter(threadData);
@@ -626,13 +668,13 @@ namespace JsonDatabase
             {
                 progressUpdaterRunning = true;
 
-                progressUpdater = new std::thread([startIndex, &json, &threadData, endPos, progress, &progressUpdaterRunning, objCount]()
+                progressUpdater = new std::thread([threadCount,startIndex, &json, &threadData, endPos, progress, &progressUpdaterRunning, objCount]()
                     {
                         double divided = 1 / (double)endPos;
                         while (progressUpdaterRunning.load())
                         {
                             size_t finishCount = startIndex;
-                            for (size_t i = 0; i < threadData.size(); ++i)
+                            for (size_t i = 0; i < threadCount; ++i)
                             {
                                 finishCount += threadData[i]->processedCharCount;
                             }
@@ -665,7 +707,7 @@ namespace JsonDatabase
 
             JD_JSON_PROFILING_BLOCK("Combine parsed objects", JD_COLOR_STAGE_3);
             valOut.reserve(objCount);
-            for (size_t i = 0; i < threadData.size(); ++i)
+            for (size_t i = 0; i < threadCount; ++i)
             {
                 ThreadData* data = threadData[i];
                 valOut.insert(valOut.end(),
@@ -673,12 +715,12 @@ namespace JsonDatabase
                     std::make_move_iterator(data->array.end()));
             }
 
-            json.current = json.start + endPos + 1;
+            json.setCurrent(json.start() + endPos + 1);
             JD_JSON_PROFILING_END_BLOCK;
 
             if (progress)
             {
-                double progressValue = (double)(json.current - json.start) / (double)json.size;
+                double progressValue = (double)(json.getIndex()) / (double)json.size();
                 progress->setProgress(progressValue);
             }
         }
@@ -881,6 +923,43 @@ namespace JsonDatabase
 
         for (auto currentChar : jsonString)
         {
+            bool currentCharIsStringKey = currentChar == '"' && lastCharWasNotEscape;
+
+            if (currentCharIsStringKey)
+            {
+                isString = !isString;
+            }
+
+            // If in string, ignore the remove chars command
+            if (!isString)
+            {
+                // Remove these characters from the string
+                switch (currentChar)
+                {
+                case ' ':
+                case '\n':
+                case '\t':
+                case '\r':
+                    goto skip;
+                }
+            }
+            jsonStringOut[count++] = currentChar;
+        skip:;
+            lastCharWasNotEscape = currentChar != '\\';
+        }
+        jsonStringOut[count] = '\0';
+    }
+    void JsonDeserializer::removeSpecificChars(const char* jsonString, char* jsonStringOut, size_t size)
+    {
+        JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
+        size_t count = 0;
+        bool isString = false;
+        bool lastCharWasNotEscape = true;
+
+        for(size_t i=0; i<size; ++i)
+       // for (auto currentChar : jsonString)
+        {
+            const char &currentChar = jsonString[i];
             bool currentCharIsStringKey = currentChar == '"' && lastCharWasNotEscape;
 
             if (currentCharIsStringKey)

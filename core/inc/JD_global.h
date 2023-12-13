@@ -49,7 +49,7 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #define JD_ENABLE_MULTITHREADING
 
 #ifdef JD_ENABLE_MULTITHREADING
-//#define JD_ENABLE_MULTITHREADING_JSON_PARSER
+#define JD_ENABLE_MULTITHREADING_JSON_PARSER
 #endif
 
 #define JD_UNUSED(x) (void)x;

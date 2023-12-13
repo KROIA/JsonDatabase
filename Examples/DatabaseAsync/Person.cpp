@@ -100,19 +100,34 @@ bool Person::save(QJsonObject& obj) const
 bool Person::save(JsonObject& obj) const
 #endif
 {
+#if JD_ACTIVE_JSON == JD_JSON_QT
+    obj["firstName"] = firstName.c_str();
+    obj["lastName"] = lastName.c_str();
+    obj["gender"] = gender.c_str();
+    obj["age"] = age.c_str();
+    obj["email"] = email.c_str();
+    obj["phone"] = phone.c_str();
+    obj["education"] = education.c_str();
+    obj["occupation"] = occupation.c_str();
+    obj["experience"] = experience.c_str();
+    obj["salary"] = salary.c_str();
+    obj["numberOfChildren"] = numberOfChildren.c_str();
+    obj["martialStatus"] = martialStatus.c_str();
 
-    *obj["firstName"] = firstName;
-    *obj["lastName"] = lastName;
-    *obj["gender"] = gender;
-    *obj["age"] = age;
-    *obj["email"] = email;
-    *obj["phone"] = phone;
-    *obj["education"] = education;
-    *obj["occupation"] = occupation;
-    *obj["experience"] = experience;
-    *obj["salary"] = salary;
-    *obj["numberOfChildren"] = numberOfChildren;
-    *obj["martialStatus"] = martialStatus;
+#else
+    obj["firstName"] = firstName;
+    obj["lastName"] = lastName;
+    obj["gender"] = gender;
+    obj["age"] = age;
+    obj["email"] = email;
+    obj["phone"] = phone;
+    obj["education"] = education;
+    obj["occupation"] = occupation;
+    obj["experience"] = experience;
+    obj["salary"] = salary;
+    obj["numberOfChildren"] = numberOfChildren;
+    obj["martialStatus"] = martialStatus;
+#endif
 
 
     //obj.insert("firstName", firstName.c_str());

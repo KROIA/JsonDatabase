@@ -1,7 +1,6 @@
 #pragma once
 #include "JD_base.h"
 #include <type_traits>
-#include <QDebug>
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
@@ -188,7 +187,7 @@ namespace JsonDatabase
 				Array,
 				Object
 			};
-
+/*
 		JsonValue();
 		JsonValue(const JsonValue& other);
 		JsonValue(JsonValue&& other) noexcept;
@@ -207,7 +206,10 @@ namespace JsonDatabase
 		JsonValue(const std::shared_ptr<JsonObject>& valuePtr);
 		JsonValue(std::shared_ptr<JsonObject>&& valuePtr) noexcept;
 		
-		~JsonValue();
+        ~JsonValue()
+        {
+
+        }
 
 		JsonValue& operator=(const JsonValue& other);
 		JsonValue& operator=(JsonValue&& other) noexcept;
@@ -229,21 +231,321 @@ namespace JsonDatabase
 
 		bool operator==(const JsonValue& other) const;
 		bool operator!=(const JsonValue& other) const;
-		// bool operator<(const JsonValue& other) const;
-		// bool operator>(const JsonValue& other) const;
-		// bool operator<=(const JsonValue& other) const;
-		// bool operator>=(const JsonValue& other) const;
+		*/
+            JsonValue()
+                : m_value(std::monostate{})
+                // , m_type(Type::Null) 
+                // , m_objElement(nullptr)
+            {
+                // Implement default constructor logic here
+            }
 
-		/*template <class T>
-		bool work(T obj) const
-		{
-			return normalWork(obj);
-		}
-		template <class T = ObjectA>
-		bool work(T obj) const
-		{
-			return objectA_work(obj);
-		}*/
+            // Copy constructor
+            JsonValue(const JsonValue& other)
+                : m_value(other.m_value)
+                // , m_type(other.m_type)
+                // , m_objElement(nullptr)
+            {
+                // Implement copy constructor logic here
+                //if (m_type == Type::Object)
+                //    m_objElement = &std::get<JsonObject>(m_value);
+            }
+
+            // Move constructor
+            JsonValue(JsonValue&& other) noexcept
+                : m_value(std::move(other.m_value))
+                // , m_type(std::move(other.m_type))
+                // , m_objElement(nullptr)
+            {
+                //if (m_type == Type::Object)
+                //    m_objElement = &std::get<JsonObject>(m_value);
+                // Implement move constructor logic here
+            }
+
+            // Constructor with std::string value
+            JsonValue(const std::string& value)
+                : m_value(value)
+                //, m_type(Type::String)
+                //, m_objElement(nullptr)
+            {
+                // Implement constructor with std::string logic here
+            }
+            JsonValue(std::string&& value) noexcept
+                : m_value(std::move(value))
+            {
+
+            }
+
+            // Constructor with const char* value
+            JsonValue(const char* value)
+                : m_value(std::string(value))
+                //, m_type(Type::String)
+                //, m_objElement(nullptr)
+            {
+                // Implement constructor with const char* logic here
+            }
+
+            // Constructor with int value
+            JsonValue(const int& value)
+                : m_value(value)
+                //, m_type(Type::Int)
+                //, m_objElement(nullptr)
+            {
+                // Implement constructor with int logic here
+            }
+
+            // Constructor with double value
+            JsonValue(const double& value)
+                : m_value(value)
+                //, m_type(Type::Double)
+                //, m_objElement(nullptr)
+            {
+                // Implement constructor with double logic here
+            }
+
+            // Constructor with bool value
+            JsonValue(const bool& value)
+                : m_value(value)
+                //, m_type(Type::Bool)
+                //, m_objElement(nullptr)
+            {
+                // Implement constructor with bool logic here
+            }
+
+            // Constructor with std::vector<JsonValue> value
+            JsonValue(const JsonArray& value)
+                : m_value(std::make_shared<JsonArray>(value))
+                //, m_type(Type::Array)
+                //, m_objElement(nullptr)
+            {
+                // Implement constructor with std::vector<JsonValue> logic here
+            }
+            JsonValue(JsonArray&& value)
+                : m_value(std::make_shared<JsonArray>(std::move(value)))
+            {
+
+            }
+            JsonValue(const std::shared_ptr<JsonArray>& valuePtr)
+                : m_value(valuePtr)
+            {
+
+            }
+            JsonValue(std::shared_ptr<JsonArray>&& valuePtr) noexcept
+                : m_value(std::move(valuePtr))
+            {
+
+            }
+
+            // Constructor with std::map<std::string, JsonValue> value
+            JsonValue(const JsonObject& value)
+                : m_value(std::make_shared<JsonObject>(value))
+                //, m_type(Type::Object)
+                //, m_objElement(&std::get<JsonObject>(m_value))
+            {
+                // Implement constructor with std::map<std::string, JsonValue> logic here
+            }
+
+            // Move constructor with std::map<std::string, JsonValue> value
+            JsonValue(JsonObject&& value) noexcept
+                : m_value(std::make_shared<JsonObject>(std::move(value)))
+                //, m_type(Type::Object)
+                //, m_objElement(&std::get<JsonObject>(m_value))
+            {
+                // Implement move constructor with std::map<std::string, JsonValue> logic here
+            }
+            JsonValue(const std::shared_ptr<JsonObject>& valuePtr)
+                : m_value(valuePtr)
+            {
+
+            }
+            JsonValue(std::shared_ptr<JsonObject>&& valuePtr) noexcept
+                : m_value(std::move(valuePtr))
+            {
+
+            }
+
+
+
+
+
+            // Copy assignment operator
+            JsonValue& operator=(const JsonValue& other)
+            {
+                m_value = other.m_value;
+                //m_type = other.m_type;
+                //if (m_type == Type::Object)
+                //    m_objElement = &std::get<JsonObject>(m_value);
+                //else
+                //    m_objElement = nullptr;
+                return *this;
+            }
+
+            // Move assignment operator
+            JsonValue& operator=(JsonValue&& other) noexcept
+            {
+                m_value = std::move(other.m_value);
+                //m_type = std::move(other.m_type);
+                //if (m_type == Type::Object)
+                //    m_objElement = &std::get<JsonObject>(m_value);
+                //else
+                //    m_objElement = nullptr;
+                return *this;
+            }
+
+            // Assignment operator with std::string value
+            JsonValue& operator=(const std::string& value)
+            {
+                m_value = value;
+                //m_type = Type::String;
+                //m_objElement = nullptr;
+                return *this;
+            }
+            JsonValue& operator=(std::string&& value) noexcept
+            {
+                m_value = std::move(value);
+                return *this;
+            }
+
+            // Assignment operator with const char* value
+            JsonValue& operator=(const char* value)
+            {
+                m_value = std::string(value);
+                //m_type = Type::String;
+                //m_objElement = nullptr;
+                return *this;
+            }
+
+            // Assignment operator with int value
+            JsonValue& operator=(const int& value)
+            {
+                m_value = value;
+                //m_type = Type::Int;
+                //m_objElement = nullptr;
+                return *this;
+            }
+
+            // Assignment operator with double value
+            JsonValue& operator=(const double& value)
+            {
+                m_value = value;
+                //m_type = Type::Double;
+                //m_objElement = nullptr;
+                return *this;
+            }
+
+            // Assignment operator with bool value
+            JsonValue& operator=(const bool& value)
+            {
+                m_value = value;
+                //m_type = Type::Bool;
+                //m_objElement = nullptr;
+                return *this;
+            }
+
+            // Assignment operator with JsonArray value
+            JsonValue& operator=(const JsonArray& value)
+            {
+                std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
+                if (ptr)
+                {
+                    ptr->get()->operator=(value);
+                    return *this;
+                }
+                m_value = std::make_shared<JsonArray>(value);
+                return *this;
+            }
+
+            // Assignment operator with JsonObject value
+            JsonValue& operator=(const JsonObject& value)
+            {
+                std::shared_ptr<JsonObject>* ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
+                if (ptr)
+                {
+                    ptr->get()->operator=(value);
+                    return *this;
+                }
+                m_value = std::make_shared<JsonObject>(value);
+                return *this;
+            }
+
+            JsonValue& operator=(const std::shared_ptr<JsonArray>& value)
+            {
+                m_value = value;
+                return *this;
+            }
+            JsonValue& operator=(const std::shared_ptr<JsonObject>& value)
+            {
+                m_value = value;
+                return *this;
+            }
+
+            // Move assignment operator with JsonObject value
+            JsonValue& operator=(JsonObject&& value) noexcept
+            {
+                std::shared_ptr<JsonObject>* ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
+                if (ptr)
+                {
+                    ptr->get()->operator=(std::move(value));
+                    return *this;
+                }
+                m_value = std::make_shared<JsonObject>(std::move(value));
+                //m_value = std::move(value);
+                //m_type = Type::Object;
+                //m_objElement = &std::get<JsonObject>(m_value);
+                return *this;
+            }
+            JsonValue& operator=(JsonArray&& value) noexcept
+            {
+                std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
+                if (ptr)
+                {
+                    ptr->get()->operator=(std::move(value));
+                    return *this;
+                }
+                m_value = std::make_shared<JsonArray>(std::move(value));
+                //m_value = std::move(value);
+                //m_type = Type::Object;
+                //m_objElement = &std::get<JsonObject>(m_value);
+                return *this;
+            }
+            JsonValue& operator=(std::shared_ptr<JsonArray>&& value) noexcept
+            {
+                m_value = std::move(value);
+                return *this;
+            }
+            JsonValue& operator=(std::shared_ptr<JsonObject>&& value) noexcept
+            {
+                m_value = std::move(value);
+                return *this;
+            }
+
+
+
+
+
+            // Equality comparison operator
+            bool operator==(const JsonValue& other) const
+            {
+                //if(m_type != other.m_type) return false;
+                return m_value == other.m_value;
+            }
+
+            // Inequality comparison operator
+            bool operator!=(const JsonValue& other) const
+            {
+                //if (m_type == other.m_type) return false;
+                return !(*this == other);
+            }
+
+
+
+            // Convert value to string representation
+
+            std::string toString() const
+            {
+                return serialize();
+            }
+
 
 
 		// Type trait to check if T is ObjectA
@@ -260,16 +562,7 @@ namespace JsonDatabase
 			static constexpr bool value = true;
 		};
 
-		/*template <class T>
-		bool holds() const noexcept
-		{
-			return std::holds_alternative<T>(m_value);
-		}
-		template <class T = JsonArray>
-		bool holds() const noexcept
-		{
-			return std::holds_alternative<std::shared_ptr<JsonArray>>(m_value);
-		}*/
+		
 
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, bool>::type holds() const noexcept
@@ -283,41 +576,7 @@ namespace JsonDatabase
 		{
 			return std::holds_alternative<std::shared_ptr<T>>(m_value);
 		}
-		//template <class T = JsonObject>
-		//bool holds() const noexcept
-		//{
-		//	return std::holds_alternative<std::shared_ptr<JsonObject>>(m_value);
-		//}
-
-		// Type getType() const;
-		// bool isNull() const;
-		// bool isString() const;
-		// bool isNumber() const;
-		// bool isInt() const;
-		// bool isDouble() const;
-		// bool isBool() const;
-		// bool isArray() const;
-		// bool isObject() const;
-
-		//bool contains(const std::string& key) const; // returns true if this is an object and contains the key
-		//JsonValue& operator[](const std::string& key); // returns the value of the key if this is an object
-
-		/*template <class T>
-		T& get()
-		{
-			return std::get<T>(m_value);
-		}
-		template <>
-		JsonArray& get()
-		{
-			return *std::get<std::shared_ptr<JsonArray>>(m_value).get();
-		}
-		template <>
-		JsonObject& get()
-		{
-			return *std::get<std::shared_ptr<JsonObject>>(m_value).get();
-		}
-		*/
+		
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, T&>::type get()
 		{
@@ -333,22 +592,6 @@ namespace JsonDatabase
 
 
 
-		/*template <class T>
-		const T& get() const
-		{
-			return std::get<T>(m_value);
-		}
-		template <>
-		const JsonArray& get() const
-		{
-			return *std::get<std::shared_ptr<JsonArray>>(m_value).get();
-		}
-		template <>
-		const JsonObject& get() const
-		{
-			return *std::get<std::shared_ptr<JsonObject>>(m_value).get();
-		}*/
-
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, const T&>::type get() const
 		{
@@ -363,28 +606,7 @@ namespace JsonDatabase
 
 
 
-		/*
-		template <class T>
-		T* get_if() noexcept
-		{
-			return std::get_if<T>(&m_value);
-		}
-		template <>
-		JsonArray* get_if() noexcept
-		{
-			std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
-			if (ptr)
-				return ptr->get();
-			return nullptr;
-		}
-		template <>
-		JsonObject* get_if() noexcept
-		{
-			std::shared_ptr<JsonObject>* ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
-			if (ptr)
-				return ptr->get();
-			return nullptr;
-		}*/
+		
 
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, T*>::type get_if() noexcept
@@ -403,28 +625,7 @@ namespace JsonDatabase
 
 
 
-		/*template <class T>
-		const T* get_if() const noexcept
-		{
-			return std::get_if<T>(&m_value);
-		}
-		template <>
-		const JsonArray* get_if() noexcept
-		{
-			const std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
-			if (ptr)
-				return ptr->get();
-			return nullptr;
-		}
-		template <>
-		const JsonObject* get_if() noexcept
-		{
-			const std::shared_ptr<JsonObject> *ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
-			if(ptr)
-				return ptr->get();
-			return nullptr;
-		}
-		*/
+		
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, const T*>::type get_if() const noexcept
 		{
@@ -443,119 +644,406 @@ namespace JsonDatabase
 
 
 
-		/*
-		JsonValue& operator[](std::integral auto&& index) 
-		{ 
-			std::shared_ptr<JsonArray>& array = std::get<std::shared_ptr<JsonArray>>(m_value);
-			return (*array.get())[index];
-		}
-
-		const JsonValue& operator[](std::integral auto&& index) const 
-		{ 
-			const std::shared_ptr<JsonArray>& array = std::get<std::shared_ptr<JsonArray>>(m_value);
-			return (*array.get())[index];
-		}
-
-		JsonValue& operator[](std::convertible_to<std::string_view> auto&& key)
-		{
-			//[] operator for maps does not support heterogeneous lookups yet
-			if (holds<std::monostate>())
-				m_value = std::make_shared<JsonObject>();
-			std::shared_ptr<JsonObject>& object = std::get<std::shared_ptr<JsonObject>>(m_value);
-			auto iter = object->find(key);
-			if (iter == object->end()) {
-				iter = object->insert(std::make_pair(std::string(key), JsonValue{})).first;
-			}
-			return *iter->second->get();
-		}
-
-		const JsonValue& operator[](std::convertible_to<std::string_view> auto&& key) const
-		{
-			//[] operator for maps does not support heterogeneous lookups yet
-			std::shared_ptr<JsonObject>& object = std::get<std::shared_ptr<JsonObject>>(m_value);
-			auto iter = object->find(key);
-			if (iter == object->end()) {
-				static const JsonValue null{};
-				return null;
-			}
-			return *iter->second->get();
-		}*/
-
-
-
-		//std::string &getString();
-		//int& getInt();
-		//double& getDouble();
-		//bool& getBool();
-		//JsonArray& getArray();
-		//JsonObject& getObject();
-		//
-		//const std::string& getString() const;
-		//const int& getInt() const;
-		//const double& getDouble() const;
-		//const bool& getBool() const;
-		//const JsonArray& getArray() const;
-		//const JsonObject& getObject() const;
-
-		// bool extractString(std::string& valueOut) const;
-		// //bool getString(JsonValue& objOut, const std::string &key) const;
-		// bool extractInt(int& valueOut) const;
-		// bool extractDouble(double& valueOut) const;
-		// bool extractBool(bool& valueOut) const;
-		// bool extractArray(JsonArray& valueOut) const;
-		// bool extractObject(JsonObject& valueOut) const;
-		// 
-		// bool extractString(std::string& valueOut, const std::string& key) const;
-		// bool extractInt(int& valueOut, const std::string& key) const;
-		// bool extractDouble(double& valueOut, const std::string& key) const;
-		// bool extractBool(bool& valueOut, const std::string& key) const;
-		// bool extractArray(JsonArray& valueOut, const std::string& key) const;
-		// bool extractObject(JsonObject& valueOut, const std::string& key) const;
-
-		// std::string& getString(const std::string& key);
-		// int &getInt(const std::string& key);
-		// double& getDouble(const std::string& key);
-		// bool& getBool(const std::string& key);
-		// JsonArray& getArray(const std::string& key);
-		// JsonObject& getObject(const std::string& key);
-		// 
-		// const std::string& getString(const std::string& key) const;
-		// const int& getInt(const std::string& key) const;
-		// const double& getDouble(const std::string& key) const;
-		// const bool& getBool(const std::string& key) const;
-		// const JsonArray& getArray(const std::string& key) const;
-		// const JsonObject& getObject(const std::string& key) const;
-		// 
-		// std::string* getStringPtr(const std::string& key);
-		// int* getIntPtr(const std::string& key);
-		// double* getDoublePtr(const std::string& key);
-		// bool* getBoolPtr(const std::string& key);
-		// JsonArray* getArrayPtr(const std::string& key);
-		// JsonObject* getObjectPtr(const std::string& key);
-		// 
-		// const std::string* getStringPtr(const std::string& key) const;
-		// const int* getIntPtr(const std::string& key) const;
-		// const double* getDoublePtr(const std::string& key) const;
-		// const bool* getBoolPtr(const std::string& key) const;
-		// const JsonArray* getArrayPtr(const std::string& key) const;
-		// const JsonObject* getObjectPtr(const std::string& key) const;
 
 		JsonVariantType* operator->() noexcept { return &m_value; }
 
 		JsonVariantType& operator*() noexcept { return m_value; }
 		const JsonVariantType& operator*() const noexcept { return m_value; }
 
-		std::string toString() const;
+		//std::string toString() const;
 		std::string serialize() const;
 
 		friend std::ostream& operator<<(std::ostream& os, const JsonValue& json);
 		friend QDebug operator<<(QDebug debug, const JsonValue& json);
+
+        // Overloading << operator for std::cout
+        
 	private:
-		
-		//Type m_type;
 		JsonVariantType m_value;
-		//JsonObject* m_objElement; // is active, if this is an JsonObject
-		
 	};
 }
 #endif
+
+
+
+namespace JsonDatabase
+{
+
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+    // Default constructor
+	/*
+    JsonValue::JsonValue()
+        : m_value(std::monostate{})
+        // , m_type(Type::Null) 
+        // , m_objElement(nullptr)
+    {
+        // Implement default constructor logic here
+    }
+
+    // Copy constructor
+    JsonValue::JsonValue(const JsonValue& other)
+        : m_value(other.m_value)
+        // , m_type(other.m_type)
+        // , m_objElement(nullptr)
+    {
+        // Implement copy constructor logic here
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
+    }
+
+    // Move constructor
+    JsonValue::JsonValue(JsonValue&& other) noexcept
+        : m_value(std::move(other.m_value))
+        // , m_type(std::move(other.m_type))
+        // , m_objElement(nullptr)
+    {
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
+        // Implement move constructor logic here
+    }
+
+    // Constructor with std::string value
+    JsonValue::JsonValue(const std::string& value)
+        : m_value(value)
+        //, m_type(Type::String)
+        //, m_objElement(nullptr)
+    {
+        // Implement constructor with std::string logic here
+    }
+    JsonValue::JsonValue(std::string&& value) noexcept
+        : m_value(std::move(value))
+    {
+
+    }
+
+    // Constructor with const char* value
+    JsonValue::JsonValue(const char* value)
+        : m_value(std::string(value))
+        //, m_type(Type::String)
+        //, m_objElement(nullptr)
+    {
+        // Implement constructor with const char* logic here
+    }
+
+    // Constructor with int value
+    JsonValue::JsonValue(const int& value)
+        : m_value(value)
+        //, m_type(Type::Int)
+        //, m_objElement(nullptr)
+    {
+        // Implement constructor with int logic here
+    }
+
+    // Constructor with double value
+    JsonValue::JsonValue(const double& value)
+        : m_value(value)
+        //, m_type(Type::Double)
+        //, m_objElement(nullptr)
+    {
+        // Implement constructor with double logic here
+    }
+
+    // Constructor with bool value
+    JsonValue::JsonValue(const bool& value)
+        : m_value(value)
+        //, m_type(Type::Bool)
+        //, m_objElement(nullptr)
+    {
+        // Implement constructor with bool logic here
+    }
+
+    // Constructor with std::vector<JsonValue> value
+    JsonValue::JsonValue(const JsonArray& value)
+        : m_value(std::make_shared<JsonArray>(value))
+        //, m_type(Type::Array)
+        //, m_objElement(nullptr)
+    {
+        // Implement constructor with std::vector<JsonValue> logic here
+    }
+    JsonValue::JsonValue(JsonArray&& value)
+        : m_value(std::make_shared<JsonArray>(std::move(value)))
+    {
+
+    }
+    JsonValue::JsonValue(const std::shared_ptr<JsonArray>& valuePtr)
+        : m_value(valuePtr)
+    {
+
+    }
+    JsonValue::JsonValue(std::shared_ptr<JsonArray>&& valuePtr) noexcept
+        : m_value(std::move(valuePtr))
+    {
+
+    }
+
+    // Constructor with std::map<std::string, JsonValue> value
+    JsonValue::JsonValue(const JsonObject& value)
+        : m_value(std::make_shared<JsonObject>(value))
+        //, m_type(Type::Object)
+        //, m_objElement(&std::get<JsonObject>(m_value))
+    {
+        // Implement constructor with std::map<std::string, JsonValue> logic here
+    }
+
+    // Move constructor with std::map<std::string, JsonValue> value
+    JsonValue::JsonValue(JsonObject&& value) noexcept
+        : m_value(std::make_shared<JsonObject>(std::move(value)))
+        //, m_type(Type::Object)
+        //, m_objElement(&std::get<JsonObject>(m_value))
+    {
+        // Implement move constructor with std::map<std::string, JsonValue> logic here
+    }
+    JsonValue::JsonValue(const std::shared_ptr<JsonObject>& valuePtr)
+        : m_value(valuePtr)
+    {
+
+    }
+    JsonValue::JsonValue(std::shared_ptr<JsonObject>&& valuePtr) noexcept
+        : m_value(std::move(valuePtr))
+    {
+
+    }
+
+
+
+
+
+    // Copy assignment operator
+    JsonValue& JsonValue::operator=(const JsonValue& other)
+    {
+        m_value = other.m_value;
+        //m_type = other.m_type;
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
+        //else
+        //    m_objElement = nullptr;
+        return *this;
+    }
+
+    // Move assignment operator
+    JsonValue& JsonValue::operator=(JsonValue&& other) noexcept
+    {
+        m_value = std::move(other.m_value);
+        //m_type = std::move(other.m_type);
+        //if (m_type == Type::Object)
+        //    m_objElement = &std::get<JsonObject>(m_value);
+        //else
+        //    m_objElement = nullptr;
+        return *this;
+    }
+
+    // Assignment operator with std::string value
+    JsonValue& JsonValue::operator=(const std::string& value)
+    {
+        m_value = value;
+        //m_type = Type::String;
+        //m_objElement = nullptr;
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(std::string&& value) noexcept
+    {
+        m_value = std::move(value);
+        return *this;
+    }
+
+    // Assignment operator with const char* value
+    JsonValue& JsonValue::operator=(const char* value)
+    {
+        m_value = std::string(value);
+        //m_type = Type::String;
+        //m_objElement = nullptr;
+        return *this;
+    }
+
+    // Assignment operator with int value
+    JsonValue& JsonValue::operator=(const int& value)
+    {
+        m_value = value;
+        //m_type = Type::Int;
+        //m_objElement = nullptr;
+        return *this;
+    }
+
+    // Assignment operator with double value
+    JsonValue& JsonValue::operator=(const double& value)
+    {
+        m_value = value;
+        //m_type = Type::Double;
+        //m_objElement = nullptr;
+        return *this;
+    }
+
+    // Assignment operator with bool value
+    JsonValue& JsonValue::operator=(const bool& value)
+    {
+        m_value = value;
+        //m_type = Type::Bool;
+        //m_objElement = nullptr;
+        return *this;
+    }
+
+    // Assignment operator with JsonArray value
+    JsonValue& JsonValue::operator=(const JsonArray& value)
+    {
+        std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(value);
+            return *this;
+        }
+        m_value = std::make_shared<JsonArray>(value);
+        return *this;
+    }
+
+    // Assignment operator with JsonObject value
+    JsonValue& JsonValue::operator=(const JsonObject& value)
+    {
+        std::shared_ptr<JsonObject>* ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(value);
+            return *this;
+        }
+        m_value = std::make_shared<JsonObject>(value);
+        return *this;
+    }
+
+    JsonValue& JsonValue::operator=(const std::shared_ptr<JsonArray>& value)
+    {
+        m_value = value;
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(const std::shared_ptr<JsonObject>& value)
+    {
+        m_value = value;
+        return *this;
+    }
+
+    // Move assignment operator with JsonObject value
+    JsonValue& JsonValue::operator=(JsonObject&& value) noexcept
+    {
+        std::shared_ptr<JsonObject>* ptr = std::get_if<std::shared_ptr<JsonObject>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(std::move(value));
+            return *this;
+        }
+        m_value = std::make_shared<JsonObject>(std::move(value));
+        //m_value = std::move(value);
+        //m_type = Type::Object;
+        //m_objElement = &std::get<JsonObject>(m_value);
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(JsonArray&& value) noexcept
+    {
+        std::shared_ptr<JsonArray>* ptr = std::get_if<std::shared_ptr<JsonArray>>(&m_value);
+        if (ptr)
+        {
+            ptr->get()->operator=(std::move(value));
+            return *this;
+        }
+        m_value = std::make_shared<JsonArray>(std::move(value));
+        //m_value = std::move(value);
+        //m_type = Type::Object;
+        //m_objElement = &std::get<JsonObject>(m_value);
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(std::shared_ptr<JsonArray>&& value) noexcept
+    {
+        m_value = std::move(value);
+        return *this;
+    }
+    JsonValue& JsonValue::operator=(std::shared_ptr<JsonObject>&& value) noexcept
+    {
+        m_value = std::move(value);
+        return *this;
+    }
+
+
+
+
+
+    // Equality comparison operator
+    bool JsonValue::operator==(const JsonValue& other) const
+    {
+        //if(m_type != other.m_type) return false;
+        return m_value == other.m_value;
+    }
+
+    // Inequality comparison operator
+    bool JsonValue::operator!=(const JsonValue& other) const
+    {
+        //if (m_type == other.m_type) return false;
+        return !(*this == other);
+    }
+
+
+
+        // Convert value to string representation
+
+    std::string JsonValue::toString() const
+    {
+        return serialize();
+    }
+    
+	*/
+    
+#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
+
+    // Overloading << operator for std::cout
+    std::ostream& operator<<(std::ostream& os, const JsonValue& json)
+    {
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeValue(json, buff);
+        os << buff;
+        return os;
+    }
+    std::ostream& operator<<(std::ostream& os, const JsonObject& json)
+    {
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeObject(json, buff);
+        os << buff;
+        return os;
+    }
+    std::ostream& operator<<(std::ostream& os, const JsonArray& json)
+    {
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeArray(json, buff);
+        os << buff;
+        return os;
+    }
+
+    // Overloading << operator for qDebug()
+    QDebug operator<<(QDebug debug, const JsonValue& json)
+    {
+        QDebugStateSaver saver(debug);
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeValue(json, buff);
+        debug << buff.c_str();
+        return debug;
+    }
+    QDebug operator<<(QDebug debug, const JsonObject& json)
+    {
+        QDebugStateSaver saver(debug);
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeObject(json, buff);
+        debug << buff.c_str();
+        return debug;
+    }
+    QDebug operator<<(QDebug debug, const JsonArray& json)
+    {
+        QDebugStateSaver saver(debug);
+        JsonSerializer serializer;
+        std::string buff;
+        serializer.serializeArray(json, buff);
+        debug << buff.c_str();
+        return debug;
+    }
+#endif
+}
+

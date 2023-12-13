@@ -192,6 +192,7 @@ namespace JsonDatabase
 			const std::string &removingChars);
 
 		static void removeSpecificChars(const std::string& jsonString, std::string& jsonStringOut);
+		static void removeSpecificChars(const char* jsonString, char* jsonStringOut, size_t size);
 		
 		static const char* findFirstNotOfNumberStr(const char* str);
 

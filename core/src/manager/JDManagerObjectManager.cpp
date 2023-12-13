@@ -476,13 +476,6 @@ namespace JsonDatabase
                 JDObjectManager::ManagedLoadMisc loaderMisc;
                 bool loaded = false;
 #if JD_ACTIVE_JSON == JD_JSON_QT
-
-                if (!jsons[i].isObject())
-                {
-                    JD_CONSOLE_FUNCTION("Json data is not an object: \""<< jsons[i] << "\"");
-                    success = false;
-                    continue;
-                }
                 const QJsonObject& json = jsons[i];
                 if (Utilities::JDSerializable::getJsonValue(json, loaderMisc.id, JDObjectInterface::s_tag_objID))
                 {
