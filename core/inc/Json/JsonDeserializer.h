@@ -3,7 +3,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "JsonValue.h"
 
 #include "manager/async/WorkProgress.h"
@@ -14,7 +14,7 @@ namespace JsonDatabase
 	{
 	public:
 
-		//JsonValue deserialize(const std::string& jsonString);
+		
 		JsonValue deserializeValue(const std::string& json);
 		JsonObject deserializeObject(const std::string& json);
 		JsonArray deserializeArray(const std::string& json);
@@ -34,7 +34,6 @@ namespace JsonDatabase
 
 		static std::string unescapeString(const std::string& str);
 	private:
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		struct Buffer
 		{
 			Buffer(const std::string & str) 
@@ -50,10 +49,6 @@ namespace JsonDatabase
 				, m_size(0)
 				, m_end(nullptr)
 			{ }
-
-
-			
-			
 
 			inline char peek() const
 			{
@@ -202,8 +197,7 @@ namespace JsonDatabase
 			size_t start;
 			size_t end;
 		};
-		static void findArrayObjectRange(Buffer& json, std::vector<ArrayObjectRange> &rangeList);
-#endif
+		static void findArrayObjectRange(Buffer& json, std::vector<ArrayObjectRange>& rangeList);
 	};
 
 }

@@ -373,7 +373,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
         bool JDManagerObjectManager::loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDManagerObjectManager::loadObjectFromJson_internal(const JsonObject& json, const JDObject& obj)
 #endif
         {
@@ -399,7 +399,7 @@ namespace JsonDatabase
             std::vector<JDObject>& newObjInstances,
             std::vector<JDObject>& removedObjs,
             std::vector<JDObjectPair>& changedPairs)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDManagerObjectManager::loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
            // bool hasOverrideChangeFromDatabaseSlots,
            // bool hasChangeFromDatabaseSlots,
@@ -481,7 +481,7 @@ namespace JsonDatabase
                 {
                     loaded = true;
                 }
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
               
                 if(!jsons[i].holds<JsonObject>())
 				{
@@ -495,8 +495,6 @@ namespace JsonDatabase
                 {
 #if JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     loaderMisc.id = json.at(JDObjectInterface::s_tag_objID).get<int>();
-#else JD_ACTIVE_JSON == JD_JSON_GLAZE
-                    loaderMisc.id = static_cast<int>(json.at(JDObjectInterface::s_tag_objID).get<double>());
 #endif
 
                     loaded = true;
@@ -508,7 +506,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_USE_QJSON
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID << "\" is missed\n"
                         << "Object: \"" << json << "\"\n");

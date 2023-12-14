@@ -45,7 +45,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
 #endif
 		{
@@ -55,7 +55,7 @@ namespace JsonDatabase
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
 			std::vector<QJsonObject>& jsonOut,
 			WorkProgress* progress)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
 			JsonArray& jsonOut,
 			WorkProgress* progress)
@@ -113,7 +113,7 @@ namespace JsonDatabase
 								objs[j]->saveInternal(jsonData);
 								jsonOut[j] = std::move(jsonData);
 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 								std::shared_ptr<JsonObject> jsonData = std::make_shared<JsonObject>();
 								objs[j]->saveInternal(*jsonData);
 								*jsonOut[j] = std::move(jsonData);
@@ -170,7 +170,7 @@ namespace JsonDatabase
 				{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 					QJsonObject data;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject data;
 #endif
 					success &= o->saveInternal(data);
@@ -218,7 +218,7 @@ namespace JsonDatabase
 			ManagedLoadContainers& containers, 
 			const ManagedLoadMode& loadMode,
 			const ManagedLoadMisc& misc)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoad(
 			const JsonObject& json,
 			JDObjectManager* manager,
@@ -239,7 +239,7 @@ namespace JsonDatabase
 			ManagedLoadContainers& containers,
 			const ManagedLoadMode& loadMode/*,
 			const ManagedLoadMisc& misc*/)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadExisting_internal(
 			const JsonObject& json,
 			JDObjectManager* manager,
@@ -304,7 +304,7 @@ namespace JsonDatabase
 			ManagedLoadContainers& containers/*,
 			const ManagedLoadMode& loadMode*/,
 			const ManagedLoadMisc& misc)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadNew_internal(
 			const JsonObject& json,
 			ManagedLoadContainers& containers/*,
@@ -325,7 +325,7 @@ namespace JsonDatabase
 			/*JDObjectID::IDType id;
 #ifndef JD_USE_QJSON
 			if (!json.getInt(id, JDObjectInterface::s_tag_objID))
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			if (!JDSerializable::getJsonValue(json, id, JDObjectInterface::s_tag_objID))
 #endif
 			{
@@ -333,7 +333,7 @@ namespace JsonDatabase
 				JD_CONSOLE_FUNCTION("Objet has incomplete data. Type: \""<< templateObj->className()<<"\" Key: \""
 					<< JDObjectInterface::s_tag_objID << "\" is missed\n"
 					<< "Object: \"" << json<< "\"\n");
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JD_CONSOLE_FUNCTION("Objet has incomplete data. Type: \"" << templateObj->className() << "\" Key: \""
 					<< JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
 #endif
@@ -351,7 +351,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::loadAndOverrideData(const QJsonObject& json)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::loadAndOverrideData(const JsonObject& json)
 #endif
 		{
@@ -361,7 +361,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::loadAndOverrideDataIfChanged(const QJsonObject& json, bool& hasChangesOut)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::loadAndOverrideDataIfChanged(const JsonObject& json, bool& hasChangesOut)
 #endif
 		{
@@ -371,7 +371,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const QJsonObject& json, const JDObjectIDptr& id)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id)
 #endif
 		{
@@ -393,7 +393,7 @@ namespace JsonDatabase
 		}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const QJsonObject& json, const JDObjectIDptr& id)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const JsonObject& json, const JDObjectIDptr& id)
 #endif
 		{
@@ -411,7 +411,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const QJsonObject& json, JDObject obj, bool& hasChangedOut)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut)
 #endif
 		{
@@ -430,7 +430,7 @@ namespace JsonDatabase
 		}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectManager::deserializeOverrideFromJson_internal(const QJsonObject& json, JDObject obj)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj)
 #endif
 		{

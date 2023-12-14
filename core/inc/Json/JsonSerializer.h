@@ -3,7 +3,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 #include "JsonValue.h"
 #include "manager/async/WorkProgress.h"
@@ -70,7 +70,6 @@ namespace JsonDatabase
 		static void escapeString(const std::string& str, std::string& serializedOut);
 
 
-		//int m_indent = 0;
 		bool m_useTabs = true;
 		int m_tabSize = 4;
 

@@ -29,7 +29,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
             static const JDObject& getObjectDefinition(const QJsonObject& json);
             static std::string getObjectTypeString(const QJsonObject& json);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             static const JDObject& getObjectDefinition(const JsonObject& json);
             static std::string getObjectTypeString(const JsonObject& json);
 #endif

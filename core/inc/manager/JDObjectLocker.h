@@ -13,7 +13,7 @@
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
 #include <QString>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 #include <mutex>
@@ -99,7 +99,7 @@ namespace JsonDatabase
 				bool load(const QJsonObject& obj) override;
 				bool save(QJsonObject& obj) const override;
 				static bool isValid(const QJsonObject& lock);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				bool load(const JsonObject& obj) override;
 				bool save(JsonObject& obj) const override;
 				static bool isValid(const JsonObject& lock);
@@ -133,7 +133,7 @@ namespace JsonDatabase
 				bool save(QJsonObject& obj) const override;
 
 				static bool isValid(const QJsonObject& lock);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				bool load(const JsonObject& obj) override;
 				bool save(JsonObject &obj) const override;
 

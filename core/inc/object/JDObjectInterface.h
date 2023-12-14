@@ -9,7 +9,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 #include <string>
@@ -52,7 +52,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
         //static std::vector<JDObject> reinstantiate(const std::vector<JDObject> &objList);
 #if JD_ACTIVE_JSON == JD_JSON_QT
         static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr& objID);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID);
 #endif
 
@@ -84,7 +84,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
         bool loadInternal(const QJsonObject &obj);
         bool saveInternal(QJsonObject &obj);
         bool getSaveData(QJsonObject &obj) const;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool equalData(const JsonObject& obj) const;
         bool loadInternal(const JsonObject& obj);
         bool saveInternal(JsonObject& obj);
@@ -108,7 +108,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
         virtual JDObjectInterface* shallowClone_internal() const = 0;
 #if JD_ACTIVE_JSON == JD_JSON_QT
         //virtual JDObjectInterface* clone_internal(const QJsonObject& obj, const JDObjectIDptr& uniqueID) const = 0;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         //virtual JDObjectInterface* clone_internal(const JsonValue& obj, const JDObjectIDptr& uniqueID) const = 0;
 #endif
 
@@ -133,7 +133,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
         static const QString s_tag_objID;
         static const QString s_tag_className;
         static const QString s_tag_data;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         static const std::string s_tag_objID;
         static const std::string s_tag_className;
         static const std::string s_tag_data;
@@ -187,7 +187,7 @@ std::shared_ptr<T> JDObjectInterface::shallowClone() const
     classNameVal* deepClone_internal() const override; \
     classNameVal* shallowClone_internal() const override; \
     //classNameVal* clone_internal(const QJsonObject &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const override; 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
     classNameVal* deepClone_internal() const override; \
     classNameVal* shallowClone_internal() const override; \
@@ -238,7 +238,7 @@ std::shared_ptr<T> JDObjectInterface::shallowClone() const
     //    obj->loadInternal(reader); \
     //    return obj; \
     //} 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #define JD_OBJECT_IMPL_CLONE(classNameVal) \
     classNameVal* classNameVal::deepClone_internal() const \
     { \

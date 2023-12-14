@@ -75,7 +75,7 @@ bool Person::operator!=(const Person& other)
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 bool Person::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool Person::load(const JsonObject& obj)
 #endif
 {
@@ -96,7 +96,7 @@ bool Person::load(const JsonObject& obj)
 }
 #if JD_ACTIVE_JSON == JD_JSON_QT
 bool Person::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool Person::save(JsonObject& obj) const
 #endif
 {

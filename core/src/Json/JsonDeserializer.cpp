@@ -2,16 +2,12 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
-#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-#include <thread>
-#include "utilities/AsyncContextDrivenDeleter.h"
-#include <windows.h>
+    #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
+        #include <thread>
+        #include "utilities/AsyncContextDrivenDeleter.h"
+        #include <windows.h>
+    #endif
 #endif
-
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
-
-#endif
-
 namespace JsonDatabase
 {
 
@@ -497,7 +493,6 @@ namespace JsonDatabase
 
        // const char*& current = json.current;
         json.skip();
-        bool eof = false;
         if (json.peek() != ']')
         {
             while (true)
@@ -1053,147 +1048,9 @@ namespace JsonDatabase
             }
         }
     }
-
-    
-
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
-    JsonValue JsonDeserializer::deserializeValue(const std::string& json)
-    {
-        JsonValue value;
-        //auto err = glz::read_json(value, json);
-        //if(err.ec != glz::error_code::none)
-		//{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-		//}
-		return value;
-    }
-    JsonObject JsonDeserializer::deserializeObject(const std::string& json)
-    {
-        JsonObject value;
-        //auto err = glz::read_json(value, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        return std::move(value);
-    }
-    JsonArray JsonDeserializer::deserializeArray(const std::string& json)
-    {
-        JsonArray value;
-        //auto err = glz::read_json(value, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        return std::move(value);
-    }
-    JsonValue JsonDeserializer::deserializeValue(const std::string& json, Internal::WorkProgress* progress)
-    {
-        JsonValue value;
-        //auto err = glz::read_json(value, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        //if (progress)
-        //    progress->setProgress(1);
-        return value;
-    }
-    JsonObject JsonDeserializer::deserializeObject(const std::string& json, Internal::WorkProgress* progress)
-    {
-        JsonObject value;
-        //auto err = glz::read_json(value, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        //if (progress)
-        //    progress->setProgress(1);
-        return std::move(value);
-    }
-    JsonArray JsonDeserializer::deserializeArray(const std::string& json, Internal::WorkProgress* progress)
-    {
-        JsonArray value;
-        //auto err = glz::read_json(value, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        //if(progress)
-        //    progress->setProgress(1);
-        return value;
-    }
-
-    void JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut)
-    {
-        //auto err = glz::read_json(valueOut, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-    }
-    void JsonDeserializer::deserializeObject(const std::string& json, JsonObject& valueOut)
-    {
-        //auto err = glz::read_json(valueOut, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-    }
-    void JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut)
-    {
-        //auto err = glz::read_json(valueOut, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-    }
-    void JsonDeserializer::deserializeValue(const std::string& json, JsonValue& valueOut, Internal::WorkProgress* progress)
-    {
-        //auto err = glz::read_json(valueOut, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        if (progress)
-            progress->setProgress(1);
-    }
-    void JsonDeserializer::deserializeObject(const std::string& json, JsonObject& valueOut, Internal::WorkProgress* progress)
-    {
-        //auto err = glz::read_json(valueOut, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        if (progress)
-            progress->setProgress(1);
-    }
-    void JsonDeserializer::deserializeArray(const std::string& json, JsonArray& valueOut, Internal::WorkProgress* progress)
-    {
-        //auto err = glz::read_json(valueOut, json);
-        //if (err.ec != glz::error_code::none)
-        //{
-        //    JD_CONSOLE_FUNCTION("Error while parsing json: " << (int)err.ec);
-        //}
-        if (progress)
-            progress->setProgress(1);
-    }
-
-    void JsonDeserializer::nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut)
-    {
-        JD_UNUSED(jsonString);
-        JD_UNUSED(jsonStringOut);
-    }
-    int JsonDeserializer::deserializeNumber(const std::string& jsonString, int& intValue, double& doubleValue)
-    {
-        JD_UNUSED(jsonString);
-        JD_UNUSED(intValue);
-        JD_UNUSED(doubleValue);
-        return 0;
-    }
 #endif
 
-#if JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 std::string JsonDeserializer::unescapeString(const std::string& str)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);

@@ -36,7 +36,6 @@ typedef std::chrono::system_clock::time_point TimePoint;
 */
 #define JD_JSON_QT 1
 #define JD_JSON_INTERNAL 2
-#define JD_JSON_GLAZE 3
 
 
 #define JD_ACTIVE_JSON JD_JSON_INTERNAL
@@ -54,7 +53,7 @@ typedef std::chrono::system_clock::time_point TimePoint;
 
 #define JD_UNUSED(x) (void)x;
 
-/*
+#if defined(JSONDATABASE_LIB)
 #pragma warning (error : 4715) // not all control paths return a value shuld be an error instead of a warning
 #pragma warning (error : 4700) // uninitialized local variable used shuld be an error instead of a warning
 #pragma warning (error : 4244) // Implicit conversions between data types 
@@ -66,5 +65,4 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #pragma warning (error : 4189) // Unused return value
 #pragma warning (error : 4996) // unsafe function calls
 #pragma warning (error : 4018) // signed/unsigned mismatch
-
-*/
+#endif

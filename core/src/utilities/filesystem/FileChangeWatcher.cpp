@@ -158,7 +158,7 @@ namespace JsonDatabase
                         DWORD error = GetLastError();
                         JD_CONSOLE_FUNCTION("Error FindNextChangeNotification. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
                     }
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JD_UNUSED(res);
 #endif
                    

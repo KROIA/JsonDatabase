@@ -6,7 +6,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 
@@ -82,7 +82,7 @@ namespace JsonDatabase
             Error readJsonFile(std::vector<QJsonObject>& jsonsOut) const;
             Error readJsonFile(QJsonObject& objOut) const;
 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             Error writeJsonFile(const JsonArray& jsons) const;
             Error writeJsonFile(const JsonObject& json) const;
 

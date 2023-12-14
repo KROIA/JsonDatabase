@@ -6,7 +6,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 
@@ -33,7 +33,7 @@ namespace JsonDatabase
 			static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut);
 			static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut,
 				WorkProgress* progress);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
 			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
 				WorkProgress* progress);
@@ -111,7 +111,7 @@ namespace JsonDatabase
 
 			static JDObjectManager* instantiateAndLoadObject(const QJsonObject& json, const JDObjectIDptr& id);
 			static JDObjectManager* cloneAndLoadObject(const JDObject& original, const QJsonObject& json, const JDObjectIDptr& id);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			static ManagedLoadStatus managedLoad(
 				const JsonObject& json,
 				JDObjectManager* manager, 
@@ -143,7 +143,7 @@ namespace JsonDatabase
 
 			static bool deserializeOverrideFromJsonIfChanged_internal(const QJsonObject& json, JDObject obj, bool& hasChangedOut);
 			static bool deserializeOverrideFromJson_internal(const QJsonObject& json, JDObject obj);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			static ManagedLoadStatus managedLoadExisting_internal(
 				const JsonObject& json,
 				JDObjectManager* manager,

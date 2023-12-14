@@ -10,7 +10,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 #include <mutex>

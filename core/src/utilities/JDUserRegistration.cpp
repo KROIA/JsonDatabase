@@ -166,7 +166,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDUserRegistration::LockEntryObjectImpl::load(const QJsonObject& obj) 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDUserRegistration::LockEntryObjectImpl::load(const JsonObject& obj) 
 #endif
 		{
@@ -178,7 +178,7 @@ namespace JsonDatabase
 				QJsonValue userValue = obj[JsonKeys::user.c_str()];
 				if (!userValue.isObject())
 					return false;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			if (obj.contains(LockEntryObjectImpl::JsonKeys::user))
 			{
 				const auto& userValue = obj.at(JsonKeys::user);
@@ -190,7 +190,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject userObj = userValue.toObject();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				const JsonObject &userObj = userValue.get<JsonObject>();
 #endif
 
@@ -205,7 +205,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDUserRegistration::LockEntryObjectImpl::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDUserRegistration::LockEntryObjectImpl::save(JsonObject& obj) const
 #endif
 		{
@@ -213,13 +213,13 @@ namespace JsonDatabase
 			bool success = LockEntryObject::save(obj);
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonObject userData;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonObject userData;
 #endif
 			m_user.save(userData);
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			obj[JsonKeys::user.c_str()] = userData;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			obj[JsonKeys::user] = userData;
 #endif
 			return success;

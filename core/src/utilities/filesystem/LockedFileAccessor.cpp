@@ -5,7 +5,7 @@
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
 #include <QJsonArray>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #include "Json/JsonDeserializer.h"
 #include "Json/JsonSerializer.h"
@@ -143,7 +143,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
         LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const std::vector<QJsonObject>& jsons) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const JsonArray& jsons) const
 #endif
         {
@@ -153,7 +153,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				JD_CONSOLE("LockedFileAccessor::writeJsonFile(const vector<QJsonObject>&) File is not locked\n");
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JD_CONSOLE("LockedFileAccessor::writeJsonFile(const JsonArray&) File is not locked\n");
 #endif
 				return Error::fileLock_notAquired;
@@ -187,7 +187,7 @@ namespace JsonDatabase
             data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
             if (m_progress)
                 m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonSerializer serializer;
             serializer.enableTabs(false);
             serializer.enableNewLinesInObjects(false);
@@ -225,7 +225,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
         LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const QJsonObject& json) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const JsonObject& json) const
 #endif
         {
@@ -235,7 +235,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 JD_CONSOLE("LockedFileAccessor::writeJsonFile(const QJsonObject&) File is not locked\n");
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JD_CONSOLE("LockedFileAccessor::writeJsonFile(const JsonValue&) File is not locked\n");
 #endif
                 return Error::fileLock_notAquired;
@@ -260,7 +260,7 @@ namespace JsonDatabase
             data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
             if (m_progress)
                 m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonSerializer serializer;
             serializer.enableTabs(false);
             serializer.enableNewLinesInObjects(false);
@@ -299,7 +299,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
         LockedFileAccessor::Error LockedFileAccessor::readJsonFile(std::vector<QJsonObject>& jsonsOut) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::readJsonFile(JsonArray& jsonsOut) const
 #endif
         {
@@ -309,7 +309,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 JD_CONSOLE("LockedFileAccessor::readJsonFile(std::vector<QJsonObject>&) File is not locked\n");
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JD_CONSOLE("LockedFileAccessor::readJsonFile(JsonArray&) File is not locked\n");
 #endif
                 return Error::fileLock_notAquired;
@@ -333,7 +333,7 @@ namespace JsonDatabase
             // Parse the JSON data
 #if JD_ACTIVE_JSON == JD_JSON_QT
             QJsonDocument jsonDocument;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonDeserializer deserializer;
             JsonArray deserialized{};
 #endif
@@ -352,7 +352,7 @@ namespace JsonDatabase
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string converted = uncompressed.toUtf8().toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeArray(converted, m_progress);
@@ -367,7 +367,7 @@ namespace JsonDatabase
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     jsonDocument = QJsonDocument::fromJson(fileData);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string converted = fileData.toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeArray(converted, m_progress);
@@ -385,7 +385,7 @@ namespace JsonDatabase
                 jsonDocument = QJsonDocument::fromJson(fileData);
                 if (m_progress)
                     m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
                 std::string str = std::move(fileData.toStdString());
                 bool success = false;
@@ -434,7 +434,7 @@ namespace JsonDatabase
                     << getFullFilePath() << " is not an array\n");
                 return Error::json_isNotAnArray;
             }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 #endif
             
@@ -449,7 +449,7 @@ namespace JsonDatabase
                     jsonsOut.emplace_back(jsonValue.toObject());
                 }
             }
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JD_GENERAL_PROFILING_BLOCK("Move JsonArray", JD_COLOR_STAGE_6);
             {
                 jsonsOut = std::move(deserialized);
@@ -460,7 +460,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
         LockedFileAccessor::Error LockedFileAccessor::readJsonFile(QJsonObject& objOut) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::readJsonFile(JsonObject& objOut) const
 #endif
         {
@@ -468,7 +468,7 @@ namespace JsonDatabase
             {
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 JD_CONSOLE("LockedFileAccessor::readJsonFile(QJsonObject&) File is not locked\n");
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JD_CONSOLE("LockedFileAccessor::readJsonFile(JsonValue&) File is not locked\n");
 #endif
                 return Error::fileLock_notAquired;
@@ -493,7 +493,7 @@ namespace JsonDatabase
             jsonError.error = QJsonParseError::NoError;
 
             QJsonDocument document;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonDeserializer deserializer;
             JsonObject deserialized{};
 #endif
@@ -512,7 +512,7 @@ namespace JsonDatabase
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     document = QJsonDocument::fromJson(uncompressed.toUtf8());
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string bufferStr = uncompressed.toUtf8().toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeObject(bufferStr, m_progress);
@@ -527,7 +527,7 @@ namespace JsonDatabase
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
 #if JD_ACTIVE_JSON == JD_JSON_QT
                     document = QJsonDocument::fromJson(fileData);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string bufferStr = fileData.toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeObject(bufferStr, m_progress);
@@ -545,7 +545,7 @@ namespace JsonDatabase
                 document = QJsonDocument::fromJson(fileData, &jsonError);
                 if (m_progress)
                     m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 std::string bufferStr = fileData.toStdString();
                 if (m_progress)
                     deserialized = deserializer.deserializeObject(bufferStr, m_progress);
@@ -562,7 +562,7 @@ namespace JsonDatabase
                     << "QJsonObject&) Can't read Jsonfile: " << jsonError.errorString().toStdString().c_str() << "\n");
                 return errorOut;
             }
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 #endif
 #if JD_ACTIVE_JSON == JD_JSON_QT
@@ -571,7 +571,7 @@ namespace JsonDatabase
                 objOut = document.object();
                 return Error::none;
             }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             
             objOut = std::move(deserialized);
             return Error::none;

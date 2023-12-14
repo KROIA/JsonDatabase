@@ -8,7 +8,7 @@
 #include <vector>
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #endif
 
@@ -34,7 +34,7 @@ namespace JsonDatabase
                 JDManager& manager);*/
          //   static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj, bool& hasChangedOut);
          //   static bool deserializeOverrideFromJson(const QJsonObject& json, JDObject obj);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
            // static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
            // static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
            //     WorkProgress* progress, double deltaProgress);

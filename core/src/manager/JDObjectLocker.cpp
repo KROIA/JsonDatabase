@@ -9,7 +9,7 @@
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
 #include <QJsonArray>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonSerializer.h"
 #include "Json/JsonDeserializer.h"
 #endif
@@ -710,7 +710,7 @@ namespace JsonDatabase
 		}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectLocker::LockEntryObjectImpl::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::load(const JsonObject& obj)
 #endif
 		{
@@ -722,12 +722,9 @@ namespace JsonDatabase
 			data.user.load(obj[JsonKeys::user.data()].toObject());
 			data.lockDate = Utilities::stringToQDate(obj[JsonKeys::lockDate.data()].toString().toStdString());
 			data.lockTime = Utilities::stringToQTime(obj[JsonKeys::lockTime.data()].toString().toStdString());
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			data.objectID = obj.at(JsonKeys::objectID).get<int>();
-			data.user.load(obj.at(JsonKeys::user).get<JsonObject>());
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
-			data.objectID = static_cast<int>(obj.at(JsonKeys::objectID).get<double>());
 			data.user.load(obj.at(JsonKeys::user).get<JsonObject>());
 #endif
 			data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).get<std::string>());
@@ -737,7 +734,7 @@ namespace JsonDatabase
 		}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectLocker::LockEntryObjectImpl::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::save(JsonObject& obj) const
 #endif
 		{
@@ -750,7 +747,7 @@ namespace JsonDatabase
 			obj[JsonKeys::user.data()] = userObj;
 			obj[JsonKeys::lockDate.data()] = Utilities::qDateToString(data.lockDate).c_str();
 			obj[JsonKeys::lockTime.data()] = Utilities::qTimeToString(data.lockTime).c_str();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 			//obj.reserve(5);
 			obj[JsonKeys::objectID] = data.objectID;
@@ -765,7 +762,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool JDObjectLocker::LockEntryObjectImpl::isValid(const QJsonObject& lock)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::isValid(const JsonObject& lock)
 #endif
 		{
@@ -781,7 +778,7 @@ namespace JsonDatabase
 		{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonObject obj;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonObject obj;
 #endif
 			save(obj);
@@ -791,7 +788,7 @@ namespace JsonDatabase
 			// Convert the JSON document to a string
 			QString jsonString = jsonDoc.toJson(QJsonDocument::Indented);
 			return jsonString.toStdString();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonSerializer serializer;
 			return serializer.serializeObject(obj);
 #endif
@@ -852,7 +849,7 @@ namespace JsonDatabase
 					locks[locks.size()-1].load(lock);
 				}
 			}
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonDeserializer deserializer;
 			JsonValue deserialized = deserializer.deserializeValue(jsonData);
 			if (!deserialized.isNull()) {
@@ -900,7 +897,7 @@ namespace JsonDatabase
 			}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonArray array;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray array;
 			array.reserve(locks.size());
 #endif
@@ -909,7 +906,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject sav;
 				lock.save(sav);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JsonObject sav;
 				lock.save(sav);
 #endif
@@ -921,7 +918,7 @@ namespace JsonDatabase
 				}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				array.append(sav);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				array.emplace_back(sav);
 #endif
 			}
@@ -930,7 +927,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			QJsonDocument jsonDoc(array);
 			transmittStr = jsonDoc.toJson(QJsonDocument::Indented);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonSerializer serializer;
 			transmittStr = QByteArray::fromStdString(serializer.serializeArray(array));
 #endif

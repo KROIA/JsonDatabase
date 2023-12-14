@@ -37,7 +37,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			std::vector<QJsonObject> backup;
 			std::vector<QJsonObject> selfOwnedObjects;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray backup;
 			JsonArray selfOwnedObjects;
 #endif
@@ -54,7 +54,7 @@ namespace JsonDatabase
 					{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 						QJsonObject &obj = backup[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL || JD_ACTIVE_JSON == JD_JSON_GLAZE
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 						JsonObject& obj = backup[i].get<JsonObject>();
 #endif
 						std::string key = LockEntryObject::getKey(obj);
@@ -83,7 +83,7 @@ namespace JsonDatabase
 				{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 					QJsonObject& obj = selfOwnedObjects[i];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& obj = selfOwnedObjects[i].get<JsonObject>();
 #endif
 					std::string key = LockEntryObject::getKey(obj);
@@ -107,7 +107,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			std::vector<QJsonObject> backup;
 			std::vector<QJsonObject> selfOwnedObjects;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray backup;
 			JsonArray selfOwnedObjects;
 #endif
@@ -126,7 +126,7 @@ namespace JsonDatabase
 					{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 						QJsonObject& obj = backup[i];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 						JsonObject& obj = backup[i].get<JsonObject>();
 #endif
 						std::string key = LockEntryObject::getKey(obj);
@@ -153,7 +153,7 @@ namespace JsonDatabase
 				{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 					QJsonObject& obj = selfOwnedObjects[i];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& obj = selfOwnedObjects[i].get<JsonObject>();
 #endif
 					std::string key = LockEntryObject::getKey(obj);
@@ -238,7 +238,7 @@ namespace JsonDatabase
 		}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		std::string AbstractRegistry::LockEntryObject::getKey(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		std::string AbstractRegistry::LockEntryObject::getKey(const JsonObject& obj)
 #endif
 		{
@@ -247,7 +247,7 @@ namespace JsonDatabase
 			{
 				return obj["key"].toString().toStdString();
 			}
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			if(obj.contains("key"))
 			{
 				return obj.at("key").get<std::string>();
@@ -258,7 +258,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool AbstractRegistry::LockEntryObject::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::LockEntryObject::load(const JsonObject& obj)
 #endif
 		{
@@ -270,13 +270,13 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool AbstractRegistry::LockEntryObject::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::LockEntryObject::save(JsonObject& obj) const
 #endif
 		{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			obj["key"] = QString::fromStdString(m_key);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			
 			obj["key"] = m_key;
 #endif
@@ -369,7 +369,7 @@ namespace JsonDatabase
 				return 0;
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			std::vector<QJsonObject> jsons;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
 #endif
 			readObjects_internal(jsons);
@@ -378,7 +378,7 @@ namespace JsonDatabase
 			{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject jsonObj;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				std::shared_ptr<JsonObject> jsonObj = std::make_shared<JsonObject>();
 #endif
 				if (!createSelfOwnedLock(obj->getKey()))
@@ -388,7 +388,7 @@ namespace JsonDatabase
 				}
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				if (obj->save(jsonObj))
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				if (obj->save(*jsonObj))
 #endif
 				{
@@ -422,7 +422,7 @@ namespace JsonDatabase
 				return 0;
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			std::vector<QJsonObject> jsons;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
 #endif
 
@@ -438,7 +438,7 @@ namespace JsonDatabase
 				{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 					QJsonObject& subObj = jsons[i];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& subObj = jsons[i].get<JsonObject>();
 #endif
 					std::string loadedKey = LockEntryObject::getKey(subObj);
@@ -462,7 +462,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			std::vector<QJsonObject> jsons;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
 #endif
 			readObjects_internal(jsons);
@@ -470,7 +470,7 @@ namespace JsonDatabase
 			{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject& subObj = jsons[i];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JsonObject& subObj = jsons[i].get<JsonObject>();
 #endif
 				std::string loadedKey = LockEntryObject::getKey(subObj);
@@ -484,7 +484,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		int AbstractRegistry::saveObjects_internal(const std::vector<QJsonObject>& jsons) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		int AbstractRegistry::saveObjects_internal(const JsonArray& jsons) const
 #endif
 		{
@@ -501,7 +501,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool AbstractRegistry::readObjects_internal(std::vector<QJsonObject>& jsons) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::readObjects_internal(JsonArray& jsons) const
 #endif
 		{
@@ -517,7 +517,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 		bool AbstractRegistry::readObjects_internal(const std::vector<QJsonObject>& jsons, std::vector<JDSerializable*>& objects) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::readObjects_internal(const JsonArray& jsons, std::vector<JDSerializable*>& objects) const
 #endif
 		{
@@ -528,7 +528,7 @@ namespace JsonDatabase
 			{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				const QJsonObject& subObj = jsons[i];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				const JsonObject& subObj = jsons[i].get<JsonObject>();
 #endif
 				bool s = objects[i]->load(subObj);
@@ -582,7 +582,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
 			std::vector<QJsonObject> jsons;
 			std::vector<QJsonObject> jsonsOut;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
 			JsonArray jsonsOut;
 #endif
@@ -600,7 +600,7 @@ namespace JsonDatabase
 				{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 					QJsonObject& subObj = jsonsOut[i];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& subObj = jsonsOut[i].get<JsonObject>();
 #endif
 					std::string loadedKey = LockEntryObject::getKey(subObj);
@@ -628,7 +628,7 @@ namespace JsonDatabase
 			std::vector<QJsonObject> jsons;
 			std::vector<QJsonObject> jsonsOut;
 			std::unordered_map<std::string, QJsonObject> objectsFromFile;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
 			JsonArray jsonsOut;
 			std::unordered_map<std::string, JsonObject> objectsFromFile;
@@ -641,7 +641,7 @@ namespace JsonDatabase
 			{
 #if JD_ACTIVE_JSON == JD_JSON_QT
 				QJsonObject& subObj = obj;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JsonObject& subObj = obj.get<JsonObject>();
 #endif
 				std::string key = LockEntryObject::getKey(subObj);

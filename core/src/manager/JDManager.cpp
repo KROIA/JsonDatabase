@@ -174,7 +174,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     
 #if JD_ACTIVE_JSON == JD_JSON_QT
     std::vector<QJsonObject> jsons; 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
 #endif
 
@@ -208,7 +208,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     }
 #if JD_ACTIVE_JSON == JD_JSON_QT
     const QJsonObject& objData = jsons[index];
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     const JsonObject &objData = jsons[index].get<JsonObject>();
 #endif
     if (progress) progress->setComment("Deserializing object");
@@ -261,7 +261,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     
 #if JD_ACTIVE_JSON == JD_JSON_QT
     std::vector<QJsonObject> *jsons = new std::vector<QJsonObject>();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray *jsons = new JsonArray();
 #endif
     AsyncContextDrivenDeleter asyncDeleter(jsons);
@@ -417,7 +417,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     std::vector<QJsonObject> jsons;
     QJsonObject data;
     success &= obj->saveInternal(data);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
     std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
     success &= obj->saveInternal(*data);

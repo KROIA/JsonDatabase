@@ -2,16 +2,13 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
-#include <iomanip> // For std::setprecision
-#include <limits> // For std::numeric_limits
-#include <omp.h>
+    #include <iomanip> // For std::setprecision
+    #include <limits> // For std::numeric_limits
+    #include <omp.h>
 
-#ifdef JD_ENABLE_MULTITHREADING
-#include <thread>
-#endif
-
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
-
+    #ifdef JD_ENABLE_MULTITHREADING
+        #include <thread>
+    #endif
 #endif
 
 namespace JsonDatabase
@@ -490,135 +487,5 @@ void JsonSerializer::escapeString(const std::string& str, std::string& serialize
         }
     }
 }
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE
-
-
-    void JsonSerializer::enableTabs(bool enable)
-    {
-        JD_UNUSED(enable);
-    }
-    void JsonSerializer::setTabSize(int size)
-    {
-        JD_UNUSED(size);
-    }
-    void JsonSerializer::enableNewLinesInObjects(bool enable)
-    {
-        JD_UNUSED(enable);
-    }
-    void JsonSerializer::enableNewLineAfterObject(bool enable)
-    {
-        JD_UNUSED(enable);
-    }
-    void JsonSerializer::enableSpaces(bool enable)
-    {
-        JD_UNUSED(enable);
-    }
-    void JsonSerializer::setIndentChar(char indentChar)
-    {
-        JD_UNUSED(indentChar);
-    }
-
-    bool JsonSerializer::tabsEnabled() const
-    {
-        return false;
-    }
-    int  JsonSerializer::tabSize() const
-    {
-        return false;
-    }
-    bool JsonSerializer::newLinesInObjectsEnabled() const
-    {
-        return false;
-    }
-    bool JsonSerializer::newLineAfterObjectEnabled() const
-    {
-        return false;
-    }
-    bool JsonSerializer::spacesEnabled() const
-    {
-        return false;
-    }
-    char JsonSerializer::indentChar() const
-    {
-        return ' ';
-    }
-
-
-
-
-    std::string JsonSerializer::serializeValue(const JsonValue& value)
-    {
-        std::string buffer;
-        glz::write < glz::opts{ .prettify = true } > (value, buffer);
-        return std::move(buffer);
-    }
-    std::string JsonSerializer::serializeObject(const JsonObject& object)
-    {
-        std::string buffer;
-        glz::write < glz::opts{ .prettify = true } > (object, buffer);
-        return std::move(buffer);
-    }
-    std::string JsonSerializer::serializeArray(const JsonArray& array)
-    {
-        std::string buffer;
-        glz::write < glz::opts{ .prettify = true } > (array, buffer);
-        return std::move(buffer);
-    }
-    std::string JsonSerializer::serializeArray(const JsonArray& array, Internal::WorkProgress* progress)
-    {
-        std::string buffer;
-        glz::write < glz::opts{ .prettify = true } > (array, buffer);
-        if (progress)
-            progress->setProgress(1.0);
-        return std::move(buffer);
-    }
-
-    void JsonSerializer::serializeValue(const JsonValue& value, std::string& serializedOut)
-    {
-        glz::write < glz::opts{ .prettify = true } > (value, serializedOut);
-    }
-    void JsonSerializer::serializeObject(const JsonObject& object, std::string& serializedOut)
-    {
-        glz::write < glz::opts{ .prettify = true } > (object, serializedOut);
-    }
-    void JsonSerializer::serializeArray(const JsonArray& array, std::string& serializedOut)
-    {
-        glz::write < glz::opts{ .prettify = true } > (array, serializedOut);
-    }
-
-
-
-    std::string JsonSerializer::serializeInt(int value)
-    {
-        std::string buffer;
-        glz::write < glz::opts{ .prettify = true } > (value, buffer);
-        return std::move(buffer);
-    }
-    std::string JsonSerializer::serializeDouble(double value)
-    {
-        std::string buffer;
-        glz::write < glz::opts{ .prettify = true } > (value, buffer);
-        return std::move(buffer);
-    }
-    std::string JsonSerializer::serializeBool(bool value)
-    {
-        std::string buffer;
-        glz::write < glz::opts{ .prettify = true } > (value, buffer);
-        return std::move(buffer);
-    }
-
-    void JsonSerializer::serializeInt(int value, std::string& serializedOut)
-    {
-        glz::write < glz::opts{ .prettify = true } > (value, serializedOut);
-    }
-    void JsonSerializer::serializeDouble(double value, std::string& serializedOut)
-    {
-        glz::write < glz::opts{ .prettify = true } > (value, serializedOut);
-    }
-    void JsonSerializer::serializeBool(bool value, std::string& serializedOut)
-    {
-        glz::write < glz::opts{ .prettify = true } > (value, serializedOut);
-    }
-
 #endif
 }

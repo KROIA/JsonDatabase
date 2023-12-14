@@ -17,7 +17,7 @@ B::~B()
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 bool B::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool B::load(const JsonDatabase::JsonObject& obj)
 #endif
 {
@@ -30,7 +30,7 @@ bool B::load(const JsonDatabase::JsonObject& obj)
 }
 #if JD_ACTIVE_JSON == JD_JSON_QT
 bool B::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool B::save(JsonDatabase::JsonObject& obj) const
 #endif
 {

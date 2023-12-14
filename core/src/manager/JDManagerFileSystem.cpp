@@ -8,7 +8,7 @@
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
 #include <QJsonArray>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
 #include "Json/JsonDeserializer.h"
 #include "Json/JsonSerializer.h"
@@ -172,7 +172,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
                 std::vector<QJsonObject> jsonData;
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JsonArray jsonData{};
 #endif
                 fileError = fileAccessor.writeJsonFile(jsonData);

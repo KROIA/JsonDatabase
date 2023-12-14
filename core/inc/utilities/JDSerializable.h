@@ -32,7 +32,7 @@ namespace JsonDatabase
 			static bool getJsonValue(const QJsonObject& obj, double& value, const QString& key);
 			static bool getJsonValue(const QJsonObject& obj, float& value, const QString& key);
 			static bool getJsonValue(const QJsonObject& obj, bool& value, const QString& key);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			virtual bool load(const JsonObject& obj) = 0;
 			virtual bool save(JsonObject& obj) const = 0;
 

@@ -46,7 +46,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
         const JDObject& JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         const JDObject& JDObjectRegistry::getObjectDefinition(const JsonObject& json)
 #endif
         {
@@ -55,7 +55,7 @@ namespace JsonDatabase
 #if JD_ACTIVE_JSON == JD_JSON_QT
             if (Utilities::JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
             {
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             bool match = json.contains(JDObjectInterface::s_tag_className);
 			if (match)
             {
@@ -70,7 +70,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
         std::string JDObjectRegistry::getObjectTypeString(const QJsonObject& json)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         std::string JDObjectRegistry::getObjectTypeString(const JsonObject& json)
 #endif
         {

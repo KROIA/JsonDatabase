@@ -64,7 +64,7 @@ namespace JsonDatabase
 				m_objectsToDelete.clear();
 				m_deleterThread->detach();
 				// thread memory is not freed until the program ends
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERN
 				deleteObjects_internal(m_objectsToDelete);
 #endif
 			}

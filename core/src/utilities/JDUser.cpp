@@ -3,7 +3,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonSerializer.h"
 #endif
 namespace JsonDatabase
@@ -141,7 +141,7 @@ namespace JsonDatabase
             QJsonObject obj;
 			save(obj);
 			return QJsonDocument(obj).toJson().toStdString();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonObject obj;
 			save(obj);
             JsonSerializer serializer;
@@ -191,7 +191,7 @@ namespace JsonDatabase
             obj[JsonKeys::time.data()] = qTimeToString(m_loginTime).c_str();
             return true; 
         }
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDUser::load(const JsonObject& obj) 
         {
             bool success = true;

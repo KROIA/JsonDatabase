@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 
 #ifdef NDEBUG
     watcher = new Internal::FileChangeWatcher("database\\Persons.json");
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     watcher = new Internal::FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
 #endif
     watcher->setup();
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
     delete manager2;
     delete manager1;
 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JDManager manager("database", "Persons", "sessionID", "USER");
 
     manager.addObject(globalTable);

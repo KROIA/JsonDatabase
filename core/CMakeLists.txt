@@ -59,7 +59,6 @@ endif()
 
 # External dependencies from the dependencies.cmake
 use_easy_profiler(EASY_PROFILER_DEPS)
-use_glazeJson(LIBRARY_DEPENDENCIES)
 
 
 

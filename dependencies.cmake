@@ -39,23 +39,6 @@ function(use_easy_profiler libsContainer)
 	set(${libsContainer} ${${libsContainer}} "easy_profiler" PARENT_SCOPE)
 endfunction()
 
-
-function(use_glazeJson libsContainer)
-
-	set(REPO https://github.com/stephenberry/glaze.git)
-	FetchContent_Declare(
-		glaze
-		GIT_REPOSITORY	${REPO}
-		GIT_TAG			v1.9.2
-		GIT_SHALLOW TRUE
-	)
-	message("Download dependency: ${REPO}")
-
-	FetchContent_MakeAvailable(glaze)
-	#
-	set(${libsContainer} ${${libsContainer}} "glaze::glaze" PARENT_SCOPE)
-endfunction()
-
   # Boost
   #set(BOOST_INCLUDE_LIBRARIES thread filesystem system program_options)
   #set(BOOST_ENABLE_CMAKE ON)

@@ -11,7 +11,7 @@
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include <json/JsonValue.h>
 #endif
 
@@ -41,14 +41,14 @@ namespace JsonDatabase
             template<typename T>
 #if JD_ACTIVE_JSON == JD_JSON_QT
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data);
 #endif
 
      /*       template<typename T>
 #if JD_ACTIVE_JSON == JD_JSON_QT
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr &id);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id);
 #endif*/
             
@@ -133,7 +133,7 @@ namespace JsonDatabase
                 std::vector<JDObject>& newObjInstances,
                 std::vector<JDObject>& removedObjs,
                 std::vector<JDObjectPair>& changedPairs);
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             bool loadObjectFromJson_internal(const JsonObject& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
                 std::vector<JDObject>& overridingObjs,
@@ -146,7 +146,7 @@ namespace JsonDatabase
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
 
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 #endif
             void update();
@@ -199,7 +199,7 @@ namespace JsonDatabase
         template<typename T>
 #if JD_ACTIVE_JSON == JD_JSON_QT
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data)
 #endif
         {
@@ -215,7 +215,7 @@ namespace JsonDatabase
         /*template<typename T>
 #if JD_ACTIVE_JSON == JD_JSON_QT
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr& id)
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id)
 #endif
         {
