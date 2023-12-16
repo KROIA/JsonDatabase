@@ -122,7 +122,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        int id;
+        
         const JsonObject* obj = jsons[i].get_if<JsonObject>();
         if (!obj)
             continue;
@@ -132,6 +132,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
         const auto& value = it->second;
         
         const int *idPtr = value.get_if<int>();
+        int id;
         if (!idPtr)
         {
             const double* idPtrD = value.get_if<double>();

@@ -72,8 +72,10 @@ namespace JsonDatabase
             DWORD_PTR dw = SetThreadAffinityMask(m_thread->native_handle(), DWORD_PTR(1));
             if (dw == 0)
             {
+#ifndef NDEBUG
                 DWORD dwErr = GetLastError();
                 JD_CONSOLE_FUNCTION("SetThreadAffinityMask failed, GLE=" << dwErr << '\n');
+#endif
             }
         }
         void JDManagerAsyncWorker::stop()

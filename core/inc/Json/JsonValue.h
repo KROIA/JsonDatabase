@@ -3,8 +3,7 @@
 #include <type_traits>
 
 #if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonObject>
-
+#include "QJsonValueInterface.h"
 
 #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include <variant>
@@ -15,8 +14,6 @@
 
 namespace JsonDatabase
 {
-
-
 	class JsonValue;
 	
 	template<class T>
@@ -36,7 +33,7 @@ namespace JsonDatabase
 		public:
 
 		using JsonVariantType = std::variant<std::monostate, std::string, int, double, bool, std::shared_ptr<JsonArray>, std::shared_ptr<JsonObject>>;
-			enum class Type 
+			enum class Type
 			{
 				Null,
 				String,
@@ -57,7 +54,7 @@ namespace JsonDatabase
 		JsonValue(const double& value);
 		JsonValue(const bool& value);
 		JsonValue(const JsonArray& value);
-		JsonValue(JsonArray&& value);
+		JsonValue(JsonArray&& value) noexcept;
 		JsonValue(const std::shared_ptr<JsonArray> &valuePtr);
 		JsonValue(std::shared_ptr<JsonArray> &&valuePtr) noexcept;
 		JsonValue(const JsonObject& value);
@@ -198,10 +195,10 @@ namespace JsonDatabase
 		std::string toString() const;
 		std::string serialize() const;
 
+		// Overloading << operator for std::cout
 		friend std::ostream& operator<<(std::ostream& os, const JsonValue& json);
 		friend QDebug operator<<(QDebug debug, const JsonValue& json);
 
-        // Overloading << operator for std::cout
         
 	private:
 		JsonVariantType m_value;

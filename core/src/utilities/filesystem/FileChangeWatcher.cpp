@@ -152,6 +152,9 @@ namespace JsonDatabase
                     JD_GENERAL_PROFILING_BLOCK("readFileChange", JD_COLOR_STAGE_9);
 
                     bool res = FindNextChangeNotification(m_eventHandle);
+#ifndef JD_DEBUG
+                    JD_UNUSED(res);
+#endif
 #ifdef JD_DEBUG
                     if (!res)
                     {

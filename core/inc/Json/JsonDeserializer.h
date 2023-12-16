@@ -1,9 +1,9 @@
 #pragma once
 #include "JD_base.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
+//#if JD_ACTIVE_JSON == JD_JSON_QT
 
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "JsonValue.h"
 
 #include "manager/async/WorkProgress.h"
@@ -34,6 +34,7 @@ namespace JsonDatabase
 
 		static std::string unescapeString(const std::string& str);
 	private:
+#ifdef JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		struct Buffer
 		{
 			Buffer(const std::string & str) 
@@ -167,8 +168,7 @@ namespace JsonDatabase
 		static bool deserializeValueSplitted_internal(Buffer& json, JsonValue& out, Internal::WorkProgress* progress);
 		static bool deserializeObject_internal(Buffer& json, JsonObject& out);
 		static bool deserializeObject_internal(Buffer& json, JsonObject& out, Internal::WorkProgress* progress);
-		//static void deserializeObjectSplitted_internal(Buffer& json, JsonObject& out);
-		//static void deserializeObjectSplitted_internal(Buffer& json, JsonObject& out, Internal::WorkProgress* progress);
+		
 		static bool deserializeArray_internal(Buffer& json, JsonArray& out);
 		static bool deserializeArray_internal(Buffer& json, JsonArray& out, Internal::WorkProgress* progress);
 
@@ -177,8 +177,7 @@ namespace JsonDatabase
 		static bool deserializePair(Buffer& json, std::pair<std::string, JsonValue> &pairOut);
 		static bool deserializePair(Buffer& json, std::pair<std::string, JsonValue> &pairOut, Internal::WorkProgress* progress);
 		static bool deserializeString(Buffer& json, std::string &strOut);
-		//static void deserializeNumber(Buffer& json, double &doubleValue, int &intValue, bool &isInt);
-		
+
 		static bool deserializeBool(Buffer& json, bool &valueOut);
 
 		static void skipWhiteSpace(const std::string& jsonString, size_t& index);
@@ -186,7 +185,7 @@ namespace JsonDatabase
 		static void removeChars(const std::string& jsonString, std::string& jsonStringOut,
 			const std::string &removingChars);
 
-		static void removeSpecificChars(const std::string& jsonString, std::string& jsonStringOut);
+		
 		static void removeSpecificChars(const char* jsonString, char* jsonStringOut, size_t size);
 		
 		static const char* findFirstNotOfNumberStr(const char* str);
@@ -198,7 +197,12 @@ namespace JsonDatabase
 			size_t end;
 		};
 		static void findArrayObjectRange(Buffer& json, std::vector<ArrayObjectRange>& rangeList);
+
+#endif
+
+
+		static void removeSpecificChars(const std::string& jsonString, std::string& jsonStringOut);
 	};
 
 }
-#endif
+//#endif

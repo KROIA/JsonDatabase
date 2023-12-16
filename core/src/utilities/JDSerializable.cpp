@@ -102,25 +102,6 @@ namespace JsonDatabase
             }
             return false;
         }
-        /*
-        #if JD_ACTIVE_JSON == JD_JSON_QT
-        bool JDSerializable::getJsonValue(const QJsonObject& obj, JDObjectID::IDType& value, const QString& key)
-        #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-        bool JDSerializable::getJsonValue(const JsonObject& obj, JDObjectID::IDType& value, const std::string& key)
-        #endif
-        {
-            if (obj.contains(key))
-            {
-        #if JD_ACTIVE_JSON == JD_JSON_QT
-                value = obj[key].toInt(value);
-        #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                value = obj.find(key)->second.getInt();
-        #endif
-                return true;
-            }
-            return false;
-        }
-        */
 #if JD_ACTIVE_JSON == JD_JSON_QT
         bool JDSerializable::getJsonValue(const QJsonObject& obj, double& value, const QString& key)
 #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL

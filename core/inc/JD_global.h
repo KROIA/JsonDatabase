@@ -38,7 +38,7 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #define JD_JSON_INTERNAL 2
 
 
-#define JD_ACTIVE_JSON JD_JSON_INTERNAL
+#define JD_ACTIVE_JSON JD_JSON_QT
 /*
 	Enable multithreading for work that can be done in parallel.
 	Disabling this will make the library not single threaded.
