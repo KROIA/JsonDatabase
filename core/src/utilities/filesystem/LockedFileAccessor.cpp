@@ -2,14 +2,14 @@
 #include "manager/async/WorkProgress.h"
 #include "utilities/filesystem/StringZipper.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QJsonDocument>
 #include <QJsonArray>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
 #include "Json/JsonValue.h"
 #include "Json/JsonDeserializer.h"
 #include "Json/JsonSerializer.h"
-#endif
+//#endif
 
 #include <iostream>
 
@@ -141,11 +141,11 @@ namespace JsonDatabase
         }
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const std::vector<QJsonObject>& jsons) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//        LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const std::vector<QJsonObject>& jsons) const
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const JsonArray& jsons) const
-#endif
+//#endif
         {
             
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -162,7 +162,7 @@ namespace JsonDatabase
             double progressScalar = 0;
             if (m_progress)
                 progressScalar = m_progress->getScalar();
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("std::vector to QJsonArray", JD_COLOR_STAGE_6);
             QJsonArray jsonArray;
 
@@ -171,7 +171,7 @@ namespace JsonDatabase
                 jsonArray.append(QJsonValue(jsonObject));
             }
             JD_GENERAL_PROFILING_END_BLOCK;
-#endif
+#endif*/
 
 
             JD_GENERAL_PROFILING_NONSCOPED_BLOCK("toJson", JD_COLOR_STAGE_6);
@@ -181,13 +181,13 @@ namespace JsonDatabase
                 m_progress->setComment("Export Json objects");
                 m_progress->startNewSubProgress(progressScalar * 0.9);
             }
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             QJsonDocument jsonDocument(jsonArray);
             // Convert QJsonDocument to a QByteArray for writing to a file
             data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
             if (m_progress)
                 m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
             JsonSerializer serializer;
             serializer.enableTabs(false);
             serializer.enableNewLinesInObjects(false);
@@ -195,7 +195,7 @@ namespace JsonDatabase
             serializer.enableSpaces(false);
             std::string bufferStr = serializer.serializeArray(jsons, m_progress);
             data = QByteArray::fromStdString(bufferStr);
-#endif
+//#endif
             JD_GENERAL_PROFILING_END_BLOCK;
 
            // m_fileWatcher.pause();
@@ -223,11 +223,11 @@ namespace JsonDatabase
             return Error::file_cantWriteFile;
         }
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const QJsonObject& json) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//        LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const QJsonObject& json) const
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::writeJsonFile(const JsonObject& json) const
-#endif
+//#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
@@ -254,13 +254,13 @@ namespace JsonDatabase
                 m_progress->setComment("Export Json objects");
                 m_progress->startNewSubProgress(progressScalar * 0.9);
             }
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             QJsonDocument jsonDocument(json);
             // Convert QJsonDocument to a QByteArray for writing to a file
             data = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented);
             if (m_progress)
                 m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
             JsonSerializer serializer;
             serializer.enableTabs(false);
             serializer.enableNewLinesInObjects(false);
@@ -268,7 +268,7 @@ namespace JsonDatabase
             serializer.enableSpaces(false);
             std::string fileBuffer = serializer.serializeObject(json);
             data = QByteArray::fromStdString(fileBuffer);
-#endif
+//#endif
             JD_GENERAL_PROFILING_END_BLOCK;
             if (m_progress)
             {
@@ -297,21 +297,21 @@ namespace JsonDatabase
 
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        LockedFileAccessor::Error LockedFileAccessor::readJsonFile(std::vector<QJsonObject>& jsonsOut) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//        LockedFileAccessor::Error LockedFileAccessor::readJsonFile(std::vector<QJsonObject>& jsonsOut) const
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::readJsonFile(JsonArray& jsonsOut) const
-#endif
+//#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
             if (!isLocked())
             {
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                JD_CONSOLE("LockedFileAccessor::readJsonFile(std::vector<QJsonObject>&) File is not locked\n");
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                JD_CONSOLE("LockedFileAccessor::readJsonFile(std::vector<QJsonObject>&) File is not locked\n");
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JD_CONSOLE("LockedFileAccessor::readJsonFile(JsonArray&) File is not locked\n");
-#endif
+//#endif
                 return Error::fileLock_notAquired;
             }
 
@@ -331,12 +331,12 @@ namespace JsonDatabase
             }
 
             // Parse the JSON data
-#if JD_ACTIVE_JSON == JD_JSON_QT
-            QJsonDocument jsonDocument;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//            QJsonDocument jsonDocument;
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonDeserializer deserializer;
             JsonArray deserialized{};
-#endif
+//#endif
             if (m_progress)
             {
                 m_progress->startNewSubProgress(progressScalar * 0.9);
@@ -350,30 +350,30 @@ namespace JsonDatabase
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                    jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                    jsonDocument = QJsonDocument::fromJson(uncompressed.toUtf8());
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string converted = uncompressed.toUtf8().toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeArray(converted, m_progress);
                     else
                         deserialized = deserializer.deserializeArray(converted);
-#endif
+//#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
                 else
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                    jsonDocument = QJsonDocument::fromJson(fileData);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                    jsonDocument = QJsonDocument::fromJson(fileData);
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string converted = fileData.toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeArray(converted, m_progress);
                     else
                         deserialized = deserializer.deserializeArray(converted);
-#endif
+//#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
             }
@@ -381,11 +381,11 @@ namespace JsonDatabase
             {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                jsonDocument = QJsonDocument::fromJson(fileData);
-                if (m_progress)
-                    m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                jsonDocument = QJsonDocument::fromJson(fileData);
+//                if (m_progress)
+//                    m_progress->setProgress(1);
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
                 std::string str = std::move(fileData.toStdString());
                 bool success = false;
@@ -420,12 +420,12 @@ namespace JsonDatabase
                 
 
              
-#endif
+//#endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             // Check if the JSON document is an array
             if (!jsonDocument.isArray())
             {
@@ -434,11 +434,11 @@ namespace JsonDatabase
                     << getFullFilePath() << " is not an array\n");
                 return Error::json_isNotAnArray;
             }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
 
-#endif
+//#endif
             
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             JD_GENERAL_PROFILING_BLOCK("QJsonArray to std::vector", JD_COLOR_STAGE_6);
             QJsonArray jsonArray = jsonDocument.array();
 
@@ -449,28 +449,28 @@ namespace JsonDatabase
                     jsonsOut.emplace_back(jsonValue.toObject());
                 }
             }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
             JD_GENERAL_PROFILING_BLOCK("Move JsonArray", JD_COLOR_STAGE_6);
             {
                 jsonsOut = std::move(deserialized);
             }
-#endif
+//#endif
             return Error::none;
         }
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        LockedFileAccessor::Error LockedFileAccessor::readJsonFile(QJsonObject& objOut) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//        LockedFileAccessor::Error LockedFileAccessor::readJsonFile(QJsonObject& objOut) const
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         LockedFileAccessor::Error LockedFileAccessor::readJsonFile(JsonObject& objOut) const
-#endif
+//#endif
         {
             if (!isLocked())
             {
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                JD_CONSOLE("LockedFileAccessor::readJsonFile(QJsonObject&) File is not locked\n");
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                JD_CONSOLE("LockedFileAccessor::readJsonFile(QJsonObject&) File is not locked\n");
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 JD_CONSOLE("LockedFileAccessor::readJsonFile(JsonValue&) File is not locked\n");
-#endif
+//#endif
                 return Error::fileLock_notAquired;
             }
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -488,15 +488,15 @@ namespace JsonDatabase
             {
                 return errorOut;
             }
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             QJsonParseError jsonError;
             jsonError.error = QJsonParseError::NoError;
 
             QJsonDocument document;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
             JsonDeserializer deserializer;
             JsonObject deserialized{};
-#endif
+//#endif
             if (m_progress)
             {
                 m_progress->startNewSubProgress(progressScalar * 0.9);
@@ -510,30 +510,30 @@ namespace JsonDatabase
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                    document = QJsonDocument::fromJson(uncompressed.toUtf8());
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                    document = QJsonDocument::fromJson(uncompressed.toUtf8());
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string bufferStr = uncompressed.toUtf8().toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeObject(bufferStr, m_progress);
                     else
                         deserialized = deserializer.deserializeObject(bufferStr);
-#endif
+//#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
                 else
                 {
                     JD_GENERAL_PROFILING_END_BLOCK;
                     JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                    document = QJsonDocument::fromJson(fileData);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                   document = QJsonDocument::fromJson(fileData);
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     std::string bufferStr = fileData.toStdString();
                     if (m_progress)
                         deserialized = deserializer.deserializeObject(bufferStr, m_progress);
                     else
                         deserialized = deserializer.deserializeObject(bufferStr);
-#endif
+//#endif
                     JD_GENERAL_PROFILING_END_BLOCK;
                 }
             }
@@ -541,20 +541,20 @@ namespace JsonDatabase
             {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("import json", JD_COLOR_STAGE_6);
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                document = QJsonDocument::fromJson(fileData, &jsonError);
-                if (m_progress)
-                    m_progress->setProgress(1);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//                document = QJsonDocument::fromJson(fileData, &jsonError);
+//                if (m_progress)
+//                    m_progress->setProgress(1);
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                 std::string bufferStr = fileData.toStdString();
                 if (m_progress)
                     deserialized = deserializer.deserializeObject(bufferStr, m_progress);
                 else
                     deserialized = deserializer.deserializeObject(bufferStr);
-#endif
+//#endif
                 JD_GENERAL_PROFILING_END_BLOCK;
             }
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             if (jsonError.error != QJsonParseError::NoError)
             {
                 errorOut = Error::json_parseError;
@@ -562,20 +562,20 @@ namespace JsonDatabase
                     << "QJsonObject&) Can't read Jsonfile: " << jsonError.errorString().toStdString().c_str() << "\n");
                 return errorOut;
             }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
 
-#endif
-#if JD_ACTIVE_JSON == JD_JSON_QT
+//#endif
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
             if (document.isObject())
             {
                 objOut = document.object();
                 return Error::none;
             }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
             
             objOut = std::move(deserialized);
             return Error::none;
-#endif
+//#endif
             return Error::json_isNotAnObject;
         }
 

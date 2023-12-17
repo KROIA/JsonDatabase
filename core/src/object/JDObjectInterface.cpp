@@ -2,9 +2,9 @@
 #include "object/JDObjectRegistry.h"
 #include "object/JDObjectManager.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
 #include <QVariant>
-#endif
+#endif*/
 
 namespace JsonDatabase
 {
@@ -103,7 +103,7 @@ std::vector<JDObject> JDObjectInterface::reinstantiate(const std::vector<JDObjec
 	}
 	return ret;
 }*/
-#if JD_ACTIVE_JSON == JD_JSON_QT
+/*#if JD_ACTIVE_JSON == JD_JSON_QT
 size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr&objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
@@ -117,7 +117,7 @@ size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons
     }
     return std::string::npos;
 }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL*/
 size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
@@ -149,7 +149,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
     }
     return std::string::npos;
 }
-#endif
+//#endif
 
 bool JDObjectInterface::loadFrom(const JDObject& source)
 {

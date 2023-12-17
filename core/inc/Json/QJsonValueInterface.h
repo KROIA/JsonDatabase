@@ -13,6 +13,7 @@ namespace JsonDatabase
 	class JSONDATABASE_EXPORT JsonArray
 	{
 		friend JsonValue;
+		friend  class JsonSerializer;
 	public:
 		JsonArray();
 		JsonArray(const JsonArray& other);
@@ -30,7 +31,7 @@ namespace JsonDatabase
 		bool operator!=(const JsonArray& other) const;
 		bool operator!=(const QJsonArray& other) const;
 
-
+		size_t size() const;
 	private:
 		QJsonArray m_array;
 	};
@@ -38,6 +39,7 @@ namespace JsonDatabase
 	class JSONDATABASE_EXPORT JsonObject
 	{
 		friend JsonValue;
+		friend  class JsonSerializer;
 	public:
 		JsonObject();
 		JsonObject(const JsonObject& other);

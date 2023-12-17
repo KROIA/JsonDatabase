@@ -172,11 +172,11 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     const JDObjectIDptr &id = obj->getObjectID();
 
     
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    std::vector<QJsonObject> jsons; 
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//    std::vector<QJsonObject> jsons; 
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
-#endif
+//#endif
 
     if (progress)
     {

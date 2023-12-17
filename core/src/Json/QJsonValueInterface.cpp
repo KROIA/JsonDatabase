@@ -55,6 +55,10 @@ namespace JsonDatabase
 	{
 		return m_array != other;
 	}
+	size_t JsonArray::size() const
+	{
+		return (size_t)m_array.size();
+	}
 
 
 

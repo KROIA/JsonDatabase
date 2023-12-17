@@ -7,11 +7,11 @@
 #include "utilities/Signal.h"
 #include <memory>
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//#include <QJsonObject>
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
-#endif
+//#endif
 #include <string>
 
 
@@ -50,11 +50,11 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
 
         // Creates a copy of the original object as a new instance
         //static std::vector<JDObject> reinstantiate(const std::vector<JDObject> &objList);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr& objID);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+//#if JD_ACTIVE_JSON == JD_JSON_QT
+//        static size_t getJsonIndexByID(const std::vector<QJsonObject>& jsons, const JDObjectIDptr& objID);
+//#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID);
-#endif
+//#endif
 
 
         bool loadFrom(const JDObject& source);

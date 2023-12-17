@@ -9,11 +9,12 @@
     #ifdef JD_ENABLE_MULTITHREADING
         #include <thread>
     #endif
+#else
+    #include <QJsonDocument>
 #endif
 
 namespace JsonDatabase
 {
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 void JsonSerializer::enableTabs(bool enable)
 {
@@ -65,20 +66,98 @@ char JsonSerializer::indentChar() const
     return m_indentChar;
 }
 
+
 std::string JsonSerializer::serializeValue(const JsonValue& value)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
     std::string out;
     int indent = 0;
     serializeValue(value, out, indent);
     return out;
+#else
+    if (value.m_value.isObject())
+    {
+        QJsonDocument jsonDocument(value.m_value.toObject());
+         return jsonDocument.toJson(QJsonDocument::JsonFormat::Indented).toStdString();
+    }
+    else if (value.m_value.isArray())
+    {
+        QJsonDocument jsonDocument(value.m_value.toArray());
+        return jsonDocument.toJson(QJsonDocument::JsonFormat::Indented).toStdString();
+    }
+    return value.m_value.toString().toStdString();
+#endif
 }
 void JsonSerializer::serializeValue(const JsonValue& value, std::string& serializedOut)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
     int indent = 0;
     serializeValue(value, serializedOut, indent);
+#else
+    if (value.m_value.isObject())
+    {
+        QJsonDocument jsonDocument(value.m_value.toObject());
+        serializedOut = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented).constData();
+    }
+    else if (value.m_value.isArray())
+    {
+        QJsonDocument jsonDocument(value.m_value.toArray());
+        serializedOut = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented).constData();
+    }
+    else
+        serializedOut = value.m_value.toString().toStdString();
+#endif
 }
+
+std::string JsonSerializer::serializeObject(const JsonObject& object)
+{
+    JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    std::string out;
+    serializeObject(object, out);
+    return out;
+}
+void JsonSerializer::serializeObject(const JsonObject& object, std::string& serializedOut)
+{
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+    int indent = 0;
+    serializeObject(object, serializedOut, indent);
+#else
+    QJsonDocument jsonDocument(object.m_obj);
+    serializedOut = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented).constData();
+#endif
+}
+std::string JsonSerializer::serializeArray(const JsonArray& array)
+{
+    return serializeArray(array, nullptr);
+}
+std::string JsonSerializer::serializeArray(const JsonArray& array, Internal::WorkProgress* progress)
+{
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+    std::string out;
+    int ident = 0;
+    serializeArray(array, out, ident, progress);
+    return out;
+#else
+    QJsonDocument jsonDocument(array.m_array);
+    std::string tmp(jsonDocument.toJson(QJsonDocument::JsonFormat::Indented).constData());
+    progress->setProgress(1);
+    return tmp;
+#endif
+}
+void JsonSerializer::serializeArray(const JsonArray& array, std::string& serializedOut)
+{
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+    int indent = 0;
+    serializeArray(array, serializedOut, indent);
+#else
+    QJsonDocument jsonDocument(array.m_array);
+    serializedOut = jsonDocument.toJson(QJsonDocument::JsonFormat::Indented).constData();
+#endif
+}
+
+#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 void JsonSerializer::serializeValue(const JsonValue& value, std::string& serializedOut, int& indent)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
@@ -99,20 +178,6 @@ void JsonSerializer::serializeValue(const JsonValue& value, std::string& seriali
     case (size_t)JsonValue::Type::Object:
         serializeObject(value.get<JsonObject>(), serializedOut, indent); break;
     }
-}
-
-std::string JsonSerializer::serializeObject(const JsonObject& object)
-{
-    JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    std::string out;
-    serializeObject(object, out);
-    return out;
-}
-void JsonSerializer::serializeObject(const JsonObject& object, std::string& serializedOut)
-{
-    //JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    int indent = 0;
-    serializeObject(object, serializedOut, indent);
 }
 void JsonSerializer::serializeObject(const JsonObject& object, std::string& serializedOut, int& indent)
 {
@@ -158,25 +223,6 @@ void JsonSerializer::serializeObject(const JsonObject& object, std::string& seri
     }
     serializedOut += std::move(std::string(indent, m_indentChar)) + "}";
     JD_JSON_PROFILING_END_BLOCK;
-}
-
-
-std::string JsonSerializer::serializeArray(const JsonArray& array)
-{
-    return serializeArray(array, nullptr);
-}
-std::string JsonSerializer::serializeArray(const JsonArray& array, Internal::WorkProgress* progress)
-{
-    //JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-    std::string out;
-    int ident = 0;
-    serializeArray(array, out, ident, progress);
-    return out;
-}
-void JsonSerializer::serializeArray(const JsonArray& array, std::string& serializedOut)
-{
-    int indent = 0;
-    serializeArray(array, serializedOut, indent);
 }
 
 void JsonSerializer::serializeArray(const JsonArray& array, std::string& serializedOut, int& indent)
@@ -349,6 +395,7 @@ void JsonSerializer::serializeString(const std::string& str, std::string& serial
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     escapeString(str, serializedOut);
 }
+
 std::string JsonSerializer::serializeInt(int value)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
@@ -419,6 +466,8 @@ void JsonSerializer::serializeBool(bool value, std::string& serializedOut)
         serializedOut = falseStr;
     }
 }
+
+
 const std::string& JsonSerializer::serializeNull()
 {
     static const std::string null = "null";
