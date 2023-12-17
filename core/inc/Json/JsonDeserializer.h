@@ -1,9 +1,7 @@
 #pragma once
 #include "JD_base.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
 
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "JsonValue.h"
 
 #include "manager/async/WorkProgress.h"
@@ -201,4 +199,3 @@ namespace JsonDatabase
 	};
 
 }
-#endif

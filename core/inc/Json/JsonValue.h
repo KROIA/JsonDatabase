@@ -2,11 +2,6 @@
 #include "JD_base.h"
 #include <type_traits>
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonObject>
-
-
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include <variant>
 #include <string>
 #include <vector>
@@ -18,12 +13,12 @@ namespace JsonDatabase
 
 
 	class JsonValue;
-	
+
 	template<class T>
 	using JsonArrayType = std::vector<T>;
 
 	template<class K, class V>
-	using JsonMapType = std::map<K,V>;
+	using JsonMapType = std::map<K, V>;
 
 
 	using JsonArray = JsonArrayType< JsonValue>;
@@ -33,19 +28,19 @@ namespace JsonDatabase
 	{
 		friend class JsonSerializer;
 		friend class JsonDeserializer;
-		public:
+	public:
 
 		using JsonVariantType = std::variant<std::monostate, std::string, int, double, bool, std::shared_ptr<JsonArray>, std::shared_ptr<JsonObject>>;
-			enum class Type 
-			{
-				Null,
-				String,
-				Int,
-				Double,
-				Bool,
-				Array,
-				Object
-			};
+		enum class Type
+		{
+			Null,
+			String,
+			Int,
+			Double,
+			Bool,
+			Array,
+			Object
+		};
 
 		JsonValue();
 		JsonValue(const JsonValue& other);
@@ -58,17 +53,17 @@ namespace JsonDatabase
 		JsonValue(const bool& value);
 		JsonValue(const JsonArray& value);
 		JsonValue(JsonArray&& value);
-		JsonValue(const std::shared_ptr<JsonArray> &valuePtr);
-		JsonValue(std::shared_ptr<JsonArray> &&valuePtr) noexcept;
+		JsonValue(const std::shared_ptr<JsonArray>& valuePtr);
+		JsonValue(std::shared_ptr<JsonArray>&& valuePtr) noexcept;
 		JsonValue(const JsonObject& value);
 		JsonValue(JsonObject&& value) noexcept;
 		JsonValue(const std::shared_ptr<JsonObject>& valuePtr);
 		JsonValue(std::shared_ptr<JsonObject>&& valuePtr) noexcept;
-		
-        ~JsonValue()
-        {
 
-        }
+		~JsonValue()
+		{
+
+		}
 
 		JsonValue& operator=(const JsonValue& other);
 		JsonValue& operator=(JsonValue&& other) noexcept;
@@ -90,7 +85,7 @@ namespace JsonDatabase
 
 		bool operator==(const JsonValue& other) const;
 		bool operator!=(const JsonValue& other) const;
-		
+
 
 
 		// Type trait to check if T is ObjectA
@@ -107,7 +102,7 @@ namespace JsonDatabase
 			static constexpr bool value = true;
 		};
 
-		
+
 
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, bool>::type holds() const noexcept
@@ -121,7 +116,7 @@ namespace JsonDatabase
 		{
 			return std::holds_alternative<std::shared_ptr<T>>(m_value);
 		}
-		
+
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, T&>::type get()
 		{
@@ -151,7 +146,7 @@ namespace JsonDatabase
 
 
 
-		
+
 
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, T*>::type get_if() noexcept
@@ -170,7 +165,7 @@ namespace JsonDatabase
 
 
 
-		
+
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, const T*>::type get_if() const noexcept
 		{
@@ -201,13 +196,11 @@ namespace JsonDatabase
 		friend std::ostream& operator<<(std::ostream& os, const JsonValue& json);
 		friend QDebug operator<<(QDebug debug, const JsonValue& json);
 
-        // Overloading << operator for std::cout
-        
+		// Overloading << operator for std::cout
+
 	private:
 		JsonVariantType m_value;
 	};
 }
-#endif
-
 
 

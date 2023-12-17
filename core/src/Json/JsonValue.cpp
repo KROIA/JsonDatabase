@@ -1,16 +1,14 @@
 #include "Json/JsonValue.h"
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL 
+
 #include "Json/JsonSerializer.h"
 #include <QDebug>
 
-#endif
+
 
 
 namespace JsonDatabase
 {
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
-    
     JsonValue::JsonValue()
         : m_value(std::monostate{})
         // , m_type(Type::Null)
@@ -344,6 +342,4 @@ namespace JsonDatabase
         debug << json.toString().c_str();
         return debug;
     }
-
-#endif
 }

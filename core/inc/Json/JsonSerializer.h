@@ -1,10 +1,6 @@
 #pragma once
 #include "JD_base.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-
 #include "JsonValue.h"
 #include "manager/async/WorkProgress.h"
 
@@ -53,7 +49,6 @@ namespace JsonDatabase
 
 	private:
 
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
 		void serializeValue(const JsonValue& value, std::string& serializedOut, int &indent);
 		void serializeObject(const JsonObject& object, std::string& serializedOut, int& indent);
@@ -78,8 +73,7 @@ namespace JsonDatabase
 		bool m_useSpaces = true;
 
 		char m_indentChar = ' ';
-#endif
+
 	};
 
 }
-#endif
