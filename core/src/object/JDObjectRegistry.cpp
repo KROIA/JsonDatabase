@@ -44,23 +44,15 @@ namespace JsonDatabase
             return error;
         }
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        const JDObject& JDObjectRegistry::getObjectDefinition(const QJsonObject& json)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
         const JDObject& JDObjectRegistry::getObjectDefinition(const JsonObject& json)
-#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
             std::string className;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-            if (Utilities::JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className))
-            {
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             bool match = json.contains(JDObjectInterface::s_tag_className);
 			if (match)
             {
                 className = json.at(JDObjectInterface::s_tag_className).get<std::string>();
-#endif
             
                 return getObjectDefinition(className);
             }
@@ -68,18 +60,10 @@ namespace JsonDatabase
             return nullObj;
         }
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        std::string JDObjectRegistry::getObjectTypeString(const QJsonObject& json)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         std::string JDObjectRegistry::getObjectTypeString(const JsonObject& json)
-#endif
         {
             std::string className;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-            Utilities::JDSerializable::getJsonValue(json, className, JDObjectInterface::s_tag_className);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             className = json.at(JDObjectInterface::s_tag_className).get<std::string>();
-#endif
             return className;
         }
 

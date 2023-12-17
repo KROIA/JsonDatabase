@@ -170,11 +170,8 @@ namespace JsonDatabase
                     return false;
                 }
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                std::vector<QJsonObject> jsonData;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
                 JsonArray jsonData{};
-#endif
                 fileError = fileAccessor.writeJsonFile(jsonData);
                 if (fileError != LockedFileAccessor::Error::none)
                 {

@@ -1,11 +1,9 @@
 #include "utilities/JDUser.h"
 #include "utilities/JDUtilities.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonDocument>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 #include "Json/JsonSerializer.h"
-#endif
+
 namespace JsonDatabase
 {
 	namespace Utilities
@@ -137,61 +135,13 @@ namespace JsonDatabase
 
         std::string JDUser::toString() const
         {
-#if JD_ACTIVE_JSON == JD_JSON_QT
-            QJsonObject obj;
-			save(obj);
-			return QJsonDocument(obj).toJson().toStdString();
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             JsonObject obj;
 			save(obj);
             JsonSerializer serializer;
 			return serializer.serializeObject(obj);
-#endif
         }
 
         // Implement load and save functions based on JD_USE_QJSON flag
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        bool JDUser::load(const QJsonObject& obj) 
-        {
-            bool success = true;
-            auto sessionIt = obj.find(JsonKeys::sessionID.data());
-            auto nameIt = obj.find(JsonKeys::name.data());
-            auto dateIt = obj.find(JsonKeys::date.data());
-            auto timeIt = obj.find(JsonKeys::time.data());
-
-            if (sessionIt == obj.end() || !sessionIt->isString())
-                success = false;
-
-            if (nameIt == obj.end() || !nameIt->isString())
-                success = false;
-
-            if (dateIt == obj.end() || !dateIt->isString())
-                success = false;
-
-            if (timeIt == obj.end() || !timeIt->isString())
-                success = false;
-
-            if (!success)
-                return false;
-
-            m_sessionID = sessionIt->toString().toStdString();
-            m_name = nameIt->toString().toStdString();
-
-            m_loginDate = stringToQDate(dateIt->toString().toStdString());
-            m_loginTime = stringToQTime(timeIt->toString().toStdString());
-            return success;
-        }
-
-        bool JDUser::save(QJsonObject& obj) const 
-        {
-            obj[JsonKeys::sessionID.data()] = m_sessionID.c_str();
-            obj[JsonKeys::name.data()] = m_name.c_str();
-
-            obj[JsonKeys::date.data()] = qDateToString(m_loginDate).c_str();
-            obj[JsonKeys::time.data()] = qTimeToString(m_loginTime).c_str();
-            return true; 
-        }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDUser::load(const JsonObject& obj) 
         {
             bool success = true;
@@ -234,7 +184,6 @@ namespace JsonDatabase
             *obj[JsonKeys::time] = qTimeToString(m_loginTime);
             return true; 
         }
-#endif
 
 
         std::string JDUser::getHostName()

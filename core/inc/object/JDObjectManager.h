@@ -4,11 +4,9 @@
 #include "JDDeclaration.h"
 #include "JDObjectID.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 #include "Json/JsonValue.h"
-#endif
+
 
 
 namespace JsonDatabase
@@ -29,15 +27,10 @@ namespace JsonDatabase
 			Lockstate getLockstate() const;
 			ChangeState getChangeState() const;
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut);
-			static bool getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut,
-				WorkProgress* progress);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
 			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
 				WorkProgress* progress);
-#endif
 			
 		private:
 			enum ManagedLoadStatus
@@ -97,21 +90,7 @@ namespace JsonDatabase
 				//bool hasOverrideChangeFromDatabaseSlots;
 			};
 			
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			static ManagedLoadStatus managedLoad(
-				const QJsonObject& json, 
-				JDObjectManager* manager, 
-				ManagedLoadContainers& containers,
-				const ManagedLoadMode &loadMode,
-				const ManagedLoadMisc &misc);
 
-
-			bool loadAndOverrideData(const QJsonObject& json);
-			bool loadAndOverrideDataIfChanged(const QJsonObject& json, bool &hasChangesOut);
-
-			static JDObjectManager* instantiateAndLoadObject(const QJsonObject& json, const JDObjectIDptr& id);
-			static JDObjectManager* cloneAndLoadObject(const JDObject& original, const QJsonObject& json, const JDObjectIDptr& id);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			static ManagedLoadStatus managedLoad(
 				const JsonObject& json,
 				JDObjectManager* manager, 
@@ -124,26 +103,7 @@ namespace JsonDatabase
 
 			static JDObjectManager* instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id);
 			static JDObjectManager* cloneAndLoadObject(const JDObject &original, const JsonObject& json, const JDObjectIDptr& id);
-#endif
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			static ManagedLoadStatus managedLoadExisting_internal(
-				const QJsonObject& json, 
-				JDObjectManager* manager,
-				ManagedLoadContainers& containers,
-				const ManagedLoadMode& loadMode/*,
-				const ManagedLoadMisc& misc*/ );
-
-			static ManagedLoadStatus managedLoadNew_internal(
-				const QJsonObject& json,
-				ManagedLoadContainers& containers/*,
-				const ManagedLoadMode& loadMode*/,
-				const ManagedLoadMisc& misc);
-
-
-			static bool deserializeOverrideFromJsonIfChanged_internal(const QJsonObject& json, JDObject obj, bool& hasChangedOut);
-			static bool deserializeOverrideFromJson_internal(const QJsonObject& json, JDObject obj);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			static ManagedLoadStatus managedLoadExisting_internal(
 				const JsonObject& json,
 				JDObjectManager* manager,
@@ -159,7 +119,6 @@ namespace JsonDatabase
 
 			static bool deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut);
 			static bool deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj);
-#endif
 
 			JDObject m_obj;
 			JDObjectIDptr m_id;

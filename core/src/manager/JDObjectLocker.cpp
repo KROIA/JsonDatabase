@@ -6,13 +6,10 @@
 
 
 #include <QFile>
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonDocument>
-#include <QJsonArray>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 #include "Json/JsonSerializer.h"
 #include "Json/JsonDeserializer.h"
-#endif
+
 #include <QDateTime>
 
 namespace JsonDatabase
@@ -265,54 +262,6 @@ namespace JsonDatabase
 				return false;
 			}
 			return true;
-
-
-
-
-			/*
-
-			err = Error::none;
-			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-				return false;
-
-			// Check if Lock is already aquired 
-			ObjectLockData targetLock;
-			size_t targetIndex;
-			Utilities::JDUser user = m_manager.getUser();
-			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
-			{
-				if (targetLock.data.user.getSessionID() == user.getSessionID())
-				{
-					// Locked by this session
-
-					// Remove lock from list
-					locks.erase(locks.begin() + targetIndex);
-
-					// Save table
-					if (!writeLockTable(locks, err))
-						return false;
-					return true;
-				}
-				else
-				{
-					err = Error::lockedByOther;
-					
-					JD_CONSOLE_FUNCTION("Can't release lock for object: \"" 
-						<< obj->getObjectID()->toString() << "\" type: \"" << obj->className()
-						<< "\"\nLock Data: \n" + targetLock.toString() + "\n"
-						<< "Lock is owned by user: " + targetLock.data.user.toString() + "\n");
-					return false;
-				}
-			}
-			JD_CONSOLE_FUNCTION("Lock for object: \"" + 
-				obj->getObjectID()->toString() + "\" type: \"" + 
-				obj->className() + "\" did not exist\n");
-
-			err = Error::none;
-			return true;*/
 		}
 		bool JDObjectLocker::unlockAllObjs(Error& err)
 		{
@@ -328,32 +277,6 @@ namespace JsonDatabase
 				return false;
 			}
 			return true;
-			
-			/*
-			err = Error::none;
-			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-				return false;
-
-			std::vector<ObjectLockData> locksOut;
-			std::vector<size_t> matches;
-			std::vector<size_t> mismatches;
-			getObjectLockDataFromSessionID(locks, m_manager.getSessionID(), locksOut, matches, mismatches);
-
-			// Save all locks which do not match, with this session id, to a new table
-			std::vector<ObjectLockData> newLockTable;
-			for (size_t i = 0; i < mismatches.size(); ++i)
-			{
-				newLockTable.push_back(locks[mismatches[i]]);
-			}
-
-			if (!writeLockTable(newLockTable, err))
-				return false;
-
-			err = Error::none;
-			return true;*/
 		}
 		bool JDObjectLocker::isObjectLocked(const JDObject & obj, Error& err) const
 		{
@@ -370,26 +293,6 @@ namespace JsonDatabase
 				return false;
 			AbstractRegistry::AutoClose autoClose(this);
 			return AbstractRegistry::isObjectActive(std::to_string(obj->getObjectID()->get()));
-
-
-
-			/*
-			err = Error::none;
-			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-			{
-				return false;
-			}
-			// Check if Lock is already aquired 
-			ObjectLockData targetLock;
-			size_t targetIndex;
-			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
-			{
-				return true; // Object is locked by any user
-			}
-			return false;*/
 		}
 		bool JDObjectLocker::isObjectLockedByMe(const JDObject & obj, Error& err) const
 		{
@@ -409,31 +312,6 @@ namespace JsonDatabase
 				return true;
 
 			return false;
-			/*
-
-
-
-			err = Error::none;
-			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-			{
-				return false;
-			}
-
-			// Check if Lock is already aquired 
-			ObjectLockData targetLock;
-			size_t targetIndex;
-			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
-			{
-				if (targetLock.data.user.getSessionID() == m_manager.getUser().getSessionID())
-				{
-					// Already locked by this session
-					return true;
-				}
-			}
-			return false;*/
 		}
 		bool JDObjectLocker::isObjectLockedByOther(const JDObject & obj, Error& err) const
 		{
@@ -457,30 +335,6 @@ namespace JsonDatabase
 					return true;
 			}
 			return false;
-
-
-			/*
-			err = Error::none;
-			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-			{
-				return false;
-			}
-
-			// Check if Lock is already aquired 
-			ObjectLockData targetLock;
-			size_t targetIndex;
-			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
-			{
-				if (targetLock.data.user.getSessionID() == m_manager.getUser().getSessionID())
-				{
-					// Already locked by this session
-					return true;
-				}
-			}
-			return false;*/
 		}
 
 		
@@ -514,33 +368,6 @@ namespace JsonDatabase
 				}
 			}
 			return success;
-
-
-			/*err = Error::none;
-			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-			{
-				return false;
-			}
-
-			lockedObjectsOut.reserve(locks.size());
-			bool success = true;
-			for (const ObjectLockData& lock : locks)
-			{
-				if (lock.data.objectID != JDObjectID::invalidID)
-					lockedObjectsOut.push_back(lock.data);
-				else
-				{
-					JD_CONSOLE_FUNCTION("Object has empty objectID: "
-						<< lock.toString() << "\n");
-					err = corruptTableData;
-					success = false;
-				}
-			}
-			
-			return success;*/
 		}
 		int JDObjectLocker::removeInactiveObjectLocks() const
 		{
@@ -576,7 +403,6 @@ namespace JsonDatabase
 
 		void JDObjectLocker::update()
 		{
-			// m_lockTableWatcher
 			if (m_lockTableWatcher.hasFileChanged())
 			{
 				m_lockTableWatcher.clearHasFileChanged();
@@ -584,83 +410,6 @@ namespace JsonDatabase
 				m_manager.getSignals().lockedObjectsChanged.emitSignal();
 			}
 		}
-		/*void JDObjectLocker::onDatabasePathChange(const std::string& oldPath, const std::string& newPath, Error& err) const
-		{
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
-
-			FileLock::Error lockErr1;
-			FileLock fileLock1(oldPath, m_lockTableFile);
-			if (!fileLock1.lock(m_lockTableTryGetLockTimeoutMs, lockErr1))
-			{
-				err = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock1.getFilePath()
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock1.getErrorStr(lockErr1) << "\n");
-				return;
-			}
-			FileLock::Error lockErr2;
-			FileLock fileLock2(newPath, m_lockTableFile);
-			if (!fileLock2.lock(m_lockTableTryGetLockTimeoutMs, lockErr2))
-			{
-				err = Error::unableToLock;
-				JD_CONSOLE_FUNCTION("Can't aquire lock for file: " << fileLock2.getFilePath()
-					<< " timeout occured after: " << m_lockTableTryGetLockTimeoutMs << "ms"
-					<< " LockError: " << fileLock2.getErrorStr(lockErr2) << "\n");
-				return;
-			}
-			m_lockTableWatcher.stop();
-
-			m_useSpecificDatabasePath = true;
-			m_specificDatabasePath = oldPath;
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-			{
-				m_useSpecificDatabasePath = false;
-				return;
-			}
-
-			std::vector<ObjectLockData> locksOut;
-			std::vector<size_t> matches;
-			std::vector<size_t> mismatches;
-			getObjectLockDataFromSessionID(locks, m_manager.getSessionID(), locksOut, matches, mismatches);
-
-			std::vector<ObjectLockData> locksFromOldLocation;
-			for (size_t i = 0; i < mismatches.size(); ++i)
-			{
-				locksFromOldLocation.push_back(locks[mismatches[i]]);
-			}
-			writeLockTable(locksFromOldLocation, err);
-
-
-			m_specificDatabasePath = newPath;
-			std::vector<ObjectLockData> locksFromNewLocation;
-
-			if (!readLockTable(locksFromNewLocation, err))
-			{
-				m_useSpecificDatabasePath = false;
-				m_lockTableWatcher.setup(getTableFileFilePath());
-				return;
-			}
-
-			for (size_t i = 0; i < matches.size(); ++i)
-			{
-				locksFromNewLocation.push_back(locks[matches[i]]);
-			}
-
-			if (!writeLockTable(locksFromNewLocation, err))
-			{
-				m_useSpecificDatabasePath = false;
-				m_lockTableWatcher.setup(getTableFileFilePath());
-				return;
-			}
-
-			m_useSpecificDatabasePath = false;
-			err = Error::none;
-			m_lockTableWatcher.setup(getTableFileFilePath());
-			return;
-		}
-		*/
 
 		void JDObjectLocker::onCreateFiles()
 		{
@@ -708,63 +457,33 @@ namespace JsonDatabase
 			data.lockDate  = QDate::currentDate();
 			data.lockTime  = QTime::currentTime();
 		}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectLocker::LockEntryObjectImpl::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::load(const JsonObject& obj)
-#endif
 		{
 			bool success = LockEntryObject::load(obj);
 			if(!isValid(obj))
 				return false;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			data.objectID = obj[JsonKeys::objectID.data()].toInt();
-			data.user.load(obj[JsonKeys::user.data()].toObject());
-			data.lockDate = Utilities::stringToQDate(obj[JsonKeys::lockDate.data()].toString().toStdString());
-			data.lockTime = Utilities::stringToQTime(obj[JsonKeys::lockTime.data()].toString().toStdString());
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
-			data.objectID = obj.at(JsonKeys::objectID).get<int>();
-			data.user.load(obj.at(JsonKeys::user).get<JsonObject>());
-#endif
+
 			data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).get<std::string>());
 			data.lockTime = Utilities::stringToQTime(obj.at(JsonKeys::lockTime).get<std::string>());
-#endif
+
 			return success;
 		}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectLocker::LockEntryObjectImpl::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 		bool JDObjectLocker::LockEntryObjectImpl::save(JsonObject& obj) const
-#endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			bool success = LockEntryObject::save(obj);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			obj[JsonKeys::objectID.data()] = data.objectID;
-			QJsonObject userObj;
-			success &= data.user.save(userObj);
-			obj[JsonKeys::user.data()] = userObj;
-			obj[JsonKeys::lockDate.data()] = Utilities::qDateToString(data.lockDate).c_str();
-			obj[JsonKeys::lockTime.data()] = Utilities::qTimeToString(data.lockTime).c_str();
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
-			//obj.reserve(5);
 			obj[JsonKeys::objectID] = data.objectID;
 			JsonObject userObj;
 			success &= data.user.save(userObj);
 			obj[JsonKeys::user] = userObj;
 			obj[JsonKeys::lockDate] = Utilities::qDateToString(data.lockDate);
 			obj[JsonKeys::lockTime] = Utilities::qTimeToString(data.lockTime);
-#endif
 			return true;
 		}
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectLocker::LockEntryObjectImpl::isValid(const QJsonObject& lock)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectLocker::LockEntryObjectImpl::isValid(const JsonObject& lock)
-#endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			if (!lock.contains(JsonKeys::objectID.data())) return false;
@@ -776,227 +495,17 @@ namespace JsonDatabase
 		}
 		std::string JDObjectLocker::LockEntryObjectImpl::toString() const
 		{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			QJsonObject obj;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonObject obj;
-#endif
 			save(obj);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			QJsonDocument jsonDoc(obj);
 
-			// Convert the JSON document to a string
-			QString jsonString = jsonDoc.toJson(QJsonDocument::Indented);
-			return jsonString.toStdString();
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonSerializer serializer;
 			return serializer.serializeObject(obj);
-#endif
 		}
 
 
 		
 		
-		/*
-
-		bool JDObjectLocker::readLockTable(std::vector<ObjectLockData>& locks, Error& err) const
-		{
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-			std::string filePath = getTableFileFilePath();
-			QFile file(filePath.c_str());
-			if (!file.exists())
-			{
-				JD_CONSOLE_FUNCTION("File: " << filePath.c_str() << " does not exist\n");
-				//err = Error::tableFileNotExist;
-				if (file.open(QIODevice::WriteOnly))
-					file.close();
-				return true;
-			}
-			if (!file.open(QIODevice::ReadOnly)) {
-				JD_CONSOLE_FUNCTION("Failed to open file for reading: " << filePath.c_str() << "\n");
-				err = Error::cantOpenTableFile;
-				return false;
-			}
-
-			std::string jsonData = file.readAll().constData();
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData.c_str());
-			if (!jsonDoc.isNull()) {
-				if (!jsonDoc.isArray())
-				{
-					JD_CONSOLE_FUNCTION("Tabledata: " << jsonData.c_str() << " is not a QJsonArray\n");
-					err = Error::corruptTableData;
-					return false;
-				}
-				QJsonArray array = jsonDoc.array();
-				for (const QJsonValue& value : array)
-				{
-					if (!value.isObject())
-					{
-						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString().toStdString().c_str() << " is not a QJsonObject\n");
-						err = Error::corruptTableData;
-						return false;
-					}
-					QJsonObject lock = value.toObject();
-					if (!ObjectLockData::isValid(lock))
-					{
-						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString().toStdString().c_str() << " is has missing or corrupt data\n");
-						err = Error::corruptTableData;
-						return false;
-					}
-
-					locks.push_back(ObjectLockData());
-					locks[locks.size()-1].load(lock);
-				}
-			}
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-			JsonDeserializer deserializer;
-			JsonValue deserialized = deserializer.deserializeValue(jsonData);
-			if (!deserialized.isNull()) {
-				if (!deserialized.isArray())
-				{
-					JD_CONSOLE_FUNCTION("Tabledata: " << jsonData.c_str() << " is not a JsonArray\n");
-					err = Error::corruptTableData;
-					return false;
-				}
-
-				JsonArray array = deserialized.getArray();
-				for (const JsonValue& value : array)
-				{
-					if (!value.isObject())
-					{
-						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString() << " is not a JsonObject\n");
-						err = Error::corruptTableData;
-						return false;
-					}
-					JsonObject lock = value.getObject();
-					if (!ObjectLockData::isValid(lock))
-					{
-						JD_CONSOLE_FUNCTION("Tabledata value: " << value.toString() << " is has missing or corrupt data\n");
-						err = Error::corruptTableData;
-						return false;
-					}
-
-					locks.push_back(ObjectLockData());
-					locks[locks.size() - 1].load(lock);
-				}
-			}
-#endif
-			return true;
-		}
-		bool JDObjectLocker::writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const
-		{
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-			std::string filePath = getTableFileFilePath();
-			
-			QFile file(filePath.c_str());
-			if (!file.open(QIODevice::WriteOnly)) {
-				JD_CONSOLE_FUNCTION("Failed to open file for writing: " << filePath.c_str() << "\n");
-				err = Error::cantOpenTableFile;
-				return false;
-			}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			QJsonArray array;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-			JsonArray array;
-			array.reserve(locks.size());
-#endif
-			for (const ObjectLockData& lock : locks)
-			{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				QJsonObject sav;
-				lock.save(sav);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-				JsonObject sav;
-				lock.save(sav);
-#endif
-				if (!ObjectLockData::isValid(sav))
-				{
-					err = Error::programmingError;
-					JD_CONSOLE_FUNCTION("Programming error!!! ajust the ObjectLockData::isValid(const QJsonObject&) function\n");
-					return false;
-				}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				array.append(sav);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-				array.emplace_back(sav);
-#endif
-			}
-
-			QByteArray transmittStr;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			QJsonDocument jsonDoc(array);
-			transmittStr = jsonDoc.toJson(QJsonDocument::Indented);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-			JsonSerializer serializer;
-			transmittStr = QByteArray::fromStdString(serializer.serializeArray(array));
-#endif
-
-			//m_lockTableWatcher.pause();
-
-			file.write(transmittStr);
-			file.close();
-
-			//m_lockTableWatcher.unpause();
-			return true;
-		}*/
-		/*std::string JDObjectLocker::getTablePath() const
-		{
-			if (m_useSpecificDatabasePath)
-			{
-				return m_specificDatabasePath;
-			}
-			return m_manager.getDatabasePath();
-		}
-		const std::string& JDObjectLocker::getTableFileName() const
-		{
-			return m_lockTableFile;
-		}
-		std::string JDObjectLocker::getTableFileFilePath() const
-		{
-			return getTablePath() + "\\" + getTableFileName();
-		}*/
-
-		/*bool JDObjectLocker::getObjectLockDataFromID(const std::vector<ObjectLockData>& locks,
-			const JDObjectIDptr& targetID,
-			ObjectLockData& lockOut,
-			size_t& index) const
-		{
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-			for (size_t i = 0; i < locks.size(); ++i)
-			{
-				const ObjectLockData& lock = locks[i];
-				if (lock.data.objectID == targetID->get())
-				{
-					lockOut = lock;
-					index = i;
-					return true;
-				}
-			}
-			return false;
-		}
-		void JDObjectLocker::getObjectLockDataFromSessionID(const std::vector<ObjectLockData>& locks,
-			const std::string& targetSessionID,
-			//const Utilities::JDUser& user,
-			std::vector<ObjectLockData>& locksOut,
-			std::vector<size_t>& matches,
-			std::vector<size_t>& mismatches) const
-		{
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
-			for (size_t i = 0; i < locks.size(); ++i)
-			{
-				const ObjectLockData& lock = locks[i];
-				if (lock.data.user.getSessionID() == targetSessionID)
-				{
-					locksOut.push_back(lock);
-					matches.push_back(i);
-				}
-				else
-				{
-					mismatches.push_back(i);
-				}
-			}
-		}*/
+		
 	}
 
 	

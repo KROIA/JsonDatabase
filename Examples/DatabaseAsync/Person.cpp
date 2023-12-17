@@ -1,14 +1,11 @@
 #include "Person.h"
 
-//size_t Person::instanceCounter = 0;
-
 
 JD_OBJECT_IMPL(Person);
 
 Person::Person(const Person& other)
     : JDObjectInterface(other)
 {
-    //instanceCounter++;
     loadFrom(&other);
 }
 
@@ -73,11 +70,7 @@ bool Person::operator!=(const Person& other)
 
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-bool Person::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool Person::load(const JsonObject& obj)
-#endif
 {
     getJsonValue(obj, firstName, "firstName");
     getJsonValue(obj, lastName, "lastName");
@@ -94,27 +87,8 @@ bool Person::load(const JsonObject& obj)
 
     return true;
 }
-#if JD_ACTIVE_JSON == JD_JSON_QT
-bool Person::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool Person::save(JsonObject& obj) const
-#endif
 {
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    obj["firstName"] = firstName.c_str();
-    obj["lastName"] = lastName.c_str();
-    obj["gender"] = gender.c_str();
-    obj["age"] = age.c_str();
-    obj["email"] = email.c_str();
-    obj["phone"] = phone.c_str();
-    obj["education"] = education.c_str();
-    obj["occupation"] = occupation.c_str();
-    obj["experience"] = experience.c_str();
-    obj["salary"] = salary.c_str();
-    obj["numberOfChildren"] = numberOfChildren.c_str();
-    obj["martialStatus"] = martialStatus.c_str();
-
-#else
     obj["firstName"] = firstName;
     obj["lastName"] = lastName;
     obj["gender"] = gender;
@@ -127,21 +101,6 @@ bool Person::save(JsonObject& obj) const
     obj["salary"] = salary;
     obj["numberOfChildren"] = numberOfChildren;
     obj["martialStatus"] = martialStatus;
-#endif
-
-
-    //obj.insert("firstName", firstName.c_str());
-    //obj.insert("lastName", lastName.c_str());
-    //obj.insert("gender", gender.c_str());
-    //obj.insert("age", age.c_str());
-    //obj.insert("email", email.c_str());
-    //obj.insert("phone", phone.c_str());
-    //obj.insert("education", education.c_str());
-    //obj.insert("occupation", occupation.c_str());
-    //obj.insert("experience", experience.c_str());
-    //obj.insert("salary", salary.c_str());
-    //obj.insert("numberOfChildren", numberOfChildren.c_str());
-    //obj.insert("martialStatus", martialStatus.c_str());
     return true;
 }
 
