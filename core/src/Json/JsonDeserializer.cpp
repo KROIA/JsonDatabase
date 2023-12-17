@@ -1,18 +1,15 @@
 #include "Json/JsonDeserializer.h"
 
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
-    #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
-        #include <thread>
-        #include "utilities/AsyncContextDrivenDeleter.h"
-        #include <windows.h>
-    #endif
+#ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER
+    #include <thread>
+    #include "utilities/AsyncContextDrivenDeleter.h"
+    #include <windows.h>
 #endif
+
 namespace JsonDatabase
 {
 
-
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 
     //#define DEBUG_PRINT(value) std::cout << "\n\n\n" << value << "\n\n\n";
 #define DEBUG_PRINT(value)
@@ -647,8 +644,10 @@ namespace JsonDatabase
                 DWORD_PTR dw = SetThreadAffinityMask(newThread->native_handle(), DWORD_PTR(1) << i);
                 if (dw == 0)
                 {
+#ifndef NDEBUG
                     DWORD dwErr = GetLastError();
                     JD_CONSOLE_FUNCTION("SetThreadAffinityMask failed, GLE=" << dwErr << '\n');
+#endif
                 }
                 threads[i] = newThread;
             }
@@ -1048,9 +1047,8 @@ namespace JsonDatabase
             }
         }
     }
-#endif
 
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 std::string JsonDeserializer::unescapeString(const std::string& str)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
@@ -1105,6 +1103,6 @@ std::string JsonDeserializer::unescapeString(const std::string& str)
     return result;
 
 }
-#endif
+
 
 }

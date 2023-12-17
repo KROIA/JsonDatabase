@@ -81,11 +81,8 @@ public:
 
 private:
    
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    bool load(const QJsonObject& obj) override 
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
     bool load(const JsonObject& obj) override
-#endif
     {
         getJsonValue(obj, firstName, "firstName");
         getJsonValue(obj, lastName, "lastName");
@@ -103,11 +100,8 @@ private:
         return true;
     }
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    bool save(QJsonObject& obj) const override
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
     bool save(JsonObject& obj) const override
-#endif
     {
         obj["firstName"] = firstName.c_str();
         obj["lastName"] = lastName.c_str();
@@ -129,9 +123,6 @@ private:
     std::string email, phone, education, occupation;
     std::string experience, salary, numberOfChildren;
     std::string martialStatus;
-
-
-    //static size_t instanceCounter;
 };
 
 JD_OBJECT_IMPL(Person);
@@ -139,13 +130,8 @@ JD_OBJECT_IMPL(Person);
 Person::Person(const Person& other)
     : JDObjectInterface(other)
 {
-    //instanceCounter++;
-   // *this = other;
+
 }
-
-
-//size_t Person::instanceCounter = 0;
-
 
 std::vector<JDObject> createPersons()
 {

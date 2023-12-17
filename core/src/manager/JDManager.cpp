@@ -20,15 +20,7 @@
 namespace JsonDatabase
 {
     using namespace Internal;
-    
-    //const QString JDManager::s_timeFormat = "hh:mm:ss.zzz";
-    //const QString JDManager::s_dateFormat = "dd.MM.yyyy";
-    //
-    //const QString JDManager::s_tag_sessionID = "sessionID";
-    //const QString JDManager::s_tag_user = "user";
-    //const QString JDManager::s_tag_date = "date";
-    //const QString JDManager::s_tag_time = "time";
-
+   
     const unsigned int JDManager::s_fileLockTimeoutMs = 1000;
 
 
@@ -155,14 +147,6 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
 		JD_CONSOLE("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
 		return false;
     }
-
-   /* bool wasLockedForWritingByOther = false;
-    JDManagerFileSystem::Error error;
-    if (!JDManagerFileSystem::lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::read, 
-        wasLockedForWritingByOther, s_fileLockTimeoutMs, error))
-    {
-        return false;
-    }*/
     double progressScalar = 0;
     if (progress)
     {
@@ -171,12 +155,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     bool success = true;
     const JDObjectIDptr &id = obj->getObjectID();
 
-    
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    std::vector<QJsonObject> jsons; 
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
-#endif
 
     if (progress)
     {
@@ -190,15 +169,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
 		JD_CONSOLE("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
 		return false;
 	}
-    
-    /*success &= JDManagerFileSystem::readJsonFile(jsons,
-        getDatabasePath(), 
-        getDatabaseName(), 
-        Internal::JDManagerFileSystem::getJsonFileEnding(), 
-        m_useZipFormat, 
-        false,
-        error,
-        progress);*/
+
 
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, id);
     if (index == std::string::npos)
@@ -206,15 +177,10 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
         JD_CONSOLE("bool JDManager::loadObject_internal(JDObject) Object with ID: \"" << id << "\" not found");
         return false;
     }
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    const QJsonObject& objData = jsons[index];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
     const JsonObject &objData = jsons[index].get<JsonObject>();
-#endif
     if (progress) progress->setComment("Deserializing object");
     success &= JDManagerObjectManager::loadObjectFromJson_internal(objData, obj);
-    //success &= Internal::JsonUtilities::deserializeOverrideFromJson(objData, obj, hasChanged);
-    //JDManagerFileSystem::unlockFile(error);
     if (progress)
     {
         progress->startNewSubProgress(progressScalar * 0.5);
@@ -237,15 +203,6 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         
     }
     bool success = true;
-    /*bool wasLockedForWritingByOther = false;
-    JDManagerFileSystem::Error error;
-    if (!JDManagerFileSystem::lockFile(getDatabasePath(), getDatabaseName(), FileReadWriteLock::Access::read, 
-        wasLockedForWritingByOther, s_fileLockTimeoutMs, error))
-    {
-        JD_CONSOLE("bool JDManager::loadObjects_internal(mode=\""<< getLoadModeStr(mode) <<"\") Can't lock database\n");
-        return false;
-    }*/
-
     LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::read, s_fileLockTimeoutMs);
@@ -255,15 +212,8 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         JD_CONSOLE("bool JDManager::loadObjects_internal(mode): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
         return false;
     }
-    
 
-
-    
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    std::vector<QJsonObject> *jsons = new std::vector<QJsonObject>();
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray *jsons = new JsonArray();
-#endif
     AsyncContextDrivenDeleter asyncDeleter(jsons);
 
     const double loadingBarRatio = 0.5;
@@ -279,14 +229,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         JD_CONSOLE("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
         return false;
     }
-    /*success &= JDManagerFileSystem::readJsonFile(*jsons,
-        getDatabasePath(), 
-        getDatabaseName(), 
-        Internal::JDManagerFileSystem::getJsonFileEnding(), 
-        m_useZipFormat, 
-        false,
-        error,
-        progress);*/
+
 
     bool modeNewObjects = (mode & (int)LoadMode::newObjects);
     bool modeChangedObjects = (mode & (int)LoadMode::changedObjects);
@@ -309,14 +252,9 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
     if (progress)
     {
-        //progress->setComment("Deserialize objects");
         progress->startNewSubProgress(progressScalar * (1- loadingBarRatio));
     }
     success &= JDManagerObjectManager::loadObjectsFromJson_internal(*jsons, mode, progress, 
-       /* hasOverrideChangeFromDatabaseSlots,
-        hasChangeFromDatabaseSlots,
-        hasObjectAddedToDatabaseSlots,
-        hasObjectRemovedFromDatabaseSlots,*/
         overridingObjs,
         newObjIDs,
         newObjInstances, 
@@ -324,7 +262,6 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         pairsForSignal);
 
 
-    //JDManagerFileSystem::unlockFile(error);
     fileAccessor.unlock();
 
     // Copy the data to the signals
@@ -395,34 +332,14 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     }
 
     FileWatcherAutoPause paused(JDManagerFileSystem::getDatabaseFileWatcher());
-    /*bool wasLockedForWritingByOther = false;
-    JDManagerFileSystem::Error error;
-    bool hasLock = JDManagerFileSystem::lockFile(getDatabasePath(), getDatabaseName(), 
-        FileReadWriteLock::Access::readWrite, wasLockedForWritingByOther, 
-        timeoutMillis, error);
-    if (wasLockedForWritingByOther)
-    {
-        m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
-    	return false;
-    }
-    if (!hasLock)
-    {
-        return false;
-    }*/
 
     if (progress) progress->setComment("Serializing object");
     JDObjectIDptr ID = obj->getObjectID();
     
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    std::vector<QJsonObject> jsons;
-    QJsonObject data;
-    success &= obj->saveInternal(data);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray jsons;
     std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
     success &= obj->saveInternal(*data);
-#endif
-    
+
 
     if (progress)
     {
@@ -438,17 +355,6 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
         JD_CONSOLE("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis,): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
         return false;
     }
-
-    /*
-    success &= JDManagerFileSystem::readJsonFile(jsons,
-        getDatabasePath(),
-        getDatabaseName(), 
-        Internal::JDManagerFileSystem::getJsonFileEnding(), 
-        m_useZipFormat, 
-        false,
-        error,
-        progress);
-        */
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
 
     if (index == std::string::npos)
@@ -472,20 +378,6 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
         JD_CONSOLE("bool JDManager::saveObject_internal(JDObject, unsigned int timeoutMs): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
         return false;
     }
-    /*
-    // Save the serialized objects
-    success &= JDManagerFileSystem::writeJsonFile(jsons, 
-        getDatabasePath(), 
-        getDatabaseName(), 
-        Internal::JDManagerFileSystem::getJsonFileEnding(), 
-        m_useZipFormat, 
-        false,
-        error,
-        progress);
-        */
-    
-    //JDManagerFileSystem::unlockFile(error);
-
     return success;
 }
 bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress)
@@ -515,31 +407,10 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
         return false;
     }
     FileWatcherAutoPause paused(JDManagerFileSystem::getDatabaseFileWatcher());
-
-   /* bool wasLockedForWritingByOther = false;
-    JDManagerFileSystem::Error error;
-    bool hasLock = JDManagerFileSystem::lockFile(getDatabasePath(), getDatabaseName(), 
-        FileReadWriteLock::Access::write, wasLockedForWritingByOther, 
-        timeoutMillis, error);
-    if (wasLockedForWritingByOther)
-    {
-        m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
-        JDManagerFileSystem::unlockFile(error);
-        return false;
-    }
-    if (!hasLock)
-    {
-        JD_CONSOLE("bool JDManager::saveObjects_internal(vector<JDObject>&, timeout=" << timeoutMillis << "ms) Can't lock database\n");
-        return false;
-    }*/
     bool success = true;
 
     if (progress) progress->setComment("Serializing objects");
-#if JD_ACTIVE_JSON == JD_JSON_QT
-    std::vector<QJsonObject>* jsonData = new std::vector<QJsonObject>();
-#elif JD_ACTIVE_JSON == JD_JSON_GLAZE || JD_ACTIVE_JSON == JD_JSON_INTERNAL
     JsonArray *jsonData = new JsonArray;
-#endif
     AsyncContextDrivenDeleter asyncDeleter(jsonData);
    
     
@@ -547,14 +418,12 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     {
         progress->startNewSubProgress(progressScalar * 0.6);
         success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData, progress);
-        //progress->setComment("Writing database file");
     }
 	else
 	{
 		success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData);
 	}
     
-
     // Save the serialized objects
     if(progress) progress->startNewSubProgress(progressScalar * 0.4);
     fileError = fileAccessor.writeJsonFile(*jsonData);
@@ -563,16 +432,6 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
         JD_CONSOLE("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
         return false;
     }
-    /*
-    success &= JDManagerFileSystem::writeJsonFile(*jsonData, 
-        getDatabasePath(), 
-        getDatabaseName(), Internal::JDManagerFileSystem::getJsonFileEnding(), 
-        m_useZipFormat, 
-        false,
-        error,
-        progress);
-    success &= JDManagerFileSystem::unlockFile(error);*/
-
     return success;
 }
 
@@ -684,8 +543,6 @@ void JDManager::update()
     
     JDManagerFileSystem::update();
     JDManagerObjectManager::update();
-    //JDObjectLocker::update();
-
     
     m_signals.emitIfNotEmpty();
     m_signals.emitQueue();

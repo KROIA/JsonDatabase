@@ -33,14 +33,8 @@ namespace JsonDatabase
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (m_databasePath == path)
 				return;
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			std::vector<QJsonObject> backup;
-			std::vector<QJsonObject> selfOwnedObjects;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray backup;
 			JsonArray selfOwnedObjects;
-#endif
 			if (m_databasePathSet)
 			{
 				if (!isRegistryFileOpen())
@@ -52,11 +46,7 @@ namespace JsonDatabase
 				{
 					for (size_t i = 0; i < backup.size(); ++i)
 					{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-						QJsonObject &obj = backup[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 						JsonObject& obj = backup[i].get<JsonObject>();
-#endif
 						std::string key = LockEntryObject::getKey(obj);
 						if (m_fileLocks.find(key) != m_fileLocks.end())
 						{
@@ -81,11 +71,7 @@ namespace JsonDatabase
 
 				for (size_t i = 0; i < selfOwnedObjects.size(); ++i)
 				{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-					QJsonObject& obj = selfOwnedObjects[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& obj = selfOwnedObjects[i].get<JsonObject>();
-#endif
 					std::string key = LockEntryObject::getKey(obj);
 					createSelfOwnedLock(key);
 				}
@@ -103,14 +89,9 @@ namespace JsonDatabase
 			
 			if (newName.size() == 0)
 				newName = "registry";
-			
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			std::vector<QJsonObject> backup;
-			std::vector<QJsonObject> selfOwnedObjects;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+		
 			JsonArray backup;
 			JsonArray selfOwnedObjects;
-#endif
 
 			if (m_nameSet)
 			{
@@ -124,11 +105,7 @@ namespace JsonDatabase
 				{
 					for (size_t i = 0; i < backup.size(); ++i)
 					{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-						QJsonObject& obj = backup[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 						JsonObject& obj = backup[i].get<JsonObject>();
-#endif
 						std::string key = LockEntryObject::getKey(obj);
 						if (m_fileLocks.find(key) != m_fileLocks.end())
 						{
@@ -151,11 +128,7 @@ namespace JsonDatabase
 				createFiles();
 				for (size_t i = 0; i < selfOwnedObjects.size(); ++i)
 				{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-					QJsonObject& obj = selfOwnedObjects[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& obj = selfOwnedObjects[i].get<JsonObject>();
-#endif
 					std::string key = LockEntryObject::getKey(obj);
 					createSelfOwnedLock(key);
 				}
@@ -236,31 +209,15 @@ namespace JsonDatabase
 		{
 			return m_key;
 		}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		std::string AbstractRegistry::LockEntryObject::getKey(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		std::string AbstractRegistry::LockEntryObject::getKey(const JsonObject& obj)
-#endif
 		{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			if (obj.contains("key"))
-			{
-				return obj["key"].toString().toStdString();
-			}
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			if(obj.contains("key"))
 			{
 				return obj.at("key").get<std::string>();
 			}
-#endif
 			return "";
 		}
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool AbstractRegistry::LockEntryObject::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::LockEntryObject::load(const JsonObject& obj)
-#endif
 		{
 			m_key = getKey(obj);
 			if(m_key.size() > 0)
@@ -268,18 +225,9 @@ namespace JsonDatabase
 			return false;
 		}
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool AbstractRegistry::LockEntryObject::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::LockEntryObject::save(JsonObject& obj) const
-#endif
 		{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			obj["key"] = QString::fromStdString(m_key);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-			
 			obj["key"] = m_key;
-#endif
 			return true;
 		}
 
@@ -367,30 +315,18 @@ namespace JsonDatabase
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (!isRegistryFileOpen())
 				return 0;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			std::vector<QJsonObject> jsons;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
-#endif
 			readObjects_internal(jsons);
 			int added = 0;
 			for (auto& obj : objects)
 			{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				QJsonObject jsonObj;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				std::shared_ptr<JsonObject> jsonObj = std::make_shared<JsonObject>();
-#endif
 				if (!createSelfOwnedLock(obj->getKey()))
 				{
 					// Can't create lock
 					continue;
 				}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				if (obj->save(jsonObj))
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				if (obj->save(*jsonObj))
-#endif
 				{
 					++added;
 					jsons.push_back(std::move(jsonObj));
@@ -420,11 +356,7 @@ namespace JsonDatabase
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (!isRegistryFileOpen())
 				return 0;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			std::vector<QJsonObject> jsons;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
-#endif
 
 			readObjects_internal(jsons);
 			int removed = 0;
@@ -436,11 +368,7 @@ namespace JsonDatabase
 
 				for (size_t i = 0; i < jsons.size(); ++i)
 				{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-					QJsonObject& subObj = jsons[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& subObj = jsons[i].get<JsonObject>();
-#endif
 					std::string loadedKey = LockEntryObject::getKey(subObj);
 					if (loadedKey == key)
 					{
@@ -459,20 +387,11 @@ namespace JsonDatabase
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			if (!isRegistryFileOpen())
 				return false;
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			std::vector<QJsonObject> jsons;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
-#endif
 			readObjects_internal(jsons);
 			for (size_t i = 0; i < jsons.size(); ++i)
 			{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				QJsonObject& subObj = jsons[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JsonObject& subObj = jsons[i].get<JsonObject>();
-#endif
 				std::string loadedKey = LockEntryObject::getKey(subObj);
 				if (loadedKey == key)
 				{
@@ -481,12 +400,7 @@ namespace JsonDatabase
 			}
 			return false;
 		}
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		int AbstractRegistry::saveObjects_internal(const std::vector<QJsonObject>& jsons) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		int AbstractRegistry::saveObjects_internal(const JsonArray& jsons) const
-#endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			if (!isRegistryFileOpen())
@@ -498,12 +412,7 @@ namespace JsonDatabase
 			return 0;
 		}
 
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool AbstractRegistry::readObjects_internal(std::vector<QJsonObject>& jsons) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::readObjects_internal(JsonArray& jsons) const
-#endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			if (!isRegistryFileOpen())
@@ -515,22 +424,14 @@ namespace JsonDatabase
 			return true;
 		}
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool AbstractRegistry::readObjects_internal(const std::vector<QJsonObject>& jsons, std::vector<JDSerializable*>& objects) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool AbstractRegistry::readObjects_internal(const JsonArray& jsons, std::vector<JDSerializable*>& objects) const
-#endif
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_6);
 			bool success = true;
 			std::vector<JDSerializable*> successfully;
 			for(size_t i=0; i< objects.size(); ++i)
 			{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				const QJsonObject& subObj = jsons[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				const JsonObject& subObj = jsons[i].get<JsonObject>();
-#endif
 				bool s = objects[i]->load(subObj);
 				if (s)
 				{
@@ -579,13 +480,8 @@ namespace JsonDatabase
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
 			if (!isRegistryFileOpen())
 				return 0;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			std::vector<QJsonObject> jsons;
-			std::vector<QJsonObject> jsonsOut;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
 			JsonArray jsonsOut;
-#endif
 			std::vector<std::string> selfOwned = getSelfOwnedLockNames();
 			readObjects_internal(jsons);
 			jsonsOut = jsons;
@@ -598,11 +494,7 @@ namespace JsonDatabase
 
 				for (size_t i = 0; i < jsonsOut.size(); ++i)
 				{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-					QJsonObject& subObj = jsonsOut[i];
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject& subObj = jsonsOut[i].get<JsonObject>();
-#endif
 					std::string loadedKey = LockEntryObject::getKey(subObj);
 					if (loadedKey == key)
 					{
@@ -624,26 +516,16 @@ namespace JsonDatabase
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
 			if (!isRegistryFileOpen())
 				return 0;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			std::vector<QJsonObject> jsons;
-			std::vector<QJsonObject> jsonsOut;
-			std::unordered_map<std::string, QJsonObject> objectsFromFile;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 			JsonArray jsons;
 			JsonArray jsonsOut;
 			std::unordered_map<std::string, JsonObject> objectsFromFile;
-#endif
 			if(!readObjects_internal(jsons))
 				return 0;
 			
 
 			for (auto& obj : jsons)
 			{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				QJsonObject& subObj = obj;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				JsonObject& subObj = obj.get<JsonObject>();
-#endif
 				std::string key = LockEntryObject::getKey(subObj);
 				objectsFromFile[key] = subObj;
 			}

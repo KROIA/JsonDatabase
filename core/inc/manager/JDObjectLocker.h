@@ -10,12 +10,7 @@
 
 #include <string>
 #include <vector>
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonObject>
-#include <QString>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 #include "Json/JsonValue.h"
-#endif
 #include <mutex>
 
 namespace JsonDatabase
@@ -95,15 +90,9 @@ namespace JsonDatabase
 				std::string toString() const;
 				
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				bool load(const QJsonObject& obj) override;
-				bool save(QJsonObject& obj) const override;
-				static bool isValid(const QJsonObject& lock);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 				bool load(const JsonObject& obj) override;
 				bool save(JsonObject& obj) const override;
 				static bool isValid(const JsonObject& lock);
-#endif
 
 			
 				LockData data;
@@ -116,57 +105,6 @@ namespace JsonDatabase
 			void onDatabasePathChangeStart(const std::string& newPath) override;
 			void onDatabasePathChangeEnd() override;
 			void onNameChange(const std::string& newName) override;
-
-
-
-
-
-			/*
-			class JSONDATABASE_EXPORT ObjectLockData : public Utilities::JDSerializable
-			{
-			public:
-				ObjectLockData();
-				ObjectLockData(const JDObject & obj, const JDManager &manager);
-				void setObject(const JDObject & obj, const JDManager& manager);
-#if JD_ACTIVE_JSON == JD_JSON_QT
-				bool load(const QJsonObject& obj) override;
-				bool save(QJsonObject& obj) const override;
-
-				static bool isValid(const QJsonObject& lock);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-				bool load(const JsonObject& obj) override;
-				bool save(JsonObject &obj) const override;
-
-				static bool isValid(const JsonObject& lock);
-#endif
-
-				std::string toString() const;
-
-				LockData data;
-				JDObject obj;
-			};*/
-
-			
-			
-			//bool readLockTable(std::vector<ObjectLockData>& locks, Error& err) const;
-			//bool writeLockTable(const std::vector<ObjectLockData>& locks, Error& err) const;
-
-			//std::string getTablePath() const;
-			//const std::string& getTableFileName() const;
-			//std::string getTableFileFilePath() const;
-
-			/*bool getObjectLockDataFromID(const std::vector<ObjectLockData>& locks,
-				const JDObjectIDptr& targetID,
-				ObjectLockData& lockOut,
-				size_t& index) const;
-
-			void getObjectLockDataFromSessionID(const std::vector<ObjectLockData>& locks,
-				const std::string& targetSessionID,
-				//const Utilities::JDUser& user,
-				std::vector<ObjectLockData>& locksOut,
-				std::vector<size_t>& matches,
-				std::vector<size_t>& mismatches) const;
-				*/
 
 			JDManager& m_manager;
 			std::mutex& m_mutex;

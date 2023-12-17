@@ -9,11 +9,9 @@
 #include <vector>
 #include <mutex>
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 #include <json/JsonValue.h>
-#endif
+
 
 namespace JsonDatabase
 {
@@ -39,18 +37,9 @@ namespace JsonDatabase
             std::shared_ptr<T> createShallowClone(const std::shared_ptr<T>& source);
 
             template<typename T>
-#if JD_ACTIVE_JSON == JD_JSON_QT
-            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data);
-#endif
 
-     /*       template<typename T>
-#if JD_ACTIVE_JSON == JD_JSON_QT
-            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr &id);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id);
-#endif*/
+            std::shared_ptr<T> createClone(const std::shared_ptr<T>& source, const JsonValue& data);
+
             
             bool addObject(JDObject obj);
             bool addObject(const std::vector<JDObject>& objList);
@@ -123,17 +112,6 @@ namespace JsonDatabase
             const std::vector<JDObjectManager*>& getObjectManagers_internal() const;
             void clearObjects_internal();
 
-
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-            bool loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj);
-            bool loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
-                std::vector<JDObject>& overridingObjs,
-                std::vector<JDObjectID::IDType>& newObjIDs,
-                std::vector<JDObject>& newObjInstances,
-                std::vector<JDObject>& removedObjs,
-                std::vector<JDObjectPair>& changedPairs);
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
             bool loadObjectFromJson_internal(const JsonObject& json, const JDObject& obj);
             bool loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
                 std::vector<JDObject>& overridingObjs,
@@ -141,14 +119,7 @@ namespace JsonDatabase
                 std::vector<JDObject>& newObjInstances,
                 std::vector<JDObject>& removedObjs,
                 std::vector<JDObjectPair>& changedPairs);
-#endif
 
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-
-#endif
             void update();
 
             
@@ -197,36 +168,16 @@ namespace JsonDatabase
         }
         
         template<typename T>
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data)
-#endif
         {
             T* cloned = dynamic_cast<T*>(source->shallowClone_internal());
             cloned->loadInternal(data);
 			std::shared_ptr<T> clone(cloned);
 
-			//newObjectInstantiated_internal(clone);
-
 			return clone;
 
         }
-        /*template<typename T>
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const QJsonObject& data, const JDObjectIDptr& id)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-        std::shared_ptr<T> JDManagerObjectManager::createClone(const std::shared_ptr<T>& source, const JsonValue& data, const JDObjectIDptr& id)
-#endif
-        {
-            T* cloned = dynamic_cast<T*>(source->clone_internal(data, id));
-            std::shared_ptr<T> clone(cloned);
 
-            //newObjectInstantiated_internal(clone);
-
-            return clone;
-
-        }*/
 
 
         template<typename T>
@@ -241,20 +192,6 @@ namespace JsonDatabase
             return true;
         }
 
-
-       /* template<typename T>
-        bool JDManagerObjectManager::deleteObjects()
-        {
-            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            std::vector<std::shared_ptr<T>> toDelete = getObjects<T>();
-
-            for (auto obj : toDelete)
-            {
-                m_objs.removeObject(obj);
-                //delete obj;
-            }
-            return true;
-        }*/
 
         template<typename T>
         std::size_t JDManagerObjectManager::getObjectCount() const

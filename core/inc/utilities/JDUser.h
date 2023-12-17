@@ -50,13 +50,10 @@ namespace JsonDatabase
 
 			std::string toString() const;
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-			bool load(const QJsonObject& obj) override;
-			bool save(QJsonObject& obj) const override;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 			bool load(const JsonObject& obj) override;
 			bool save(JsonObject& obj) const override;
-#endif
+
 
 			struct JsonKeys
 			{

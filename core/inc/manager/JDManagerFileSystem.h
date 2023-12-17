@@ -8,11 +8,8 @@
 #include "utilities/JDUserRegistration.h"
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-#include <QJsonObject>
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 #include "Json/JsonValue.h"
-#endif
 #include <mutex>
 
 namespace JsonDatabase

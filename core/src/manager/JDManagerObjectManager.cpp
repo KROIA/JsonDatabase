@@ -371,11 +371,7 @@ namespace JsonDatabase
             m_objs.clear();
         }
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        bool JDManagerObjectManager::loadObjectFromJson_internal(const QJsonObject& json, const JDObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDManagerObjectManager::loadObjectFromJson_internal(const JsonObject& json, const JDObject& obj)
-#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if (!obj->loadInternal(json))
@@ -388,29 +384,12 @@ namespace JsonDatabase
 
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-        bool JDManagerObjectManager::loadObjectsFromJson_internal(const std::vector<QJsonObject>& jsons, int mode, Internal::WorkProgress* progress,
-           // bool hasOverrideChangeFromDatabaseSlots,
-           // bool hasChangeFromDatabaseSlots,
-           // bool hasObjectAddedToDatabaseSlots,
-           // bool hasObjectRemovedFromDatabaseSlots,
-            std::vector<JDObject>& overridingObjs,
-            std::vector<JDObjectID::IDType>& newObjIDs,
-            std::vector<JDObject>& newObjInstances,
-            std::vector<JDObject>& removedObjs,
-            std::vector<JDObjectPair>& changedPairs)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
         bool JDManagerObjectManager::loadObjectsFromJson_internal(const JsonArray& jsons, int mode, Internal::WorkProgress* progress,
-           // bool hasOverrideChangeFromDatabaseSlots,
-           // bool hasChangeFromDatabaseSlots,
-           // bool hasObjectAddedToDatabaseSlots,
-           // bool hasObjectRemovedFromDatabaseSlots,
             std::vector<JDObject> &overridingObjs,
             std::vector<JDObjectID::IDType>& newObjIDs,
             std::vector<JDObject>& newObjInstances,
             std::vector<JDObject> &removedObjs,
             std::vector<JDObjectPair> &changedPairs)
-#endif
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             double progressScalar = 0;
@@ -445,15 +424,6 @@ namespace JsonDatabase
 				.overridingObjects = overrideChanges
 			};
 
-           /* double progressToTotal = 0;
-            if (progress)
-            {
-                progressToTotal = 1.0 - progress->getProgress();
-                progress->setComment("Loading "+std::to_string(jsons.size()) + " objects");
-            }
-            double deltaProgress = (progressToTotal*0.5) / (jsons.size()+1);
-            */
-
             if (progress)
             {
                 progress->setComment("Loading " + std::to_string(jsons.size()) + " objects");
@@ -475,13 +445,6 @@ namespace JsonDatabase
             {
                 JDObjectManager::ManagedLoadMisc loaderMisc;
                 bool loaded = false;
-#if JD_ACTIVE_JSON == JD_JSON_QT
-                const QJsonObject& json = jsons[i];
-                if (Utilities::JDSerializable::getJsonValue(json, loaderMisc.id, JDObjectInterface::s_tag_objID))
-                {
-                    loaded = true;
-                }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
               
                 if(!jsons[i].holds<JsonObject>())
 				{
@@ -493,24 +456,16 @@ namespace JsonDatabase
                 
                 if (json.contains(JDObjectInterface::s_tag_objID))
                 {
-#if JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                    loaderMisc.id = json.at(JDObjectInterface::s_tag_objID).get<int>();
-#endif
 
+                    loaderMisc.id = json.at(JDObjectInterface::s_tag_objID).get<int>();
                     loaded = true;
                 }
 				
-#endif
                 if (!loaded)
                 {
-#if JD_ACTIVE_JSON == JD_USE_QJSON
-                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
-                        << JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
                         << JDObjectInterface::s_tag_objID << "\" is missed\n"
                         << "Object: \"" << json << "\"\n");
-#endif
                     success = false;
                     continue;
                 }
@@ -547,7 +502,6 @@ namespace JsonDatabase
 
                     removedObjs.emplace_back(obj);
                 nextObj:;
-                   // if (progress) progress->addProgress(dProgress);
                 }
             }
 

@@ -43,23 +43,14 @@ namespace JsonDatabase
 			return m_changestate;
 		}
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, std::vector<QJsonObject>& jsonOut)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
-#endif
 		{
 			return getJsonArray(objs, jsonOut, nullptr);
 		}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
-			std::vector<QJsonObject>& jsonOut,
-			WorkProgress* progress)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
 			JsonArray& jsonOut,
 			WorkProgress* progress)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 			if (objs.size() == 0)
@@ -108,16 +99,10 @@ namespace JsonDatabase
 							std::atomic<int> & finishCount = threadData[i].finishCount;
 							for (size_t j = data.start; j < data.end; ++j)
 							{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-								QJsonObject jsonData;
-								objs[j]->saveInternal(jsonData);
-								jsonOut[j] = std::move(jsonData);
 
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 								std::shared_ptr<JsonObject> jsonData = std::make_shared<JsonObject>();
 								objs[j]->saveInternal(*jsonData);
 								*jsonOut[j] = std::move(jsonData);
-#endif
 								
 								finishCount++;
 							}
@@ -168,11 +153,7 @@ namespace JsonDatabase
 				jsonOut.reserve(objs.size());
 				for (auto o : objs)
 				{
-#if JD_ACTIVE_JSON == JD_JSON_QT
-					QJsonObject data;
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 					JsonObject data;
-#endif
 					success &= o->saveInternal(data);
 					jsonOut.emplace_back(std::move(data));
 					if (progress)
@@ -210,43 +191,22 @@ namespace JsonDatabase
 			s_undef = "unknown JDObjectManager::ManagedLoadStatus("+std::to_string((int)status)+")";
 			return s_undef;
 		}
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoad(
-			const QJsonObject& json, 
-			JDObjectManager* manager,
-			ManagedLoadContainers& containers, 
-			const ManagedLoadMode& loadMode,
-			const ManagedLoadMisc& misc)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoad(
 			const JsonObject& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers, 
 			const ManagedLoadMode& loadMode,
 			const ManagedLoadMisc& misc)
-#endif
 		{
 			if (manager)
 				return managedLoadExisting_internal(json, manager, containers, loadMode);
 			return managedLoadNew_internal(json, containers, misc);
 		}
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadExisting_internal(
-			const QJsonObject& json,
-			JDObjectManager* manager,
-			ManagedLoadContainers& containers,
-			const ManagedLoadMode& loadMode/*,
-			const ManagedLoadMisc& misc*/)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadExisting_internal(
 			const JsonObject& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers,
-			const ManagedLoadMode& loadMode/*,
-			const ManagedLoadMisc& misc*/)
-#endif
+			const ManagedLoadMode& loadMode)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject obj = manager->getObject();
@@ -257,30 +217,11 @@ namespace JsonDatabase
 			{
 				if (loadMode.overridingObjects)
 				{
-					//if (misc.hasOverrideChangeFromDatabaseSlots)
-					//{
+					
 					if (!manager->loadAndOverrideData(json))
 						return ManagedLoadStatus::loadFailed;
 
 					containers.overridingObjs.push_back(obj);
-
-
-
-					// To do: Simplify
-					//containers.loadedObjects[obj] = obj;
-
-					/* }
-					else
-					{
-						if (!manager->loadAndOverrideData(json))
-							return ManagedLoadStatus::loadFailed;
-
-						JDObject obj = manager->getObject();
-						containers.overridingObjs.push_back(obj);
-
-						// To do: Simplify
-						containers.loadedObjects[obj] = obj;
-					}*/
 				}
 				else
 				{
@@ -297,20 +238,11 @@ namespace JsonDatabase
 			containers.loadedObjects[obj] = obj;
 			return ManagedLoadStatus::success;
 		}
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadNew_internal(
-			const QJsonObject& json,
-			ManagedLoadContainers& containers/*,
-			const ManagedLoadMode& loadMode*/,
-			const ManagedLoadMisc& misc)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadNew_internal(
 			const JsonObject& json,
 			ManagedLoadContainers& containers/*,
 			const ManagedLoadMode& loadMode*/,
 			const ManagedLoadMisc& misc)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject templateObj = JDObjectRegistry::getObjectDefinition(json);
@@ -322,24 +254,6 @@ namespace JsonDatabase
 #endif
 				return ManagedLoadStatus::loadFailed_UnknownObjectType;
 			}
-			/*JDObjectID::IDType id;
-#ifndef JD_USE_QJSON
-			if (!json.getInt(id, JDObjectInterface::s_tag_objID))
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-			if (!JDSerializable::getJsonValue(json, id, JDObjectInterface::s_tag_objID))
-#endif
-			{
-#ifndef JD_USE_QJSON
-				JD_CONSOLE_FUNCTION("Objet has incomplete data. Type: \""<< templateObj->className()<<"\" Key: \""
-					<< JDObjectInterface::s_tag_objID << "\" is missed\n"
-					<< "Object: \"" << json<< "\"\n");
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-				JD_CONSOLE_FUNCTION("Objet has incomplete data. Type: \"" << templateObj->className() << "\" Key: \""
-					<< JDObjectInterface::s_tag_objID.toStdString() << "\" is missed\n");
-#endif
-				return ManagedLoadStatus::loadFailed_IncompleteData;
-			}
-			*/
 			JDObject instance = templateObj->shallowClone();
 			instance->loadInternal(json);
 			containers.newObjIDs.push_back(misc.id);
@@ -349,31 +263,20 @@ namespace JsonDatabase
 		}
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectManager::loadAndOverrideData(const QJsonObject& json)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+
 		bool JDObjectManager::loadAndOverrideData(const JsonObject& json)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			return deserializeOverrideFromJson_internal(json, m_obj);
 		}
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectManager::loadAndOverrideDataIfChanged(const QJsonObject& json, bool& hasChangesOut)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::loadAndOverrideDataIfChanged(const JsonObject& json, bool& hasChangesOut)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			return deserializeOverrideFromJsonIfChanged_internal(json, m_obj, hasChangesOut);
 		}
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const QJsonObject& json, const JDObjectIDptr& id)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject templateObj = JDObjectRegistry::getObjectDefinition(json);
@@ -391,11 +294,7 @@ namespace JsonDatabase
 
 			return cloneAndLoadObject(templateObj, json, id);
 		}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const QJsonObject& json, const JDObjectIDptr& id)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const JsonObject& json, const JDObjectIDptr& id)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject instance = original->shallowClone();
@@ -408,12 +307,7 @@ namespace JsonDatabase
 			return manager;
 		}
 
-
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const QJsonObject& json, JDObject obj, bool& hasChangedOut)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			if (!obj->equalData(json))
@@ -428,11 +322,7 @@ namespace JsonDatabase
 			}
 			return true;
 		}
-#if JD_ACTIVE_JSON == JD_JSON_QT
-		bool JDObjectManager::deserializeOverrideFromJson_internal(const QJsonObject& json, JDObject obj)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 		bool JDObjectManager::deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj)
-#endif
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			if (!obj->loadInternal(json))

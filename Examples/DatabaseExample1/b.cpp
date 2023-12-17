@@ -15,11 +15,7 @@ B::~B()
 
 
 
-#if JD_ACTIVE_JSON == JD_JSON_QT
-bool B::load(const QJsonObject& obj)
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool B::load(const JsonDatabase::JsonObject& obj)
-#endif
 {
     qDebug() << "Loading B";
     int value;
@@ -28,11 +24,7 @@ bool B::load(const JsonDatabase::JsonObject& obj)
         qDebug() << "BValue is: "<<value;
     return true;
 }
-#if JD_ACTIVE_JSON == JD_JSON_QT
-bool B::save(QJsonObject& obj) const
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
 bool B::save(JsonDatabase::JsonObject& obj) const
-#endif
 {
     qDebug() << "Saving B";
     obj["BValue"] = 2;
