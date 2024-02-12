@@ -456,8 +456,53 @@ namespace JsonDatabase
                 
                 if (json.contains(JDObjectInterface::s_tag_objID))
                 {
-
-                    loaderMisc.id = json.at(JDObjectInterface::s_tag_objID).get<int>();
+                    const JsonValue& idValue = json.at(JDObjectInterface::s_tag_objID);
+                    if(idValue.holds<JDObjectID::IDType>())
+						loaderMisc.id = idValue.get<JDObjectID::IDType>();
+                    else
+                    {
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+                        if (idValue.holds<long>())
+                        {
+                            loaderMisc.id = std::to_string(idValue.get<long>());
+                        }
+                        else
+                        {
+                            JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+                            success = false;
+                            continue;
+                        }
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+                        if (idValue.holds<std::string>())
+                        {
+                            const std::string &idStr = idValue.get<std::string>();
+                            long idValueLong = std::stol(idStr);
+                            if(idValueLong < 0)
+							{
+								JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+								success = false;
+								continue;
+							}
+                            if(std::to_string(idValueLong) != idStr)
+                            {
+                                JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+								success = false;
+								continue;
+							}
+                            loaderMisc.id = idValueLong;
+                        }
+                        else
+                        {
+                            JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+                            success = false;
+                            continue;
+                        }
+#else
+                        JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+                        success = false;
+                        continue;
+#endif
+					}
                     loaded = true;
                 }
 				

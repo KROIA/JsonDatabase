@@ -30,12 +30,12 @@ namespace JsonDatabase
 		friend class JsonDeserializer;
 	public:
 
-		using JsonVariantType = std::variant<std::monostate, std::string, int, double, bool, std::shared_ptr<JsonArray>, std::shared_ptr<JsonObject>>;
+		using JsonVariantType = std::variant<std::monostate, std::string, long, double, bool, std::shared_ptr<JsonArray>, std::shared_ptr<JsonObject>>;
 		enum class Type
 		{
 			Null,
 			String,
-			Int,
+			Long,
 			Double,
 			Bool,
 			Array,
@@ -48,7 +48,7 @@ namespace JsonDatabase
 		JsonValue(const std::string& value);
 		JsonValue(std::string&& value) noexcept;
 		JsonValue(const char* value);
-		JsonValue(const int& value);
+		JsonValue(const long& value);
 		JsonValue(const double& value);
 		JsonValue(const bool& value);
 		JsonValue(const JsonArray& value);
@@ -70,7 +70,7 @@ namespace JsonDatabase
 		JsonValue& operator=(const std::string& value);
 		JsonValue& operator=(std::string&& value) noexcept;
 		JsonValue& operator=(const char* value);
-		JsonValue& operator=(const int& value);
+		JsonValue& operator=(const long& value);
 		JsonValue& operator=(const double& value);
 		JsonValue& operator=(const bool& value);
 		JsonValue& operator=(const JsonArray& value);

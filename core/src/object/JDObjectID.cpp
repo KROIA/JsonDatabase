@@ -2,9 +2,20 @@
 #include "utilities/JDObjectIDDomain.h"
 
 
+
 namespace JsonDatabase
 {
+
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
     const JDObjectID::IDType JDObjectID::invalidID = 0; // Invalid ID
+    const JDObjectID::IDType JDObjectID::defaultID = 1; // Default ID
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+    const JDObjectID::IDType JDObjectID::invalidID = ""; // Invalid ID
+    const JDObjectID::IDType JDObjectID::defaultID = "1"; // Default ID
+#else
+    #error "Invalid JD_ID_TYPE_SWITCH value"
+#endif
+
 
     // Constructors
     JDObjectID::JDObjectID(const IDType& id, 
@@ -135,12 +146,12 @@ namespace JsonDatabase
 
     std::string JDObjectID::toString(const IDType& id)
     {
-        return std::to_string(id);
+        return toStringInternal(id);
     }
 
     QString JDObjectID::toQString(const IDType& id)
     {
-        return QString::number(id);
+        return QString::fromStdString(toStringInternal(id));
     }
 
     bool JDObjectID::unregister()

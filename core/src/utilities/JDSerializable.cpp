@@ -42,11 +42,11 @@ namespace JsonDatabase
             return false;
         }
 
-        bool JDSerializable::getJsonValue(const JsonObject& obj, int& value, const std::string& key)
+        bool JDSerializable::getJsonValue(const JsonObject& obj, long& value, const std::string& key)
         {
             if (obj.contains(key))
             {
-                value = obj.find(key)->second.get<int>();
+                value = obj.find(key)->second.get<long>();
                 return true;
             }
             return false;

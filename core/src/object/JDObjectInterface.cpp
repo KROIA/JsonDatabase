@@ -23,7 +23,7 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 
 JDObjectInterface::JDObjectInterface()
     : m_manager(nullptr)
-    , m_shallowID(0)
+    , m_shallowID(JDObjectID::invalidID)
 {
 
 }
@@ -53,31 +53,39 @@ JDObject JDObjectInterface::shallowClone() const
 }
 
 
+
 size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        int id;
+        JDObjectID::IDType id;
         const JsonObject* obj = jsons[i].get_if<JsonObject>();
         if (!obj)
             continue;
         const auto& it = obj->find(s_tag_objID);
         if(it == obj->end())
 			continue;
-        const auto& value = it->second;
+        const JsonDatabase::JsonValue& value = it->second;
         
-        const int *idPtr = value.get_if<int>();
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+        const std::string* idPtr = value.get_if<std::string>();
+        if (!idPtr)
+            continue;
+        id = *idPtr;
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+        const long* idPtr = value.get_if<long>();
         if (!idPtr)
         {
             const double* idPtrD = value.get_if<double>();
-            if(!idPtrD)
-				continue;
-            id = static_cast<int>(*idPtrD);
+            if (!idPtrD)
+                continue;
+            id = static_cast<long>(*idPtrD);
         }
-		else
-			id = *idPtr;
-
-
+        else
+            id = *idPtr;
+#else 
+    #error "Invalid JD_ID_TYPE_SWITCH value"
+#endif 
         if (id == objID->get())
             return i;
     }

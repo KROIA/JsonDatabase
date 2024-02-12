@@ -38,11 +38,11 @@ namespace JsonDatabase
 
 
 
-		static std::string serializeInt(int value);
+		static std::string serializeLong(long value);
 		static std::string serializeDouble(double value);
 		static std::string serializeBool(bool value);
 
-		static void serializeInt(int value, std::string& serializedOut);
+		static void serializeLong(long value, std::string& serializedOut);
 		static void serializeDouble(double value, std::string& serializedOut);
 		static void serializeBool(bool value, std::string& serializedOut);
 

@@ -15,8 +15,27 @@ namespace JsonDatabase
 	{
 		friend JDObjectIDDomain;
 	public:
-		using IDType = int;
+
+#define JD_ID_TYPE_STRING 1
+#define JD_ID_TYPE_LONG 2
+
+// Select the type for a ID here:
+#define JD_ID_TYPE_SWITCH JD_ID_TYPE_LONG
+//#define JD_ID_TYPE_SWITCH JD_ID_TYPE_STRING
+
+
+
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+		using IDType = std::string;
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+		using IDType = long;
+#else
+#error "Invalid ID type"
+#endif
+
 		static const IDType invalidID;
+		static const IDType defaultID;
+
 
 		enum State
 		{
@@ -67,6 +86,15 @@ namespace JsonDatabase
 		friend std::ostream& operator<<(std::ostream& os, const JDObjectID& id);
 		friend QDebug operator<<(QDebug debug, const JDObjectID& id);
 	private:
+		// Invalid value for all types of ID
+
+		static std::string toStringInternal(int ID) {
+			return std::to_string(ID);
+		}
+		static const std::string &toStringInternal(const std::string& ID) {
+			return ID;
+		}
+
 
 		IDType m_id;
 		State m_isValid;

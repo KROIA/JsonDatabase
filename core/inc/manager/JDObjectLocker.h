@@ -55,6 +55,8 @@ namespace JsonDatabase
 				Utilities::JDUser user;
 				QDate lockDate;
 				QTime lockTime;
+
+				LockData() : objectID(JDObjectID::invalidID) {}
 			};
 			bool getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const;
 			int removeInactiveObjectLocks() const;

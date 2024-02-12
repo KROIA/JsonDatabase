@@ -1,4 +1,8 @@
 #include "utilities/JDObjectIDDomain.h"
+#include <cstdlib> // For atoi, used to convert string to integer
+#include <ctime>   // For time, used for seeding random number generator
+#include <sstream> // For stringstream, used to convert integer to string
+
 
 namespace JsonDatabase
 {
@@ -48,7 +52,7 @@ namespace JsonDatabase
 
 
 
-	const JDObjectID::IDType JDObjectIDDomain::s_startID = 1;
+	const JDObjectID::IDType JDObjectIDDomain::s_startID = JDObjectID::defaultID;
 
 	JDObjectIDDomain::JDObjectIDDomain()
 		: m_name("")
@@ -214,8 +218,60 @@ namespace JsonDatabase
 		return success;
 	}
 
+
+	static std::string generateRandomString(int length) {
+		static const char alphanum[] =
+			"0123456789"
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			"abcdefghijklmnopqrstuvwxyz";
+
+		std::string randomString;
+		srand(static_cast<unsigned int>(time(0))); // Seed the random number generator
+
+		for (int i = 0; i < length; ++i) {
+			randomString += alphanum[rand() % (sizeof(alphanum) - 1)];
+		}
+
+		return randomString;
+	}
+	static std::string generateRandomString(const std::string& input, unsigned int increment) {
+		// Attempt to convert the input string to an integer
+		int num = atoi(input.c_str());
+
+		// If the conversion is successful, increment the number and return it as a string
+		if (num != 0 || input == "0") {
+			num++;
+			std::stringstream ss;
+			ss << num;
+			return ss.str();
+		}
+
+		// If the conversion fails, check if the string ends with a number
+		size_t lastDigitPos = input.find_last_of("0123456789");
+		if (lastDigitPos != std::string::npos) {
+			std::string prefix = input.substr(0, lastDigitPos);
+			std::string suffix = input.substr(lastDigitPos);
+			int numSuffix = atoi(suffix.c_str());
+			if (numSuffix != 0 || suffix == "0") {
+				numSuffix += increment;
+				std::stringstream ss;
+				ss << numSuffix;
+				return prefix + ss.str();
+			}
+		}
+
+		// If neither conversion nor suffix incrementing is possible, return an empty string
+		return generateRandomString(10);
+	}
 	void JDObjectIDDomain::generateNextID(unsigned int increment)
 	{
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+		m_nextID = generateRandomString(m_nextID, increment);
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
 		m_nextID += increment;
+#else
+#error "Invalid ID type"
+#endif
+		
 	}
 }

@@ -125,7 +125,7 @@ namespace JsonDatabase
 				}
 			}
 
-			auto newEntry = std::make_shared<LockEntryObjectImpl>(std::to_string(obj->getObjectID()->get()), obj, m_manager);
+			auto newEntry = std::make_shared<LockEntryObjectImpl>(obj->getObjectID()->toString(), obj, m_manager);
 			int ret = 0;
 			
 			if ((ret = AbstractRegistry::addObjects({ newEntry })) != 1)
@@ -233,7 +233,7 @@ namespace JsonDatabase
 				return false;
 			AbstractRegistry::AutoClose autoClose(this);
 
-			std::string key = std::to_string(obj->getObjectID()->get());
+			std::string key = obj->getObjectID()->toString();
 
 			if(!AbstractRegistry::lockExists(key))
 			{
@@ -292,7 +292,7 @@ namespace JsonDatabase
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
 			AbstractRegistry::AutoClose autoClose(this);
-			return AbstractRegistry::isObjectActive(std::to_string(obj->getObjectID()->get()));
+			return AbstractRegistry::isObjectActive(obj->getObjectID()->toString());
 		}
 		bool JDObjectLocker::isObjectLockedByMe(const JDObject & obj, Error& err) const
 		{
@@ -308,13 +308,14 @@ namespace JsonDatabase
 				return false;
 			AbstractRegistry::AutoClose autoClose(this);
 
-			if(AbstractRegistry::isSelfOwned(std::to_string(obj->getObjectID()->get())))
+			if(AbstractRegistry::isSelfOwned(obj->getObjectID()->toString()))
 				return true;
 
 			return false;
 		}
 		bool JDObjectLocker::isObjectLockedByOther(const JDObject & obj, Error& err) const
 		{
+			err = Error::none;
 			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
@@ -327,7 +328,7 @@ namespace JsonDatabase
 				return false;
 			AbstractRegistry::AutoClose autoClose(this);
 
-			std::string key = std::to_string(obj->getObjectID()->get());
+			std::string key = obj->getObjectID()->toString();
 
 			if(AbstractRegistry::lockExists(key))
 			{
@@ -462,7 +463,9 @@ namespace JsonDatabase
 			bool success = LockEntryObject::load(obj);
 			if(!isValid(obj))
 				return false;
-
+			data.objectID = obj.at(JsonKeys::objectID).get<JDObjectID::IDType>();
+			data.user.load(obj.at(JsonKeys::user).get<JsonObject>());
+			
 			data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).get<std::string>());
 			data.lockTime = Utilities::stringToQTime(obj.at(JsonKeys::lockTime).get<std::string>());
 

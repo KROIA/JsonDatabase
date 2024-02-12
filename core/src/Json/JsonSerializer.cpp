@@ -88,8 +88,8 @@ void JsonSerializer::serializeValue(const JsonValue& value, std::string& seriali
         serializedOut = serializeNull(); break;
     case (size_t)JsonValue::Type::String:
         serializeString(value.get<std::string>(), serializedOut); break;
-    case (size_t)JsonValue::Type::Int:
-        serializeInt(value.get<int>(), serializedOut); break;
+    case (size_t)JsonValue::Type::Long:
+        serializeLong(value.get<long>(), serializedOut); break;
     case (size_t)JsonValue::Type::Double:
         serializeDouble(value.get<double>(), serializedOut); break;
     case (size_t)JsonValue::Type::Bool:
@@ -349,12 +349,12 @@ void JsonSerializer::serializeString(const std::string& str, std::string& serial
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     escapeString(str, serializedOut);
 }
-std::string JsonSerializer::serializeInt(int value)
+std::string JsonSerializer::serializeLong(long value)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     return std::to_string(value);
 }
-void JsonSerializer::serializeInt(int value, std::string& serializedOut)
+void JsonSerializer::serializeLong(long value, std::string& serializedOut)
 {
     JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     serializedOut = std::move(std::to_string(value));

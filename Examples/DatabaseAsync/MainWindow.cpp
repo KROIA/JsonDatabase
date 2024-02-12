@@ -161,14 +161,22 @@ void MainWindow::on_editObject_pushButton_clicked()
 	else
 	{*/
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
-	if (m_manager->isObjectLockedByOther(p, lastError))
+	if(m_manager->lockObject(p, lastError))
+	{
+		editMode = true;
+	}
+	else
+	{
+		editMode = false;
+	}
+	/*if (m_manager->isObjectLockedByOther(p, lastError))
 	{
 		editMode = false;
 	}
 	else
 	{
 		editMode = true;
-	}
+	}*/
 	if (lastError != JsonDatabase::Internal::JDObjectLocker::Error::none)
 		editMode = false;
 	//}
@@ -326,7 +334,14 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 JDObject MainWindow::getSelectedObject()
 {
-	return m_manager->getObject(ui.id_lineEdit->text().toInt());
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+	JDObjectID::IDType id = ui.id_lineEdit->text().toStdString();
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+	JDObjectID::IDType id = ui.id_lineEdit->text().toLong();
+#else
+#error "Invalid ID type"
+#endif	
+	return m_manager->getObject(id);
 }
 JDderivedObject<Person> MainWindow::getSelectedPerson()
 {

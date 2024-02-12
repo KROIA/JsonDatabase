@@ -27,7 +27,7 @@ namespace JsonDatabase
 			//static bool getJsonValue(const JsonObject& obj, QVariant& value, const std::string& key);
 			static bool getJsonValue(const JsonObject& obj, QString& value, const std::string& key);
 			static bool getJsonValue(const JsonObject& obj, std::string& value, const std::string& key);
-			static bool getJsonValue(const JsonObject& obj, int& value, const std::string& key);
+			static bool getJsonValue(const JsonObject& obj, long& value, const std::string& key);
 			//static bool getJsonValue(const JsonObject& obj, JDObjectID::IDType& value, const std::string& key);
 			static bool getJsonValue(const JsonObject& obj, double& value, const std::string& key);
 			static bool getJsonValue(const JsonObject& obj, float& value, const std::string& key);

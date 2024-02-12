@@ -235,17 +235,21 @@ namespace JsonDatabase
             }
             default:
             {
-                int intValue = 0;
+                long longValue = 0;
                 double doubleValue = 0;
 
-                int result = deserializeNumber(json, intValue, doubleValue);
-                if (result == 1)
-                {
-                    valOut = intValue;
-                    return json.getRemainingSize();;
-                }
 
-                valOut = doubleValue;
+                int result = deserializeNumber(json, longValue, doubleValue);
+
+                switch (result)
+                {
+                case 1:
+                    valOut = longValue;
+                    break;
+                case 2:
+                    valOut = doubleValue;
+                    break;
+                }
                 return json.getRemainingSize();
             }
         }
@@ -312,17 +316,21 @@ namespace JsonDatabase
             }
             default:
             {
-                int intValue = 0;
+                long longValue = 0;
                 double doubleValue = 0;
+                
 
-                int result = deserializeNumber(json, intValue, doubleValue);
-                if (result == 1)
+                int result = deserializeNumber(json, longValue, doubleValue);
+
+                switch (result)
                 {
-                    valOut = intValue;
-                    return json.getRemainingSize();
+                case 1:
+                    valOut = longValue;
+                    break;
+                case 2:
+                    valOut = doubleValue;
+                    break;
                 }
-
-                valOut = doubleValue;
                 return json.getRemainingSize();
             }
         }
@@ -805,15 +813,15 @@ namespace JsonDatabase
         return json.getRemainingSize();
     }
 
-    int JsonDeserializer::deserializeNumber(const std::string& jsonString, int& intValue, double& doubleValue)
+    int JsonDeserializer::deserializeNumber(const std::string& jsonString, long& longValue, double& doubleValue)
     {
         Buffer buff(jsonString);
-        return deserializeNumber(buff, intValue, doubleValue);
+        return deserializeNumber(buff, longValue, doubleValue);
     }
-    int JsonDeserializer::deserializeNumber(Buffer& json, int& intValue, double& doubleValue)
+    int JsonDeserializer::deserializeNumber(Buffer& json, long& longValue, double& doubleValue)
     {
         JD_JSON_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-        intValue = 0;
+        longValue = 0;
         doubleValue = 0;
         // std::size_t found = std::find_first_not_of("-0123456789.eE", index);
         const char* found = findFirstNotOfNumberStr(json.getCurrent());
@@ -836,7 +844,7 @@ namespace JsonDatabase
         std::istringstream iss(subStr);
         if (dotP == std::string::npos)
         {
-            iss >> intValue;
+            iss >> longValue;
             return 1;
         }
         else

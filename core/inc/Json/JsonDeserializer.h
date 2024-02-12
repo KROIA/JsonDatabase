@@ -28,7 +28,7 @@ namespace JsonDatabase
 		bool deserializeArray(const std::string& json, JsonArray& valueOut, Internal::WorkProgress* progress);
 
 		static void nornmalizeJsonString(const std::string& jsonString, std::string& jsonStringOut);
-		static int deserializeNumber(const std::string& jsonString, int& intValue, double& doubleValue);
+		static int deserializeNumber(const std::string& jsonString, long& longValue, double& doubleValue);
 
 		static std::string unescapeString(const std::string& str);
 	private:
@@ -156,7 +156,7 @@ namespace JsonDatabase
 			Returns 1 if the string is an integer
 			Returns 2 if the string is a double
 		*/
-		static int deserializeNumber(Buffer& json, int& intValue, double& doubleValue);
+		static int deserializeNumber(Buffer& json, long& longValue, double& doubleValue);
 		
 
 		static bool deserializeValue_internal(Buffer& json, JsonValue& out);

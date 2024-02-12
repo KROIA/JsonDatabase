@@ -33,9 +33,9 @@ int main(int argc, char* argv[])
 
 bool test_json_stringParse_str_to_number(int shuldBeType, const std::string& str)
 {
-	int intValue = 0;
+	long longValue = 0;
 	double doubleValue = 0;
-	int type = JsonDatabase::JsonDeserializer::deserializeNumber(str, intValue, doubleValue);
+	int type = JsonDatabase::JsonDeserializer::deserializeNumber(str, longValue, doubleValue);
 	std::string typeStr;
 	switch (type)
 	{
@@ -43,7 +43,7 @@ bool test_json_stringParse_str_to_number(int shuldBeType, const std::string& str
 		typeStr = "None   ";
 		break;
 	case 1:
-		typeStr = "Int    ";
+		typeStr = "Long   ";
 		break;
 	case 2:
 		typeStr = "Double ";
@@ -55,7 +55,7 @@ bool test_json_stringParse_str_to_number(int shuldBeType, const std::string& str
 	{
 		status = "pass ";
 	}
-	std::cout << "str_to_number "<< status << typeStr << "\"" << str << "\"" << " intVal:" << intValue << " doubleVal: " << doubleValue << "\n";
+	std::cout << "str_to_number "<< status << typeStr << "\"" << str << "\"" << " longVal:" << longValue << " doubleVal: " << doubleValue << "\n";
 	return shuldBeType == type;
 }
 bool test_json_stringParse_double_to_str(const std::string& shuldBeType, double val)
@@ -69,9 +69,9 @@ bool test_json_stringParse_double_to_str(const std::string& shuldBeType, double 
 	std::cout << "double_to_str "<<status << val << " : " << shuldBeType << " == " << converted << "\n";
 	return converted == shuldBeType;
 }
-bool test_json_stringParse_int_to_str(const std::string& shuldBeType, int val)
+bool test_json_stringParse_int_to_str(const std::string& shuldBeType, long val)
 {
-	std::string converted = JsonDatabase::JsonSerializer::serializeInt(val);
+	std::string converted = JsonDatabase::JsonSerializer::serializeLong(val);
 	std::string status = "fail ";
 	if (converted == shuldBeType)
 	{
@@ -143,7 +143,7 @@ bool test_json_stringParse()
 		success &= test_json_stringParse_double_to_str(test.first, test.second);
 	}
 
-	std::vector< std::pair<std::string, int>> intToStrTests = {
+	std::vector< std::pair<std::string, long>> intToStrTests = {
 		{ "0", 0 },
 		{ "1", 1 },
 		{ "-65", -65 },
@@ -172,12 +172,12 @@ bool test_json_objectNesting()
 	std::cout << "test_json_objectNesting" << " Start\n";
 	bool success = true;
 	JsonValue stringValue("stringValue");
-	JsonValue intValue(1);
+	JsonValue longValue(long(1));
 	JsonValue doubleValue(1.0);
 	JsonValue boolValue(true);
 	JsonValue nullValue;
 
-	JsonArray jsonArray({ stringValue, intValue, doubleValue, boolValue, nullValue });
+	JsonArray jsonArray({ stringValue, longValue, doubleValue, boolValue, nullValue });
 	JsonValue arrayValue(jsonArray);
 
 	JsonObject jsonObject(
@@ -185,7 +185,7 @@ bool test_json_objectNesting()
 			{ "string1", "1This is a test text\nentered \"new line\": \"1\"" },
 			{ "string2", "2This is a test text\nentered \"new line\": \"1\"" },
 			{ "string3", "3This is a test text\nentered \"new line\": \"1\"" },
-			{ "int", intValue }, 
+			{ "long", longValue },
 			{ "double", doubleValue }, 
 			{ "bool", boolValue }, 
 			{ "null", nullValue }, 
@@ -193,11 +193,11 @@ bool test_json_objectNesting()
 		});
 
 
-	JsonArray jsonArray2({ stringValue, intValue, doubleValue, boolValue, nullValue, arrayValue, jsonObject });
+	JsonArray jsonArray2({ stringValue, longValue, doubleValue, boolValue, nullValue, arrayValue, jsonObject });
 	JsonArray jsonArray3({ jsonObject, jsonObject, jsonObject, jsonObject, jsonArray });
 
 	cout << "\n\nstringValue:  \n" << stringValue << endl;
-	cout << "\n\nintValue:  \n" << intValue << endl;
+	cout << "\n\nlongValue:  \n" << longValue << endl;
 	cout << "\n\ndoubleValue:  \n" << doubleValue << endl;
 	cout << "\n\nboolValue: \n" << boolValue << endl;
 	cout << "\n\nnullValue: \n" << nullValue << endl;

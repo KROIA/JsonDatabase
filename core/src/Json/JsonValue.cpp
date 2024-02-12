@@ -62,8 +62,9 @@ namespace JsonDatabase
         // Implement constructor with const char* logic here
     }
 
-    // Constructor with int value
-    JsonValue::JsonValue(const int& value)
+
+    // Constructor with long value
+    JsonValue::JsonValue(const long& value)
         : m_value(value)
         //, m_type(Type::Int)
         //, m_objElement(nullptr)
@@ -192,8 +193,7 @@ namespace JsonDatabase
         return *this;
     }
 
-    // Assignment operator with int value
-    JsonValue& JsonValue::operator=(const int& value)
+    JsonValue& JsonValue::operator=(const long& value)
     {
         m_value = value;
         //m_type = Type::Int;

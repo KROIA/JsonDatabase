@@ -70,6 +70,7 @@ namespace JsonDatabase
 		bool unregisterID(JDObjectIDptr id);
 
 	private:
+
 		void generateNextID(unsigned int increment = 1);
 
 		std::string m_name;

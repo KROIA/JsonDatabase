@@ -18,7 +18,7 @@ B::~B()
 bool B::load(const JsonDatabase::JsonObject& obj)
 {
     qDebug() << "Loading B";
-    int value;
+    long value;
     getJsonValue(obj,value,"BValue");
     if(value != 2)
         qDebug() << "BValue is: "<<value;
@@ -27,6 +27,6 @@ bool B::load(const JsonDatabase::JsonObject& obj)
 bool B::save(JsonDatabase::JsonObject& obj) const
 {
     qDebug() << "Saving B";
-    obj["BValue"] = 2;
+    obj["BValue"] = long(2);
     return true;
 }
