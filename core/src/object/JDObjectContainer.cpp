@@ -1,226 +1,265 @@
 #include "object/JDObjectContainer.h"
-
+#include "object/JDObjectInterface.h"
 
 
 namespace JsonDatabase
 {
-
-    JDObjectInterface* JDObjectContainer::operator[](const std::string& id)
+    namespace Internal
     {
-		auto it = m_objectMap.find(id);
-		if (it != m_objectMap.end())
-		{
-			return it->second;
-		}
-		return nullptr;
-    }
-    JDObjectInterface* JDObjectContainer::operator[](size_t index)
-    {
-        
-        if(m_objectVector.size() > index)
-            return m_objectVector[index];
-        return nullptr;
-    }
-    bool JDObjectContainer::operator[](JDObjectInterface *obj)
-    {
-        auto it = m_objectPtrMap.find(obj);
-        if (it != m_objectPtrMap.end())
+        JDObjectManager* JDObjectContainer::operator[](const JDObjectIDptr& id)
         {
-            return it->second;
-        }
-        return false;
-    }
-
-    void JDObjectContainer::reserve(size_t size)
-    {
-		m_objectVector.reserve(size);
-        m_objectPtrMap.reserve(size);
-        m_objectMap.reserve(size);
-    }
-
-    bool JDObjectContainer::addObject(JDObjectInterface* obj)
-    {
-        if (!obj)
-            return false;
-        const std::string &id = obj->getObjectID();
-        auto it = m_objectMap.find(id);
-        if (exists(obj))
-            return false;
-        m_objectVector.emplace_back(obj);
-        m_objectMap[id] = obj;
-        m_objectPtrMap[obj] = obj;
-        return true;
-    }
-    bool JDObjectContainer::addObject(const std::vector<JDObjectInterface*>& objs)
-    {
-        bool success = true;
-        m_objectVector.reserve(m_objectVector.size() + objs.size());
-        //m_objectVector.insert(m_objectVector.end(), objs.begin(), objs.end());
-        for (auto it = objs.begin(); it != objs.end(); ++it)
-        {
-            if (!*it)
+            auto it = m_objectMap.find(id->get());
+            if (it != m_objectMap.end())
             {
-                success = false;
-                continue;
+                return it->second;
             }
-               
-			auto it2 = m_objectPtrMap.find(*it);
-			if (it2 != m_objectPtrMap.end())
-			{
-				success = false;
-				continue;
-			}
-			const std::string &id = (*it)->getObjectID();
-			m_objectMap[id] = *it;
-            m_objectVector.emplace_back(*it);
-            m_objectPtrMap[*it] = *it;
-		}
-        return success;
-    }
-    JDObjectInterface* JDObjectContainer::replaceObject(JDObjectInterface* replacement)
-    {
-        if (!replacement)
             return nullptr;
-        const std::string &id = replacement->getObjectID();
-		auto it = m_objectMap.find(id);
-		if (it != m_objectMap.end())
-		{
-			auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
-			*it2 = replacement;
-            JDObjectInterface *old = it->second;
-			it->second = replacement;
-            m_objectPtrMap.erase(old);
-            m_objectPtrMap[replacement] = replacement;
-			return old;
-		}
-		return nullptr;
-    }
-    bool JDObjectContainer::removeObject(const std::string& id)
-    {
-        auto it = m_objectMap.find(id);
-        if (it != m_objectMap.end()) 
+        }
+        JDObjectManager* JDObjectContainer::operator[](size_t index)
         {
-            auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
 
-            m_objectVector.erase(it2);
-            m_objectMap.erase(it);
-            m_objectPtrMap.erase(it->second);
+            if (m_objectVector.size() > index)
+                return m_objectVector[index];
+            return nullptr;
+        }
+        size_t JDObjectContainer::operator[](JDObject& obj)
+        {
+            for (size_t i = 0; i < m_objectVector.size(); ++i)
+            {
+                if (m_objectVector[i]->getObject().get() == obj.get())
+                    return i;
+            }
+            return std::string::npos;
+        }
+
+        void JDObjectContainer::reserve(size_t size)
+        {
+            m_objectVector.reserve(size);
+            m_objectPtrMap.reserve(size);
+            m_objectMap.reserve(size);
+        }
+
+        bool JDObjectContainer::addObject(JDObjectManager* obj)
+        {
+            if (!obj)
+                return false;
+            const JDObjectIDptr id = obj->getID();
+            auto it = m_objectMap.find(id->get());
+            if (it != m_objectMap.end())
+            {
+               /* if (it->second == obj)
+                {
+                    // Object already added
+                    return false;
+                }
+                else
+                {
+                    // ID already taken for a different instance
+                    return false;
+                }*/
+                return false;
+            }
+            m_objectVector.emplace_back(obj);
+            m_objectMap[id->get()] = obj;
+            m_objectPtrMap[obj->getObject().get()] = obj;
             return true;
         }
-        return false;
-    }
-    bool JDObjectContainer::removeObject(JDObjectInterface *obj)
-    {
-        if(!obj)
-			return false;
-        
-        auto it = m_objectPtrMap.find(obj);
-        if (it == m_objectPtrMap.end())
+        bool JDObjectContainer::addObject(const std::vector<JDObjectManager*>& objs)
+        {
+            bool success = true;
+            m_objectVector.reserve(m_objectVector.size() + objs.size());
+            m_objectMap.reserve(m_objectMap.size() + objs.size());
+            m_objectPtrMap.reserve(m_objectPtrMap.size() + objs.size());
+
+            for (auto it = objs.begin(); it != objs.end(); ++it)
+            {
+                JDObjectManager* obj = *it;
+                if (!obj)
+                {
+                    success = false;
+                    continue;
+                }
+
+                JDObjectIDptr id = obj->getID();
+                auto it2 = m_objectMap.find(id->get());
+                if (it2 != m_objectMap.end())
+                {
+                    success = false;
+                    // Object already added
+                   /* if (it2->second == obj)
+                    {
+                        // Object already added
+                    }
+                    else
+                    {
+                        // ID already taken for a different instance
+                    }*/
+                    continue;
+                }
+                m_objectVector.emplace_back(obj);
+                m_objectMap[id->get()] = obj;
+                m_objectPtrMap[obj->getObject().get()] = obj;
+            }
+            return success;
+        }
+        /*JDObject JDObjectContainer::replaceObject(const JDObject& replacement)
+        {
+            if (!replacement.get())
+                return nullptr;
+            JDObjectIDptr id = replacement->getObjectID();
+            auto it = m_objectMap.find(id->get());
+            if (it != m_objectMap.end())
+            {
+                auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
+                *it2 = replacement;
+                JDObject& old = it->second;
+                it->second = replacement;
+                m_objectPtrMap.erase(old.get());
+                m_objectPtrMap[replacement.get()] = replacement;
+                return old;
+            }
+            return nullptr;
+        }*/
+        JDObjectManager* JDObjectContainer::getAndRemoveObject(const JDObjectIDptr& id)
+        {
+            auto it = m_objectMap.find(id->get());
+            if (it != m_objectMap.end())
+            {
+                JDObjectManager *manager = it->second;
+                auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
+
+                m_objectVector.erase(it2);
+                m_objectMap.erase(it);
+                m_objectPtrMap.erase(it->second->getObject().get());
+                return manager;
+            }
+            return nullptr;
+        }
+        bool JDObjectContainer::removeObject(const JDObjectIDptr& id)
+        {
+            auto it = m_objectMap.find(id->get());
+            if (it != m_objectMap.end())
+            {
+                auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
+
+                m_objectVector.erase(it2);
+                m_objectMap.erase(it);
+                m_objectPtrMap.erase(it->second->getObject().get());
+                return true;
+            }
             return false;
+        }
+        bool JDObjectContainer::removeObject(JDObjectManager *obj)
+        {
+            return removeObject(obj->getID());
+        }
+        bool JDObjectContainer::removeObject(const JDObject& obj)
+        {
+            return removeObject(obj->getObjectID());
+        }
+        bool JDObjectContainer::removeObject(const std::vector<JDObject>& objs)
+        {
+            if (objs.size() == 0)
+                return true;
 
-        const std::string& id = obj->getObjectID();
-        auto it2 = m_objectMap.find(id);
-        m_objectMap.erase(it2);
+            bool success = true;
+            for (auto& obj : objs) {
+                success &= removeObject(obj->getObjectID());
+            }
+            return success;
+        }
 
-        auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
-        m_objectVector.erase(it3);
-
-        return true;
-    }
-    bool JDObjectContainer::removeObject(const std::vector<JDObjectInterface*>& objs)
-    {
-        if (!objs.size() == 0)
-            return true;
-
-        for (auto& obj : objs) {
+        JDObjectManager* JDObjectContainer::getObjectByID(const JDObjectIDptr& id)
+        {
+            auto it = m_objectMap.find(id->get());
+            if (it != m_objectMap.end())
+            {
+                return it->second;
+            }
+            return nullptr;
+        }
+        JDObjectManager* JDObjectContainer::getObjectByID(const JDObjectID::IDType& id)
+        {
+            auto it = m_objectMap.find(id);
+            if (it != m_objectMap.end())
+            {
+                return it->second;
+            }
+            return nullptr;
+        }
+        JDObjectManager* JDObjectContainer::getObjectByPtr(JDObjectInterface* obj)
+        {
             auto it = m_objectPtrMap.find(obj);
-            if (it == m_objectPtrMap.end())
-                continue;
-
-            const std::string& id = obj->getObjectID();
-            auto it2 = m_objectMap.find(id);
-            m_objectMap.erase(it2);
-
-            auto it3 = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
-            m_objectVector.erase(it3);
+            if (it != m_objectPtrMap.end())
+            {
+                return it->second;
+            }
+            return nullptr;
         }
-        return true;
-    }
 
-    JDObjectInterface* JDObjectContainer::getObjectByID(const std::string& id) 
-    {
-        auto it = m_objectMap.find(id);
-        if (it != m_objectMap.end()) 
+        const std::vector<JDObjectManager*>& JDObjectContainer::getAllObjects() const
         {
-            return it->second;
+            return m_objectVector;
         }
-        return nullptr;
-    }
-
-    const std::vector<JDObjectInterface*>& JDObjectContainer::getAllObjects() const 
-    {
-        return m_objectVector;
-    }
-    const std::unordered_map<std::string, JDObjectInterface*>& JDObjectContainer::getAllObjectsIDMap() const
-    {
-        return m_objectMap;
-    }
-    const std::unordered_map<JDObjectInterface*, JDObjectInterface*>& JDObjectContainer::getAllObjectsPtrMap() const
-    {
-        return m_objectPtrMap;
-    }
-
-    bool JDObjectContainer::exists(const std::string& id) const
-    {
-        
-        auto it = m_objectMap.find(id);
-        if (it != m_objectMap.end())
+        const std::unordered_map<JDObjectID::IDType, JDObjectManager*>& JDObjectContainer::getAllObjectsIDMap() const
         {
-            return true;
+            return m_objectMap;
         }
-        return false;
-    }
-    bool JDObjectContainer::exists(JDObjectInterface* obj) const
-    {
-        if (!obj)
-			return false;
-        return m_objectPtrMap.find(obj) != m_objectPtrMap.end();
-        /*auto it = std::find(m_objectVector.begin(), m_objectVector.end(), obj);
-        if(it != m_objectVector.end())
-		{
-			return true;
+        const std::unordered_map<JDObjectInterface*, JDObjectManager*>& JDObjectContainer::getAllObjectsPtrMap() const
+        {
+            return m_objectPtrMap;
         }
-        return false;*/
-    }
 
-    size_t JDObjectContainer::size() const
-    {
-		return m_objectVector.size();
-    }
-    void JDObjectContainer::clear()
-    {
-        m_objectVector.clear();
-		m_objectMap.clear();
-        m_objectPtrMap.clear();
-    }
+        bool JDObjectContainer::exists(const JDObjectIDptr& id) const
+        {
 
-    JDObjectContainer::iterator JDObjectContainer::begin() 
-    {
-        return m_objectVector.begin();
-    }
+            auto it = m_objectMap.find(id->get());
+            if (it != m_objectMap.end())
+            {
+                return true;
+            }
+            return false;
+        }
+        bool JDObjectContainer::exists(const JDObject& obj) const
+        {
+            if (!obj.get())
+                return false;
+            return m_objectPtrMap.find(obj.get()) != m_objectPtrMap.end();
+        }
+        bool JDObjectContainer::exists(JDObjectManager* obj) const
+        {
+            return exists(obj->getObject());
+        }
 
-    JDObjectContainer::iterator JDObjectContainer::end() 
-    {
-        return m_objectVector.end();
-    }
+        size_t JDObjectContainer::size() const
+        {
+            return m_objectVector.size();
+        }
+        void JDObjectContainer::clear()
+        {
+            m_objectVector.clear();
+            m_objectMap.clear();
+            m_objectPtrMap.clear();
+        }
 
-    JDObjectContainer::const_iterator JDObjectContainer::begin() const 
-    {
-        return m_objectVector.begin();
-    }
+        JDObjectContainer::iterator JDObjectContainer::begin()
+        {
+            return m_objectVector.begin();
+        }
 
-    JDObjectContainer::const_iterator JDObjectContainer::end() const 
-    {
-        return m_objectVector.end();
+        JDObjectContainer::iterator JDObjectContainer::end()
+        {
+            return m_objectVector.end();
+        }
+
+        JDObjectContainer::const_iterator JDObjectContainer::begin() const
+        {
+            return m_objectVector.begin();
+        }
+
+        JDObjectContainer::const_iterator JDObjectContainer::end() const
+        {
+            return m_objectVector.end();
+        }
     }
 }

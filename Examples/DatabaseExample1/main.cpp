@@ -20,20 +20,20 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
 
-    JDManager manager("database", "MyData", "sessionID", "USER");
+    JDManager manager("database", "MyData", "USER");
     manager.setup();
     //JDManager manager("C:\\Users\\alexk\\Documents\\Privat\\Softwareentwicklung\\QT\\Projekte\\JsonDatabase\\example\\bin\\database","sessionID","USER");
     //manager.addObjectDefinition<A>();
     //manager.addObjectDefinition<B>();
     //manager.addObjectDefinition<C>();
-    A* a1 = new A("a1");
-    A* a2 = new A("a2");
+    JDObject a1(new A());
+    JDObject a2(new A());
 
-    B* b1 = new B("b1");
-    B* b2 = new B("b2");
+    JDObject b1(new B());
+    JDObject b2(new B());
 
-    C* c1 = new C("c1");
-    C* c2 = new C("c2");
+    JDObject c1(new C());
+    JDObject c2(new C());
 
     manager.getSignals().connect_onSaveObjectsDone_slot(&onSaveCallback);
 
@@ -58,14 +58,14 @@ int main(int argc, char *argv[])
 
     
 
-    JDManager manager2("database", "MyData", "sessionID2", "USER");
+    JDManager manager2("database", "MyData", "USER");
     //manager2.addObjectDefinition<A>();
     //manager2.addObjectDefinition<B>();
     //manager2.addObjectDefinition<C>();
     manager2.loadObjects();
     qDebug() << "Objects loaded: " << manager2.getObjectCount();
-    std::vector<JDObjectInterface*> objs1 = manager.getObjects();
-    std::vector<JDObjectInterface*> objs2 = manager2.getObjects();
+    std::vector<JDObject> objs1 = manager.getObjects();
+    std::vector<JDObject> objs2 = manager2.getObjects();
 
     return a.exec();
 }

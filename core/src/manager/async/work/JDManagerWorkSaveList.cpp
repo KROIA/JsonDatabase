@@ -1,6 +1,7 @@
 #include "manager/async/work/JDManagerWorkSaveList.h"
 #include "manager/JDManager.h"
 #include "utilities/JDUniqueMutexLock.h"
+#include "utilities/AsyncContextDrivenDeleter.h"
 
 namespace JsonDatabase
 {
@@ -9,20 +10,28 @@ namespace JsonDatabase
 		JDManagerAysncWorkSaveList::JDManagerAysncWorkSaveList(
 			JDManager& manager,
 			std::mutex& mtx,
-			const std::vector<JDObjectInterface*>& objects)
+			const std::vector<JDObject>& objects)
 			: JDManagerAysncWork(manager, mtx)
 			, m_success(false)
 		{
+			m_objects = objects;
+			m_progress.setTaskName("Speichere " + std::to_string(m_objects.size()) + " Objekte");
 			m_objects.resize(objects.size());
+			JD_CONSOLE("Save list of " << objects.size() << " objects. Create deepClone...\n");
 			for (size_t i = 0; i < objects.size(); ++i)
-				m_objects[i] = objects[i]->clone();
-				
-			m_progress.setTaskName("Speichere "+ std::to_string(m_objects.size())+ " Objekte");
+			{
+				//objects[i]->incrementVersionValue();
+				m_objects[i] = manager.createDeepClone(objects[i]);
+				//m_objects[i] = objects[i]->clone();
+			}
+			JD_CONSOLE("Save list of " << objects.size() << " objects. Create deepClone done\n");
+			
 		}
 		JDManagerAysncWorkSaveList::~JDManagerAysncWorkSaveList()
 		{
-			for (size_t i = 0; i < m_objects.size(); ++i)
-				delete m_objects[i];
+			// Delete all objects asynchroneously
+			AsyncContextDrivenDeleter asyncDeleter(m_objects);
+			m_objects.clear();
 		}
 		bool JDManagerAysncWorkSaveList::hasSucceeded() const
 		{
@@ -30,7 +39,8 @@ namespace JsonDatabase
 		}
 		void JDManagerAysncWorkSaveList::process()
 		{
-			JDM_UNIQUE_LOCK_P;
+			JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+			//JDM_UNIQUE_LOCK_P;
 			m_success = m_manager.saveObjects_internal(m_objects, JDManager::s_fileLockTimeoutMs, &m_progress);
 		}
 		std::string JDManagerAysncWorkSaveList::getErrorMessage() const

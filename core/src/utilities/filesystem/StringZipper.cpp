@@ -22,8 +22,8 @@ namespace JsonDatabase
             bool decompressString(QByteArray compressedData, QString& outputString)
             {
                 // Extract the expected uncompressed data size from the first 4 bytes
-                qint32 expectedSize = qFromBigEndian<qint32>(
-                    reinterpret_cast<const uchar*>(compressedData.constData()));
+                //qint32 expectedSize = qFromBigEndian<qint32>(
+                //    reinterpret_cast<const uchar*>(compressedData.constData()));
 
                 // Remove the header from the compressed data
                 compressedData.remove(0, 4);

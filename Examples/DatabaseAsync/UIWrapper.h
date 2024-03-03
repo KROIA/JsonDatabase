@@ -1,6 +1,7 @@
 #pragma once
 #include <QApplication>
 #include "MainWindow.h"
+#include <QTimer>
 
 
 class UIWrapper : public QObject
@@ -9,14 +10,30 @@ class UIWrapper : public QObject
 public:
 	UIWrapper(QObject* parent = nullptr) : QObject(parent)
 	{
+		w1 = nullptr;
+		w2 = nullptr;
+
 		w1 = new MainWindow("User1");
-		w2 = new MainWindow("User2");
+		// Create a single shot timer that creates both MainWindows in differend times
+		// Create single shot with lambda
+
+		bool useSecondWindow = false;
+
+		if (useSecondWindow)
+		{
+			QTimer::singleShot(3000, [this]() {
+				w2 = new MainWindow("User2");
+				w2->show();
+				connect(w2, &MainWindow::closeWindow, this, &UIWrapper::onWindowClosed);
+				});
+		}
+		
 
 		w1->show();
-		w2->show();
+		
 
 		connect(w1, &MainWindow::closeWindow, this, &UIWrapper::onWindowClosed);
-		connect(w2, &MainWindow::closeWindow, this, &UIWrapper::onWindowClosed);
+		
 	}
 	~UIWrapper() {}
 private slots:

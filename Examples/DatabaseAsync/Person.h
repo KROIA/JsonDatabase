@@ -22,7 +22,7 @@ public:
     numberOfChildren
     
     */
-    Person(string id, string fn, string ln, string g, string age,
+    Person(string fn, string ln, string g, string age,
         string email, string ph, string edu, string occ,
         string exp, string sal, string mart, string chc);
     Person();
@@ -41,17 +41,13 @@ public:
 private:
    
 
-    bool load(const QJsonObject& obj) override;
-    bool save(QJsonObject& obj) const override;
-
+    bool load(const JsonObject& obj) override;
+    bool save(JsonObject& obj) const override;
     
-
-
-    //static size_t instanceCounter;
 };
 
 
 
 
 
-extern std::vector<JDObjectInterface*> createPersons(unsigned int startID);
+extern std::vector<JDObject> createPersons();

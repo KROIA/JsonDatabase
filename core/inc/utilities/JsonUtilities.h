@@ -6,24 +6,16 @@
 
 #include <string>
 #include <vector>
-#include <QJsonObject>
+#include "Json/JsonValue.h"
 
 namespace JsonDatabase
 {
-    namespace Internal
+    namespace Utilities
     {
         class JsonUtilities
         {
         public:
-            static bool getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut);
-            static bool getJsonArray(const std::vector<JDObjectInterface*>& objs, std::vector<QJsonObject>& jsonOut, 
-                                     WorkProgress* progress, double deltaProgress);
-            static bool serializeObject(JDObjectInterface* obj, std::string& serializedOut);
-            static bool serializeJson(const QJsonObject& obj, std::string& serializedOut);
 
-            static bool deserializeJson(const QJsonObject& json, JDObjectInterface* objOriginal, JDObjectInterface*& objOut);
-            static bool deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj, bool& hasChangedOut);
-            static bool deserializeOverrideFromJson(const QJsonObject& json, JDObjectInterface* obj);
         };
     }
 }

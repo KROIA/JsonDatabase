@@ -13,7 +13,7 @@ namespace JsonDatabase
 			JDManagerAysncWorkSaveSingle(
 				JDManager& manager,
 				std::mutex& mtx,
-				JDObjectInterface* object);
+				const JDObject &object);
 			~JDManagerAysncWorkSaveSingle();
 
 			bool hasSucceeded() const override;
@@ -22,7 +22,7 @@ namespace JsonDatabase
 			WorkType getWorkType() const override;
 
 		private:
-			JDObjectInterface* m_object;
+			JDObject m_object;
 			bool m_success;
 		};
 	}

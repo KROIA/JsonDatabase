@@ -10,9 +10,9 @@ namespace JsonDatabase
         {
             int execute(const std::string& command)
             {
-                JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1)
-                    // Convert the command to wide string
-                    std::wstring wideCommand(command.begin(), command.end());
+                JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+                // Convert the command to wide string
+                std::wstring wideCommand(command.begin(), command.end());
                 // int execResult = WinExec(("C:\\Windows\\System32\\cmd.exe /c "+command).c_str(), SW_HIDE);
                 // return execResult;
                 // wideCommand += L" exit";

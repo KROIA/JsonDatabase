@@ -1,41 +1,36 @@
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
-#include <QVariant>
+#include "object/JDObjectManager.h"
+
 
 
 namespace JsonDatabase
 {
 
-const QString JDObjectInterface::s_tag_objID = "objID";
-const QString JDObjectInterface::s_tag_objVersion = "objVersion";
-const QString JDObjectInterface::s_tag_className = "class";
-const QString JDObjectInterface::s_tag_data = "Data";
+    const std::string JDObjectInterface::s_tag_objID = "objID";
+    const std::string JDObjectInterface::s_tag_className = "class";
+    const std::string JDObjectInterface::s_tag_data = "Data";
 
-
-JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObjectInterface* obj)
+JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObject obj)
 {
     addToRegistry(obj);
 }
-int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObjectInterface* obj)
+int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 {
-    return JDObjectRegistry::registerType(obj);
+    return Internal::JDObjectRegistry::registerType(obj);
 }
 
 
 JDObjectInterface::JDObjectInterface()
-    : m_objID("")
-    , m_version(0)
+    : m_manager(nullptr)
+    , m_shallowID(JDObjectID::invalidID)
 {
 
 }
-JDObjectInterface::JDObjectInterface(const std::string& id)
-    : m_objID(id)
-    , m_version(0)
-{
 
-}
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
-    : m_version(other.m_version)
+    : m_manager(nullptr)
+    , m_shallowID(other.m_shallowID)
 {
 
 }
@@ -44,110 +39,183 @@ JDObjectInterface::~JDObjectInterface()
 
 }
 
-std::vector<JDObjectInterface*> JDObjectInterface::reinstantiate(const std::vector<JDObjectInterface*>& objList)
+JDObject JDObjectInterface::deepClone() const
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    std::vector<JDObjectInterface*> ret;
-	ret.reserve(objList.size());
-    for (auto it = objList.begin(); it != objList.end(); ++it)
-    {
-		ret.push_back((*it)->clone());
-	}
-	return ret;
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JDObjectInterface *instance = deepClone_internal();
+	return JDObject(instance);
 }
-size_t JDObjectInterface::getJsonIndexByID(const std::vector<QJsonObject>& jsons, const std::string objID)
+JDObject JDObjectInterface::shallowClone() const
+{
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JDObjectInterface *instance = shallowClone_internal();
+	return JDObject(instance);
+}
+
+
+
+size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        std::string id;
-        if (JDSerializable::getJsonValue(jsons[i], id, s_tag_objID))
+        JDObjectID::IDType id;
+        const JsonObject* obj = jsons[i].get_if<JsonObject>();
+        if (!obj)
+            continue;
+        const auto& it = obj->find(s_tag_objID);
+        if(it == obj->end())
+			continue;
+        const JsonDatabase::JsonValue& value = it->second;
+        
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+        const std::string* idPtr = value.get_if<std::string>();
+        if (!idPtr)
+            continue;
+        id = *idPtr;
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+        const long* idPtr = value.get_if<long>();
+        if (!idPtr)
         {
-            if (id == objID)
-                return i;
+            const double* idPtrD = value.get_if<double>();
+            if (!idPtrD)
+                continue;
+            id = static_cast<long>(*idPtrD);
         }
+        else
+            id = *idPtr;
+#else 
+    #error "Invalid JD_ID_TYPE_SWITCH value"
+#endif 
+        if (id == objID->get())
+            return i;
     }
     return std::string::npos;
 }
 
-const std::string& JDObjectInterface::getObjectID() const
+
+bool JDObjectInterface::loadFrom(const JDObject& source)
 {
-    return m_objID;
+    bool success = true;
+    JsonObject data;
+    success &= source->save(data);
+    if (success)
+        success &= load(data);
+    return success;
 }
-void JDObjectInterface::setObjectID(const std::string& id)
+bool JDObjectInterface::loadFrom(const JDObjectInterface* source)
 {
-    m_objID = id;
+    bool success = true;
+    JsonObject data;
+    success &= source->save(data);
+    if (success)
+        success &= load(data);
+    return success;
 }
 
-void JDObjectInterface::setVersion(int version)
+bool JDObjectInterface::isManaged() const
 {
-	m_version = version;
+	return m_manager != nullptr;
 }
-void JDObjectInterface::setVersion(const QJsonObject& obj)
+
+JDObjectIDptr JDObjectInterface::getObjectID() const
 {
-	if(obj.contains(s_tag_objVersion))
-		m_version = obj[s_tag_objVersion].toInt(0);
+    if(m_manager)
+        return m_manager->getID();
+    return nullptr;
 }
-bool JDObjectInterface::equalData(const QJsonObject& obj) const
+const JDObjectID::IDType& JDObjectInterface::getShallowObjectID() const
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    QJsonObject data1;
-    QJsonObject data2;
-    bool equal = getJsonValue(obj, data1, s_tag_data);
+    return m_shallowID;
+}
+
+bool JDObjectInterface::equalData(const JsonObject& obj) const
+{
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    bool equal = true;
+
+    auto it = obj.find(s_tag_data);
+    if(it == obj.end())
+		return false;
+
+
+    const JsonObject &data1 = obj.find(s_tag_data)->second.get<JsonObject>();
+
+    JsonObject data2;
+
     {
-        JD_GENERAL_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("user save", JD_COLOR_STAGE_5);
         equal &= save(data2);
     }
     {
-        JD_GENERAL_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
+        JD_OBJECT_PROFILING_BLOCK("UserEqual", JD_COLOR_STAGE_5);
         equal &= data1 == data2;
     }
 
-    return equal;
+    return equal; 
 }
-bool JDObjectInterface::loadInternal(const QJsonObject &obj)
+bool JDObjectInterface::loadInternal(const JsonObject& obj)
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    
-    
-    if(!obj.contains(s_tag_objID) ||
-       !obj.contains(s_tag_objVersion))
-        return false;
-    QJsonObject data;
-    bool success = getJsonValue(obj, data, s_tag_data);
-    
-    {
-        JD_GENERAL_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
-        success &= load(data);
-    }
-    setObjectID(obj[s_tag_objID].toString().toStdString());
-    m_version = obj[s_tag_objVersion].toInt(0);
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    const JsonObject *data = obj.at(s_tag_data).get_if<JsonObject>();
+    bool success = true;
 
-    if(m_version <= 0)
+    if (data)
+    {
+        JD_OBJECT_PROFILING_BLOCK("UserLoad", JD_COLOR_STAGE_5);
+        success &= load(*data);
+    }
+    else
         success = false;
     return success;
 }
 
-
-bool JDObjectInterface::saveInternal(QJsonObject &obj)
+bool JDObjectInterface::saveInternal(JsonObject& obj)
 {
-    ++m_version;
     return getSaveData(obj);
 }
-bool JDObjectInterface::getSaveData(QJsonObject& obj) const
+bool JDObjectInterface::getSaveData(JsonObject& obj) const
 {
-    JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    obj[s_tag_objID] = getObjectID().c_str();
-    obj[s_tag_objVersion] = QJsonValue(m_version);
-    obj[s_tag_className] = className().c_str();
-    QJsonObject data;
+    JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    JDObjectIDptr id = getObjectID();
+    JDObjectID::IDType idVal = JDObjectID::invalidID;
+    if(id)
+        idVal = id->get();
+    else
+        idVal = m_shallowID;
+    *obj[s_tag_objID] = idVal;
+    *obj[s_tag_className] = className();
     bool ret;
     {
-        JD_GENERAL_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
-        ret = save(data);
+        JD_OBJECT_PROFILING_BLOCK("UserSave", JD_COLOR_STAGE_5);
+        std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
+        ret = save(*data);
+        *obj[s_tag_data] = std::move(data);
     }
-
-    obj[s_tag_data] = data;
     return ret;
 }
 
+
+void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
+{
+    JDObjectIDptr id = nullptr;
+    if (m_manager)
+    {
+        if (!manager)
+            id = m_manager->getID();
+        else
+            id = manager->getID();
+    }
+    else
+        if (manager)
+        {
+            id = manager->getID();
+        }
+    if (id.get())
+        m_shallowID = id->get();
+	m_manager = manager;
+}
+Internal::JDObjectManager* JDObjectInterface::getManager() const
+{
+    return m_manager;
+}
 }

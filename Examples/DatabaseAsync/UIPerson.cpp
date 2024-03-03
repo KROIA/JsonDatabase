@@ -21,9 +21,10 @@ UIPerson::~UIPerson()
 
 }
 
-void UIPerson::setPerson(Person* person, bool editMode)
+void UIPerson::setPerson(JDderivedObject<Person> person, bool editMode)
 {
 	m_editMode = editMode;
+	
 	if (!m_editMode)
 	{
 		ui.frame->setEnabled(false);
@@ -35,7 +36,8 @@ void UIPerson::setPerson(Person* person, bool editMode)
 	m_person = person;
 	if (m_person)
 	{
-		ui.objectID_label->setText(QString::fromStdString(m_person->getObjectID()));
+		qDebug() << m_person->firstName.c_str();
+		ui.objectID_label->setText(m_person->getObjectID()->toQString());
 		ui.firstName_lineEdit->setText(QString::fromStdString(m_person->firstName));
 		ui.lastName_lineEdit->setText(QString::fromStdString(m_person->lastName));
 	}

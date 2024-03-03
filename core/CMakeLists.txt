@@ -54,9 +54,12 @@ if(QT_ENABLE)
 endif()
 # end QT settings
 
+
+
+
 # External dependencies from the dependencies.cmake
 use_easy_profiler(EASY_PROFILER_DEPS)
-set(LIBRARY_DEPENDENCIES)
+
 
 
 include_directories(inc)
@@ -151,3 +154,6 @@ copyLibraryHeaders("${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PATH}" "${CMAKE_INSTAL
 if(QT_ENABLE AND QT_DEPLOY)
     DEPLOY_QT(${QT_PATH} profiler_gui "$<TARGET_FILE_DIR:profiler_gui>/$<TARGET_FILE_NAME:profiler_gui>" ${INSTALL_BIN_PATH})
 endif()
+
+
+message("Compiler flags: ${CMAKE_CXX_FLAGS}")

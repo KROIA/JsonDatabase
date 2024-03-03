@@ -8,11 +8,11 @@ namespace JsonDatabase
 #define DEFINE_SIGNAL_CONNECT_DISCONNECT(signalName, ...) \
         void JDManagerSignals::connect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction) \
         { \
-            ##signalName##.connectSlot(slotFunction); \
+            ##signalName.connectSlot(slotFunction); \
         } \
         void JDManagerSignals::disconnect_##signalName##_slot(const Signal<__VA_ARGS__>::SlotFunction& slotFunction) \
         { \
-            ##signalName##.disconnectSlot(slotFunction); \
+            ##signalName.disconnectSlot(slotFunction); \
         }
 
         JDManagerSignals::JDManagerSignals(JDManager& manager, std::mutex& mtx)
@@ -26,6 +26,8 @@ namespace JsonDatabase
             , objectChangedFromDatabase("ChangedFromDatabase")
             , databaseOutdated("DatabaseOutdated")
 
+            , onStartAsyncWork("onStartAsyncWork")
+            , onEndAsyncWork("onEndAsyncWork")
             , onLoadObjectDone("onLoadObjectDone")
             , onLoadObjectsDone("onLoadObjectsDone")
             , onSaveObjectDone("onSaveObjectDone")
@@ -40,16 +42,17 @@ namespace JsonDatabase
 
         DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseFileChanged, )
         DEFINE_SIGNAL_CONNECT_DISCONNECT(lockedObjectsChanged, )
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectRemovedFromDatabase, const JDObjectContainer&)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const JDObjectContainer&)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectRemovedFromDatabase, const std::vector<JDObject>&)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectAddedToDatabase, const std::vector<JDObject>&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(objectChangedFromDatabase, const std::vector<JDObjectPair>&)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const JDObjectContainer&)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(objectOverrideChangeFromDatabase, const std::vector<JDObject>&)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(databaseOutdated, )
 
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone,  bool, JDObjectInterface*)
-      
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onStartAsyncWork,)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onEndAsyncWork,)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectDone,  bool, JDObject)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onLoadObjectsDone, bool)
-        DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone,  bool, JDObjectInterface*)
+        DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectDone,  bool, JDObject)
         DEFINE_SIGNAL_CONNECT_DISCONNECT(onSaveObjectsDone, bool)
 
         /*
@@ -65,15 +68,19 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK;
             container.reserve(size);
         }
-        void JDManagerSignals::ContainerSignal::addObjs(const std::vector<JDObjectInterface*>& objs)
+        size_t JDManagerSignals::ContainerSignal::size() const
         {
-            JDM_UNIQUE_LOCK;
-            container.addObject(objs);
+			return container.size();
         }
-        void JDManagerSignals::ContainerSignal::addObj(JDObjectInterface* obj)
+        void JDManagerSignals::ContainerSignal::addObjs(const std::vector<JDObject>& objs)
         {
             JDM_UNIQUE_LOCK;
-            container.addObject(obj);
+            container.insert(container.end(), objs.begin(), objs.end());
+        }
+        void JDManagerSignals::ContainerSignal::addObj(JDObject obj)
+        {
+            JDM_UNIQUE_LOCK;
+            container.push_back(obj);
         }
         void JDManagerSignals::ContainerSignal::clear()
         {
@@ -82,7 +89,7 @@ namespace JsonDatabase
         }
         void JDManagerSignals::ContainerSignal::emitSignalIfNotEmpty()
         {
-            JDObjectContainer cpy;
+            std::vector<JDObject> cpy;
             {
                 JDM_UNIQUE_LOCK;
                 cpy = container;
@@ -92,11 +99,11 @@ namespace JsonDatabase
                 return;
             signal.emitSignal(cpy);
         }
-        void JDManagerSignals::ContainerSignal::connectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot)
+        void JDManagerSignals::ContainerSignal::connectSlot(const Signal<const std::vector<JDObject>&>::SlotFunction& slot)
         {
             signal.connectSlot(slot);
         }
-        void JDManagerSignals::ContainerSignal::disconnectSlot(const Signal<const JDObjectContainer&>::SlotFunction& slot)
+        void JDManagerSignals::ContainerSignal::disconnectSlot(const Signal<const std::vector<JDObject>&>::SlotFunction& slot)
         {
             signal.disconnectSlot(slot);
         }
@@ -109,6 +116,10 @@ namespace JsonDatabase
         {
             JDM_UNIQUE_LOCK;
 			container.reserve(size);
+        }
+        size_t JDManagerSignals::ObjectChangeSignal::size() const
+        {
+            return container.size();
         }
         void JDManagerSignals::ObjectChangeSignal::addPairs(const std::vector<JDObjectPair>& pairs)
         {
@@ -179,7 +190,7 @@ namespace JsonDatabase
             sig.signal = signal;
             m_signalQueue.push_back(sig);
         }
-        void JDManagerSignals::addToQueue(Signals signal, bool success, JDObjectInterface* obj, bool onlyOnce)
+        void JDManagerSignals::addToQueue(Signals signal, bool success, const JDObject& obj, bool onlyOnce)
         {
             JDM_UNIQUE_LOCK_P_M(m_signalsMutex);
             if (onlyOnce)
@@ -270,57 +281,63 @@ namespace JsonDatabase
                 {
                     switch (signal.signal)
                     {
-                    case signal_databaseFileChanged:
-                        databaseFileChanged.emitSignal();
-                        break;
-                    case signal_lockedObjectsChanged:
-                        lockedObjectsChanged.emitSignal();
-                        break;
-                    case signal_objectRemovedFromDatabase:
-                        objectRemovedFromDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_objectAddedToDatabase:
-                        objectAddedToDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_objectChangedFromDatabase:
-                        objectChangedFromDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_objectOverrideChangeFromDatabase:
-                        objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
-                        break;
-                    case signal_databaseOutdated:
-                        databaseOutdated.emitSignal();
-                        break;
-                    case signal_onLoadObjectDone:
-                    {
-                        AsyncLoadObjectData* data = (AsyncLoadObjectData*)signal.data;
-                        onLoadObjectDone.emitSignal(data->success, data->object);
-                        delete data;
-                        break;
-                    }
-                    case signal_onLoadObjectsDone:
-                    {
-                        AsyncLoadObjectsData* data = (AsyncLoadObjectsData*)signal.data;
-                        onLoadObjectsDone.emitSignal(data->success);
-                        delete data;
-                        break;
-                    }
-                    case signal_onSaveObjectDone:
-                    {
-                        AsyncSaveObjectData* data = (AsyncSaveObjectData*)signal.data;
-                        onSaveObjectDone.emitSignal(data->success, data->object);
-                        delete data;
-                        break;
-                    }
-                    case signal_onSaveObjectsDone:
-                    {
-                        AsyncSaveObjectsData* data = (AsyncSaveObjectsData*)signal.data;
-                        onSaveObjectsDone.emitSignal(data->success);
-                        delete data;
-                        break;
-                    }
-                    default:
-                        break;
+                        case signal_onStartAsyncWork:
+						    onStartAsyncWork.emitSignal();
+						    break;
+                        case signal_onEndAsyncWork:
+                            onEndAsyncWork.emitSignal();
+                            break;
+                        case signal_databaseFileChanged:
+                            databaseFileChanged.emitSignal();
+                            break;
+                        case signal_lockedObjectsChanged:
+                            lockedObjectsChanged.emitSignal();
+                            break;
+                        case signal_objectRemovedFromDatabase:
+                            objectRemovedFromDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_objectAddedToDatabase:
+                            objectAddedToDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_objectChangedFromDatabase:
+                            objectChangedFromDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_objectOverrideChangeFromDatabase:
+                            objectOverrideChangeFromDatabase.emitSignalIfNotEmpty();
+                            break;
+                        case signal_databaseOutdated:
+                            databaseOutdated.emitSignal();
+                            break;
+                        case signal_onLoadObjectDone:
+                        {
+                            AsyncLoadObjectData* data = (AsyncLoadObjectData*)signal.data;
+                            onLoadObjectDone.emitSignal(data->success, data->object);
+                            delete data;
+                            break;
+                        }
+                        case signal_onLoadObjectsDone:
+                        {
+                            AsyncLoadObjectsData* data = (AsyncLoadObjectsData*)signal.data;
+                            onLoadObjectsDone.emitSignal(data->success);
+                            delete data;
+                            break;
+                        }
+                        case signal_onSaveObjectDone:
+                        {
+                            AsyncSaveObjectData* data = (AsyncSaveObjectData*)signal.data;
+                            onSaveObjectDone.emitSignal(data->success, data->object);
+                            delete data;
+                            break;
+                        }
+                        case signal_onSaveObjectsDone:
+                        {
+                            AsyncSaveObjectsData* data = (AsyncSaveObjectsData*)signal.data;
+                            onSaveObjectsDone.emitSignal(data->success);
+                            delete data;
+                            break;
+                        }
+                        default:
+                            break;
                     }
                 }
             }

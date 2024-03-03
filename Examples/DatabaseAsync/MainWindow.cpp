@@ -10,7 +10,7 @@
 #endif
 
 #define DEBUG_SIMPLE std::cout
-#define DEBUG DEBUG_SIMPLE << m_manager->getUser().c_str() << "::" << __FUNCTION__ << ": "
+#define DEBUG DEBUG_SIMPLE << m_manager->getUser().getName().c_str() << "::" << __FUNCTION__ << ": "
 
 
 MainWindow::MainWindow(const std::string& user, QWidget *parent)
@@ -20,7 +20,10 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	ui.setupUi(this);
 	setWindowTitle(QString::fromStdString(user));
 
-	m_manager = new JDManager("asyncDatabase", "Person", "sessionID", user);
+	//if(m_manager)
+	//	delete m_manager;
+
+	m_manager = new JDManager("asyncDatabase", "Person", user);
 	m_manager->setup();
 
 	m_uiPersonEditor = new UIPerson(ui.editor_frame);
@@ -40,6 +43,8 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
     m_manager->getSignals().connect_databaseOutdated_slot(this, &MainWindow::onDatabaseOutdated);
 
 
+    m_manager->getSignals().connect_onStartAsyncWork_slot(this, &MainWindow::onAsyncWorkStarted);
+    m_manager->getSignals().connect_onEndAsyncWork_slot(this, &MainWindow::onAsyncWorkFinished);
     m_manager->getSignals().connect_onLoadObjectsDone_slot(this, &MainWindow::onLoadAllDone);
 	m_manager->getSignals().connect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
     m_manager->getSignals().connect_onSaveObjectsDone_slot(this, &MainWindow::onSaveAllDone);
@@ -49,12 +54,16 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 
 	//m_manager->getSignals().disconnect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
 	connect(&m_timer, &QTimer::timeout, this, &MainWindow::onTimerFinished);
-	m_timer.start(1);
+	m_timer.start(100);
+
+	connect(&m_asyncUpdateTimer, &QTimer::timeout, this, &MainWindow::onAsyncUpdateTimerFinished);
+	//m_timer.start(1);
 }
 
 MainWindow::~MainWindow()
 {
 	m_timer.stop();
+	m_asyncUpdateTimer.stop();
 	delete m_manager;
 	m_manager = nullptr;
 	//JDManager::stopProfiler(m_manager->getUser()+"_asyncProfile.prof");
@@ -65,10 +74,19 @@ void MainWindow::onTimerFinished()
 	EASY_FUNCTION(profiler::colors::Amber);
 	m_manager->update();
 	ui.objectCount_label->setText("Object count: "+QString::number(m_manager->getObjectCount()));
-	JsonDatabase::Internal::WorkProgress progress = m_manager->getWorkProgress();
-	ui.progressBar->setValue(progress.getProgress()*100);
-	ui.progressTaskName_label->setText(QString::fromStdString(progress.getTaskText()));
-	ui.progressComment_label->setText(QString::fromStdString(progress.getComment()));
+	
+	
+}
+void MainWindow::onAsyncUpdateTimerFinished()
+{
+	bool managerIsBusy = m_manager->isBusy();
+	if (managerIsBusy)
+	{
+		JsonDatabase::Internal::WorkProgress progress = m_manager->getWorkProgress();
+		ui.progressBar->setValue(static_cast<int>(progress.getProgress() * 100));
+		ui.progressTaskName_label->setText(QString::fromStdString(progress.getTaskText()));
+		ui.progressComment_label->setText(QString::fromStdString(progress.getComment()));
+	}
 }
 
 void MainWindow::on_zipFormat_checkBox_stateChanged(int state)
@@ -82,7 +100,7 @@ void MainWindow::on_generatePersons_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
-	m_manager->addObject(createPersons(m_manager->getObjectCount()));
+	m_manager->addObject(createPersons());
 }
 void MainWindow::on_loadDatabase_pushButton_clicked()
 {
@@ -106,29 +124,26 @@ void MainWindow::on_saveDatabase_pushButton_clicked()
 void MainWindow::on_addObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	QString id = ui.id_lineEdit->text();
-	if (id.isEmpty())
-	{
-		DEBUG << "id is empty\n";
-		return;
-	}
-	Person* p = new Person(id.toStdString(), "Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4");
-	DEBUG <<p->getObjectID().c_str();
+	JDderivedObject<Person> p(new Person("Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4"));
+	
 	if (!m_manager->addObject(p))
 	{
 		DEBUG << "Can't add object to database\n";
 	}
+	DEBUG << p->getObjectID()->toString().c_str() << "\n";
 }
 void MainWindow::on_deleteObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	
-	JDObjectInterface* p = getSelectedObject();
+	JDObject p = getSelectedObject();
 	if (p)
 	{
-		DEBUG << p->getObjectID().c_str() << "\n";
-		m_manager->removeObject(p);
-		delete p;
+		DEBUG << p->getObjectID()->toString().c_str() << "\n";
+		//m_manager->removeObject(p);
+		JDObjectInterface* obj = p.get();
+		p.reset();
+		delete obj;
 	}
 	else
 	{
@@ -138,7 +153,7 @@ void MainWindow::on_deleteObject_pushButton_clicked()
 void MainWindow::on_editObject_pushButton_clicked()
 {
 	bool editMode = false;
-	Person* p = getSelectedPerson();
+	JDderivedObject<Person> p = getSelectedPerson();
 	/*if (m_manager->lockObject(p))
 	{
 		editMode = true;
@@ -146,34 +161,42 @@ void MainWindow::on_editObject_pushButton_clicked()
 	else
 	{*/
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
-	if (m_manager->isObjectLockedByOther(p, lastError))
+	if(m_manager->lockObject(p, lastError))
+	{
+		editMode = true;
+	}
+	else
+	{
+		editMode = false;
+	}
+	/*if (m_manager->isObjectLockedByOther(p, lastError))
 	{
 		editMode = false;
 	}
 	else
 	{
 		editMode = true;
-	}
+	}*/
 	if (lastError != JsonDatabase::Internal::JDObjectLocker::Error::none)
 		editMode = false;
 	//}
-	m_uiPersonEditor->setPerson(getSelectedPerson(), editMode);
+	m_uiPersonEditor->setPerson(p, editMode);
 }
 
 void MainWindow::on_lockObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
-	JDObjectInterface *obj = getSelectedObject();
+	JDObject obj = getSelectedObject();
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
 	if (m_manager->lockObject(obj, lastError))
 	{
-		DEBUG << "locked: " << obj->getObjectID().c_str() << "\n";
+		DEBUG << "locked: " << obj->getObjectID()->toString().c_str() << "\n";
 	}
 	else
 	{
 		if(obj)
-			DEBUG << "Can't lock: " << obj->getObjectID().c_str() << "\n";
+			DEBUG << "Can't lock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't lock object, nullptr\n";
 	}
@@ -182,16 +205,16 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
-	JDObjectInterface* obj = getSelectedObject();
+	JDObject obj = getSelectedObject();
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
 	if (m_manager->unlockObject(obj, lastError))
 	{
-		DEBUG << "unlocked: " << obj->getObjectID().c_str() << "\n";
+		DEBUG << "unlocked: " << obj->getObjectID()->toString().c_str() << "\n";
 	}
 	else
 	{
 		if (obj)
-			DEBUG << "Can't unlock: " << obj->getObjectID().c_str() << "\n";
+			DEBUG << "Can't unlock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't unlock object, nullptr\n";
 	}
@@ -201,9 +224,9 @@ void MainWindow::on_test_pushButton_clicked()
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
 
-	std::vector<JDObjectInterface*> objects;
-	std::unordered_map<std::string, JDObjectInterface*> map1;
-	std::unordered_map<JDObjectInterface*, JDObjectInterface*> map2;
+	std::vector<JDObject> objects;
+	std::unordered_map<JsonDatabase::JDObjectID::IDType, JDObject> map1;
+	std::unordered_map<JDObject, JDObject> map2;
 
 	auto added = m_manager->getObjects();
 
@@ -219,21 +242,21 @@ void MainWindow::on_test_pushButton_clicked()
 	auto end = std::chrono::high_resolution_clock::now();
 	// mesure duration using chrono
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::vector<JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::vector<JDObject> fill time: " << duration.count() << " microseconds\n";
 
 	// mesure start time using chrono 
 	start = std::chrono::high_resolution_clock::now();
 	map1.reserve(added.size());
 	for (auto& obj : added)
 	{
-		map1[obj->getObjectID()] = obj;
+		map1[obj->getObjectID()->get()] = obj;
 	}
 
 	// mesure end time using chrono
 	end = std::chrono::high_resolution_clock::now();
 	// mesure duration using chrono
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObject> fill time: " << duration.count() << " microseconds\n";
 
 	// mesure start time using chrono 
 	start = std::chrono::high_resolution_clock::now();
@@ -247,7 +270,7 @@ void MainWindow::on_test_pushButton_clicked()
 	end = std::chrono::high_resolution_clock::now();
 	// mesure duration using chrono
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<JDObjectInterface*, JDObjectInterface*> fill time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<JDObject, JDObject> fill time: " << duration.count() << " microseconds\n";
 
 
 	size_t iterations = 10;
@@ -265,14 +288,14 @@ void MainWindow::on_test_pushButton_clicked()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::vector<JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::vector<JDObject> search time: " << duration.count() << " microseconds\n";
 
 	start = std::chrono::high_resolution_clock::now();
 	for (size_t i = 0; i < iterations; ++i)
 	{
 		for (auto& obj : added)
 		{
-			auto it = map1.find(obj->getObjectID());
+			auto it = map1.find(obj->getObjectID()->get());
 			if (it != map1.end())
 			{
 				//DEBUG_SIMPLE << "found\n";
@@ -281,7 +304,7 @@ void MainWindow::on_test_pushButton_clicked()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<std::string, JDObject> search time: " << duration.count() << " microseconds\n";
 
 	start = std::chrono::high_resolution_clock::now();
 	for (size_t i = 0; i < iterations; ++i)
@@ -297,7 +320,7 @@ void MainWindow::on_test_pushButton_clicked()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	DEBUG_SIMPLE << "std::unordered_map<JDObjectInterface*, JDObjectInterface*> search time: " << duration.count() << " microseconds\n";
+	DEBUG_SIMPLE << "std::unordered_map<JDObject, JDObject> search time: " << duration.count() << " microseconds\n";
 
 }
 void MainWindow::closeEvent(QCloseEvent* event)
@@ -309,13 +332,21 @@ void MainWindow::closeEvent(QCloseEvent* event)
 }
 
 
-JDObjectInterface* MainWindow::getSelectedObject()
+JDObject MainWindow::getSelectedObject()
 {
-	return m_manager->getObject(ui.id_lineEdit->text().toStdString());
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+	JDObjectID::IDType id = ui.id_lineEdit->text().toStdString();
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+	JDObjectID::IDType id = ui.id_lineEdit->text().toLong();
+#else
+#error "Invalid ID type"
+#endif	
+	return m_manager->getObject(id);
 }
-Person* MainWindow::getSelectedPerson()
+JDderivedObject<Person> MainWindow::getSelectedPerson()
 {
-	return dynamic_cast<Person*>(getSelectedObject());
+	JDObject obj = getSelectedObject();
+	return std::dynamic_pointer_cast<Person>(obj);
 }
 void MainWindow::onDatabaseFileChanged()
 {
@@ -334,17 +365,17 @@ void MainWindow::onLockedObjectsChanged()
 	std::string text;
 	for (auto& id : locked)
 	{
-		Person *p = m_manager->getObject<Person>(id.objectID);
-		if (p)
+		auto p = m_manager->getObject<Person>(id.objectID);
+		if (p.get())
 		{
-			text += "\"" + id.objectID + "\" object locked by \"" + id.owner + "\"\n";
+			text += "\"" + JDObjectID::toString(id.objectID) + "\" object locked by \"" + id.user.getName() + "\"\n";
 		}
 		else
-			text += "\"" + id.objectID + "\" object not found\n";
+			text += "\"" + JDObjectID::toString(id.objectID) + "\" object not found\n";
 	}
 	ui.lockedObjects_label->setText(QString::fromStdString(text));
 }
-void MainWindow::onObjectRemovedFromDatabase(const JsonDatabase::JDObjectContainer& removed)
+void MainWindow::onObjectRemovedFromDatabase(const std::vector<JDObject>& removed)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
@@ -352,12 +383,12 @@ void MainWindow::onObjectRemovedFromDatabase(const JsonDatabase::JDObjectContain
 	buffer.reserve(removed.size() * 32);
 	for (auto& obj : removed)
 	{
-		buffer += "  " + obj->getObjectID() + "\n";
-		delete obj;
+		buffer += "  " + obj->getObjectID()->toString() + "\n";
+		//delete obj.get();
 	}
 	DEBUG_SIMPLE << buffer.c_str();
 }
-void MainWindow::onObjectAddedToDatabase(const JsonDatabase::JDObjectContainer& added)
+void MainWindow::onObjectAddedToDatabase(const std::vector<JDObject>& added)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG;
@@ -365,7 +396,7 @@ void MainWindow::onObjectAddedToDatabase(const JsonDatabase::JDObjectContainer& 
 	buffer.reserve(added.size() * 32);
 	for (auto& obj : added)
 	{
-		buffer += "  " + obj->getObjectID() + "\n";
+		buffer += "  " + obj->getObjectID()->toString() + "\n";
 	}
 	DEBUG_SIMPLE << buffer.c_str();
 }
@@ -375,10 +406,10 @@ void MainWindow::onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDO
 	DEBUG;
 	for (auto& obj : changedPairs)
 	{
-		DEBUG_SIMPLE << "  " << obj.first->getObjectID().c_str() << "\n";
+		DEBUG_SIMPLE << "  " << obj.first->getObjectID()->toString().c_str() << "\n";
 	}
 }
-void MainWindow::onObjectOverrideChangeFromDatabase(const JsonDatabase::JDObjectContainer& overwritten)
+void MainWindow::onObjectOverrideChangeFromDatabase(const std::vector<JDObject>& overwritten)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG;
@@ -386,7 +417,7 @@ void MainWindow::onObjectOverrideChangeFromDatabase(const JsonDatabase::JDObject
 	buffer.reserve(overwritten.size() * 32);
 	for (auto& obj : overwritten)
 	{
-		buffer += "  " + obj->getObjectID() + "\n";
+		buffer += "  " + obj->getObjectID()->toString() + "\n";
 	}
 	DEBUG_SIMPLE << buffer.c_str();
 }
@@ -398,29 +429,84 @@ void MainWindow::onDatabaseOutdated()
 }
 
 
-
+void MainWindow::onAsyncWorkStarted()
+{
+	m_asyncUpdateTimer.start(1);
+}
+void MainWindow::onAsyncWorkFinished()
+{
+	m_asyncUpdateTimer.stop();
+}
 void MainWindow::onSaveAllDone(bool success)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "success: "<<(success?"true":"false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
-void MainWindow::onSaveIndividualDone(bool success, JDObjectInterface* obj)
+void MainWindow::onSaveIndividualDone(bool success, JDObject obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	DEBUG  << obj->getObjectID().c_str() << " "<<(success ? "true" : "false") << "\n";
+	DEBUG  << obj->getObjectID()->toString().c_str() << " "<<(success ? "true" : "false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
 void MainWindow::onLoadAllDone(bool success)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG  << (success ? "true" : "false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
-void MainWindow::onLoadIndividualDone(bool success, JDObjectInterface* obj)
+void MainWindow::onLoadIndividualDone(bool success, JDObject obj)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	DEBUG << obj->getObjectID().c_str() <<" "<< (success ? "true" : "false") << "\n";
+	DEBUG << obj->getObjectID()->toString().c_str() <<" "<< (success ? "true" : "false") << "\n";
+	if (success)
+	{
+		ui.progressBar->setValue(100);
+		ui.progressTaskName_label->setText("Done");
+		ui.progressComment_label->setText("");
+	}
+	else
+	{
+		ui.progressBar->setValue(0);
+		ui.progressTaskName_label->setText("Failed");
+		ui.progressComment_label->setText("");
+	}
 }
 
-void MainWindow::onPersonSave(Person* person)
+void MainWindow::onPersonSave(JDderivedObject<Person> person)
 {
 	if (person)
 		m_manager->saveObjectAsync(person);

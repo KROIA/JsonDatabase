@@ -13,16 +13,16 @@ public:
 	~UIPerson();
 
 
-	void setPerson(Person* person, bool editMode);
+	void setPerson(JDderivedObject<Person> person, bool editMode);
 signals:
-	void savePerson(Person* person);
+	void savePerson(JDderivedObject<Person> person);
 private slots:
 
 	void on_save_pushButton_clicked();
 	
 private:
 	Ui::UIPerson ui;
-	Person* m_person;
+	JDderivedObject<Person> m_person;
 	bool m_editMode;
 
 };

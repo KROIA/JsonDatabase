@@ -9,14 +9,14 @@ namespace JsonDatabase
 		JDManagerAysncWorkLoadSingleObject::JDManagerAysncWorkLoadSingleObject(
 			JDManager& manager,
 			std::mutex& mtx,
-			JDObjectInterface* object)
+			const JDObject& object)
 			: JDManagerAysncWork(manager, mtx)
 			, m_object(object)
 			, m_success(false)
 		{
 			if (object)
 			{
-				m_progress.setTaskName("Lade Objekt: " + m_object->getObjectID());
+				m_progress.setTaskName("Lade Objekt: " + m_object->getObjectID()->toString());
 			}
 		}
 		JDManagerAysncWorkLoadSingleObject::~JDManagerAysncWorkLoadSingleObject()
@@ -27,19 +27,22 @@ namespace JsonDatabase
 		{ 
 			return m_success; 
 		}
-		JDObjectInterface* JDManagerAysncWorkLoadSingleObject::getObject() const
+		const JDObject &JDManagerAysncWorkLoadSingleObject::getObject() const
 		{
 			return m_object;
 		}
 		void JDManagerAysncWorkLoadSingleObject::process()
 		{
-			JDM_UNIQUE_LOCK_P;
-			if (!m_object)
+			JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
 			{
-				m_success = false;
-				return;
+				JDM_UNIQUE_LOCK_P;
+				if (!m_object)
+				{
+					m_success = false;
+					return;
+				}
+				m_success = m_manager.loadObject_internal(m_object, &m_progress);
 			}
-			m_success = m_manager.loadObject_internal(m_object, &m_progress);
 		}
 		std::string JDManagerAysncWorkLoadSingleObject::getErrorMessage() const
 		{
