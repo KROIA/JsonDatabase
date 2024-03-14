@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "utilities/filesystem/FileReadWriteLock.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/filesystem/LockedFileAccessor.h"
@@ -16,7 +16,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSONDATABASE_EXPORT JDManagerFileSystem
+        class JSON_DATABASE_EXPORT_EXPORT JDManagerFileSystem
         {
         protected:
             JDManagerFileSystem(

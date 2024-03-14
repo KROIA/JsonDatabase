@@ -1,13 +1,13 @@
 #pragma once
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include <mutex>
 
 namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSONDATABASE_EXPORT JDUniqueMutexLock
+		class JSON_DATABASE_EXPORT_EXPORT JDUniqueMutexLock
 		{
 		public:
 			JDUniqueMutexLock(std::mutex& mutex);

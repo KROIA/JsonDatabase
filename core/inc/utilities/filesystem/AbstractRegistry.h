@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "utilities/filesystem/LockedFileAccessor.h"
 #include "utilities/JDSerializable.h"
 #include "json/JsonValue.h"
@@ -10,7 +10,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSONDATABASE_EXPORT AbstractRegistry
+		class JSON_DATABASE_EXPORT_EXPORT AbstractRegistry
 		{
 		public:
 			AbstractRegistry();
@@ -31,7 +31,7 @@ namespace JsonDatabase
 		protected:
 
 			// Manages the closing of the registry file.
-			class JSONDATABASE_EXPORT AutoClose
+			class JSON_DATABASE_EXPORT_EXPORT AutoClose
 			{
 			public:
 				AutoClose(const AbstractRegistry* registry);
@@ -40,7 +40,7 @@ namespace JsonDatabase
 				const AbstractRegistry* m_registry;
 			};
 
-			class JSONDATABASE_EXPORT LockEntryObject : public JDSerializable
+			class JSON_DATABASE_EXPORT_EXPORT LockEntryObject : public JDSerializable
 			{
 			public:
 				LockEntryObject(const std::string &key);

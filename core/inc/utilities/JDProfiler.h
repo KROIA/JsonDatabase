@@ -1,10 +1,10 @@
 #pragma once
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include <string>
 
 namespace JsonDatabase
 {
-	class JSONDATABASE_EXPORT Profiler
+	class JSON_DATABASE_EXPORT_EXPORT Profiler
 	{
 		public:
 		static void startProfiler();

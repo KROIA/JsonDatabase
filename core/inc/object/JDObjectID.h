@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include <string>
 #include <QString>
 #include <QDebug>
@@ -11,7 +11,7 @@
 namespace JsonDatabase
 {
 	
-	class JSONDATABASE_EXPORT JDObjectID
+	class JSON_DATABASE_EXPORT_EXPORT JDObjectID
 	{
 		friend JDObjectIDDomain;
 	public:

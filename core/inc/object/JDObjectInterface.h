@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "utilities/JDSerializable.h"
 #include "JDObjectID.h"
 #include "utilities/Signal.h"
@@ -18,7 +18,7 @@ namespace JsonDatabase
     
     
     
-class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
+class JSON_DATABASE_EXPORT_EXPORT JDObjectInterface: protected Utilities::JDSerializable
 {
         friend JDManager;
         friend Internal::JDManagerObjectManager;
@@ -74,7 +74,7 @@ class JSONDATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
         bool getSaveData(JsonObject& obj) const;
 
 
-    class JSONDATABASE_EXPORT AutoObjectAddToRegistry
+    class JSON_DATABASE_EXPORT_EXPORT AutoObjectAddToRegistry
     {
     public:
         AutoObjectAddToRegistry(JDObject obj);

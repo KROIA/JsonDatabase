@@ -1,4 +1,5 @@
 #include "Json/JsonSerializer.h"
+#include <sstream>
 
 #if JD_ACTIVE_JSON == JD_JSON_INTERNAL
 

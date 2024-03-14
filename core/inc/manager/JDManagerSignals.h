@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "utilities/signal.h"
 #include "object/JDObjectContainer.h"
 
@@ -28,7 +28,7 @@ namespace JsonDatabase
     namespace Internal
     {
         //class JDManager;
-        class JSONDATABASE_EXPORT JDManagerSignals
+        class JSON_DATABASE_EXPORT_EXPORT JDManagerSignals
         {
             friend JDManager;
             friend JDManagerObjectManager;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "manager/async/WorkProgress.h"
 #include <mutex>
 
@@ -9,7 +9,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSONDATABASE_EXPORT JDManagerAysncWork
+        class JSON_DATABASE_EXPORT_EXPORT JDManagerAysncWork
         {
             friend class JDManager;
             friend class JDManagerAsyncWorker;

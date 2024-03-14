@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include "JDSerializable.h"
 #include <string>
 #include <QDateTime>
@@ -11,7 +11,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSONDATABASE_EXPORT JDUser : public JDSerializable
+		class JSON_DATABASE_EXPORT_EXPORT JDUser : public JDSerializable
 		{
 		public:
 			JDUser();

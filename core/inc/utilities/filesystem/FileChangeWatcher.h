@@ -1,8 +1,8 @@
 #pragma once
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include "Signal.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_Declaration.h"
 
 #include <windows.h>
 #include <iostream>
@@ -16,7 +16,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSONDATABASE_EXPORT FileChangeWatcher
+        class JSON_DATABASE_EXPORT_EXPORT FileChangeWatcher
         {
         public:
             FileChangeWatcher(const std::string& filePath);
@@ -53,7 +53,7 @@ namespace JsonDatabase
         };
 
 
-        class JSONDATABASE_EXPORT ManagedFileChangeWatcher
+        class JSON_DATABASE_EXPORT_EXPORT ManagedFileChangeWatcher
         {
             friend JDManagerFileSystem;
             friend JDObjectLocker;

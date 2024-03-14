@@ -1,5 +1,6 @@
 #pragma once
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
+#include <QDebug>
 #include <type_traits>
 
 #include <variant>
@@ -24,7 +25,7 @@ namespace JsonDatabase
 	using JsonArray = JsonArrayType< JsonValue>;
 	using JsonObject = JsonMapType<std::string, JsonValue>;
 
-	class JSONDATABASE_EXPORT JsonValue
+	class JSON_DATABASE_EXPORT_EXPORT JsonValue
 	{
 		friend class JsonSerializer;
 		friend class JsonDeserializer;

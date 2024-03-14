@@ -1,17 +1,39 @@
 #pragma once
 
-#include <QtCore/qglobal.h>
-#include <chrono>
+/// USER_SECTION_START 1
 
+/// USER_SECTION_END
+
+#include <chrono>
+// Params
+// <LIBRARY NAME SHORT>=JD 
+//
 #ifndef BUILD_STATIC
+#pragma message("JSONDATABASE_LIB is a shared library")
 # if defined(JSONDATABASE_LIB)
-#  define JSONDATABASE_EXPORT Q_DECL_EXPORT
+#  define JSON_DATABASE_EXPORT_EXPORT __declspec(dllexport)
 # else
-#  define JSONDATABASE_EXPORT Q_DECL_IMPORT
+#  define JSON_DATABASE_EXPORT_EXPORT __declspec(dllimport)
 # endif
 #else 
-# define JSONDATABASE_EXPORT
+#pragma message("JSONDATABASE_LIB is a static library")
+# define JSON_DATABASE_EXPORT_EXPORT
 #endif
+
+/// USER_SECTION_START 2
+
+/// USER_SECTION_END
+
+#ifdef QT_ENABLED
+#pragma message("QT is enabled")
+#ifdef QT_WIDGETS_ENABLED
+#pragma message("QT_WIDGETS is enabled")
+#endif
+#endif
+
+/// USER_SECTION_START 3
+
+/// USER_SECTION_END
 
 // MSVC Compiler
 #ifdef _MSC_VER 
@@ -22,27 +44,14 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #endif
 
 
+#define JD_UNUSED(x) (void)x;
 
-
+/// USER_SECTION_START 4
 #define JDM_UNIQUE_LOCK std::unique_lock<std::mutex> lck(m_mutex);
 #define JDM_UNIQUE_LOCK_P Internal::JDUniqueMutexLock uniqueLock(m_mutex);
 #define JDM_UNIQUE_LOCK_M(MUT) std::unique_lock<std::mutex> lck(MUT);
 #define JDM_UNIQUE_LOCK_P_M(mutex) Internal::JDUniqueMutexLock uniqueLock(mutex);
-
-
-/*
-	Enable multithreading for work that can be done in parallel.
-	Disabling this will make the library not single threaded.
-	The JsonManager still uses a thread to process the work
-
-*/
-#define JD_ENABLE_MULTITHREADING
-
-#ifdef JD_ENABLE_MULTITHREADING
-#define JD_ENABLE_MULTITHREADING_JSON_PARSER
-#endif
-
-#define JD_UNUSED(x) (void)x;
+/// USER_SECTION_END
 
 #if defined(JSONDATABASE_LIB)
 #pragma warning (error : 4715) // not all control paths return a value shuld be an error instead of a warning
@@ -57,3 +66,7 @@ typedef std::chrono::system_clock::time_point TimePoint;
 #pragma warning (error : 4996) // unsafe function calls
 #pragma warning (error : 4018) // signed/unsigned mismatch
 #endif
+
+/// USER_SECTION_START 5
+
+/// USER_SECTION_END

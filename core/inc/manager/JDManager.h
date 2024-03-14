@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 
 #include "async/JDManagerAsyncWorker.h"
 #include "async/work/JDManagerWorkLoadSingleObject.h"
@@ -26,7 +26,7 @@
 namespace JsonDatabase
 {
 
-class JSONDATABASE_EXPORT JDManager: 
+class JSON_DATABASE_EXPORT_EXPORT JDManager: 
     public Internal::JDManagerObjectManager, 
     public Internal::JDManagerFileSystem,
     //public Internal::JDObjectLocker,

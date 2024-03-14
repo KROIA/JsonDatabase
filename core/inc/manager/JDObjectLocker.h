@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include "object/JDObjectInterface.h"
 #include "utilities/JDSerializable.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
@@ -17,7 +17,7 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSONDATABASE_EXPORT JDObjectLocker : public Utilities::AbstractRegistry
+		class JSON_DATABASE_EXPORT_EXPORT JDObjectLocker : public Utilities::AbstractRegistry
 		{
 			//friend JDManagerObjectManager;
 		public:
@@ -80,7 +80,7 @@ namespace JsonDatabase
 
 
 		private:
-			class JSONDATABASE_EXPORT LockEntryObjectImpl : public LockEntryObject
+			class JSON_DATABASE_EXPORT_EXPORT LockEntryObjectImpl : public LockEntryObject
 			{
 			public:
 				LockEntryObjectImpl(const std::string& key);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "JDUser.h"
 #include "utilities/filesystem/AbstractRegistry.h"
 
@@ -17,7 +17,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSONDATABASE_EXPORT JDUserRegistration : public AbstractRegistry
+		class JSON_DATABASE_EXPORT_EXPORT JDUserRegistration : public AbstractRegistry
 		{
 		public:
 
@@ -35,7 +35,7 @@ namespace JsonDatabase
 			int unregisterInactiveUsers() const;
 
 		private:
-			class JSONDATABASE_EXPORT LockEntryObjectImpl : public LockEntryObject
+			class JSON_DATABASE_EXPORT_EXPORT LockEntryObjectImpl : public LockEntryObject
 			{
 			public:
 				LockEntryObjectImpl(const std::string& key);

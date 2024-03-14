@@ -1,6 +1,7 @@
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/JDUtilities.h"
 #include <fstream>
+#include <filesystem>
 
 namespace JsonDatabase
 {

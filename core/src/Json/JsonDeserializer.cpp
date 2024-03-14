@@ -1,4 +1,5 @@
 #include "Json/JsonDeserializer.h"
+#include <sstream>
 
 
 #ifdef JD_ENABLE_MULTITHREADING_JSON_PARSER

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "object/JDObjectID.h"
 #include "Json/JsonValue.h"
 
@@ -12,7 +12,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSONDATABASE_EXPORT JDSerializable
+		class JSON_DATABASE_EXPORT_EXPORT JDSerializable
 		{
 		public:
 			virtual ~JDSerializable() {}

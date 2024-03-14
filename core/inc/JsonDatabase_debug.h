@@ -1,9 +1,8 @@
 #pragma once
 
+/// USER_SECTION_START 1
 
-//#define JD_JSON_PROFILING_ENABED
-//#define JD_ASYNC_DELETER_PROFILING_ENABED
-
+/// USER_SECTION_END
 
 // Debugging
 #ifdef NDEBUG
@@ -19,7 +18,9 @@
 #define JD_CONSOLE_FUNCTION(msg) JD_CONSOLE_STREAM << __PRETTY_FUNCTION__ << " " << msg;
 #endif
 
+/// USER_SECTION_START 2
 
+/// USER_SECTION_END
 
 #ifdef JD_PROFILING
 #include "easy/profiler.h"
@@ -86,6 +87,8 @@
 #define JD_GENERAL_PROFILING_VALUE(name, value) JD_PROFILING_VALUE(name, value)
 #define JD_GENERAL_PROFILING_TEXT(name, value) JD_PROFILING_TEXT(name, value)
 
+
+/// USER_SECTION_START 3
 // JDObject
 #define JD_OBJECT_PROFILING_COLORBASE Blue
 #define JD_OBJECT_PROFILING_BLOCK_C(text, color) JD_PROFILING_BLOCK_C(text, color)
@@ -235,3 +238,4 @@
 #define JD_ASYNC_DELETER_PROFILING_TEXT(name, value)
 #define JD_ASYNC_DELETER_PROFILING_THREAD(name)
 #endif
+/// USER_SECTION_END

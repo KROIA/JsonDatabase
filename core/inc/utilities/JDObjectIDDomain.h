@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "object/JDObjectID.h"
 #include <unordered_map>
 #include <string>
@@ -9,7 +9,7 @@
 
 namespace JsonDatabase
 {
-	class JSONDATABASE_EXPORT JDObjectIDDomainInterface
+	class JSON_DATABASE_EXPORT_EXPORT JDObjectIDDomainInterface
 	{
 		friend JDObjectIDDomain;
 		JDObjectIDDomainInterface(JDObjectIDDomain* domain);
@@ -30,7 +30,7 @@ namespace JsonDatabase
 		JDObjectIDDomain* m_domain;
 	};
 
-	class JSONDATABASE_EXPORT JDObjectIDDomain
+	class JSON_DATABASE_EXPORT_EXPORT JDObjectIDDomain
 	{
 	public:
 		JDObjectIDDomain();

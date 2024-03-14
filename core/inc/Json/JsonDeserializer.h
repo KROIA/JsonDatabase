@@ -1,5 +1,5 @@
 #pragma once
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 
 
 #include "JsonValue.h"
@@ -8,7 +8,7 @@
 
 namespace JsonDatabase
 {
-	class JSONDATABASE_EXPORT JsonDeserializer
+	class JSON_DATABASE_EXPORT_EXPORT JsonDeserializer
 	{
 	public:
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include "JDObjectManager.h"
 #include "JDObjectID.h"
 #include <vector>
@@ -10,7 +10,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSONDATABASE_EXPORT JDObjectContainer
+        class JSON_DATABASE_EXPORT_EXPORT JDObjectContainer
         {
         public:
             using iterator = std::vector<JDObjectManager*>::iterator;

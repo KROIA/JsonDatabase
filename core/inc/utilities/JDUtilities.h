@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include "StringUtilities.h"
 #include <string>
 #include <windows.h>
@@ -10,7 +10,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		std::string JSONDATABASE_EXPORT getLastErrorString(DWORD error);
+		std::string JSON_DATABASE_EXPORT_EXPORT getLastErrorString(DWORD error);
 
 		
 

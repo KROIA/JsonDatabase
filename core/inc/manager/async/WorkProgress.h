@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include <string>
 #include <vector>
 
@@ -9,7 +9,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSONDATABASE_EXPORT WorkProgress
+        class JSON_DATABASE_EXPORT_EXPORT WorkProgress
         {
         public:
             WorkProgress();

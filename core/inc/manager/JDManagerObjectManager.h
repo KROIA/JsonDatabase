@@ -1,7 +1,7 @@
 #pragma once
 
-#include "JD_base.h"
-#include "JDDeclaration.h"
+#include "JsonDatabase_base.h"
+#include "JsonDatabase_Declaration.h"
 #include "object/JDObjectContainer.h"
 #include "utilities/JDObjectIDDomain.h"
 #include "JDObjectLocker.h"
@@ -17,7 +17,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSONDATABASE_EXPORT JDManagerObjectManager
+        class JSON_DATABASE_EXPORT_EXPORT JDManagerObjectManager
         {
             friend class JDManager;
         protected:

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 #include "FileLock.h"
 
 #include <string>
@@ -15,7 +15,7 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSONDATABASE_EXPORT FileReadWriteLock
+		class JSON_DATABASE_EXPORT_EXPORT FileReadWriteLock
 		{
 		public:
 			enum Access

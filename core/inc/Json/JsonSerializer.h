@@ -1,12 +1,12 @@
 #pragma once
-#include "JD_base.h"
+#include "JsonDatabase_base.h"
 
 #include "JsonValue.h"
 #include "manager/async/WorkProgress.h"
 
 namespace JsonDatabase
 {
-	class JSONDATABASE_EXPORT JsonSerializer
+	class JSON_DATABASE_EXPORT_EXPORT JsonSerializer
 	{
 	public:
 
