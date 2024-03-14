@@ -1,4 +1,4 @@
-## description: SFML Editor widget for QT applications
+## description: Json Database to serialize/deserialize objects
 cmake_minimum_required(VERSION 3.1.0)
 include(FetchContent)
 
