@@ -129,8 +129,8 @@ namespace JsonDatabase
                 auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
 
                 m_objectVector.erase(it2);
-                m_objectMap.erase(it);
                 m_objectPtrMap.erase(it->second->getObject().get());
+                m_objectMap.erase(it);
                 return manager;
             }
             return nullptr;
@@ -143,8 +143,8 @@ namespace JsonDatabase
                 auto it2 = std::find(m_objectVector.begin(), m_objectVector.end(), it->second);
 
                 m_objectVector.erase(it2);
-                m_objectMap.erase(it);
                 m_objectPtrMap.erase(it->second->getObject().get());
+                m_objectMap.erase(it);
                 return true;
             }
             return false;
@@ -212,7 +212,6 @@ namespace JsonDatabase
 
         bool JDObjectContainer::exists(const JDObjectIDptr& id) const
         {
-
             auto it = m_objectMap.find(id->get());
             if (it != m_objectMap.end())
             {

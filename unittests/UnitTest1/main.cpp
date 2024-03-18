@@ -1,13 +1,19 @@
 #ifdef QT_ENABLED
-#include <QApplication>
+#include <QCoreApplication>
 #endif
 #include <iostream>
 #include "JsonDatabase.h"
+#include <iostream>
+#include "tests.h"
 
 #ifdef QT_WIDGETS_ENABLED
 #include <QWidget>
+#include <QApplication>
 #endif
 
+// Instantiate Tests here:
+// TEST_INSTANTIATE(Test_simple); // Where Test_simple is a derived class from the Test class
+TEST_INSTANTIATE(TST_simple);
 
 int main(int argc, char* argv[])
 {
@@ -17,12 +23,22 @@ int main(int argc, char* argv[])
 	QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
 #ifdef QT_ENABLED
+#ifdef QT_WIDGETS_ENABLED
 	QApplication app(argc, argv);
+#else
+	QCoreApplication app(argc, argv);
+#endif
 #endif
 
 	JsonDatabase::LibraryInfo::printInfo();
+
+	std::cout << "Running " << UnitTest::Test::getTests().size() << " tests...\n";
+	UnitTest::Test::TestResults results;
+	UnitTest::Test::runAllTests(results);
+	UnitTest::Test::printResults(results);
+
 #ifdef QT_WIDGETS_ENABLED
-	QWidget* widget = JsonDatabase::LibraryInfo::createInfoWidget();
+	QWidget* widget = LibraryNamespace::LibraryInfo::createInfoWidget();
 	if (widget)
 		widget->show();
 #endif
