@@ -16,7 +16,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT_EXPORT FileChangeWatcher
+        class JSON_DATABASE_EXPORT FileChangeWatcher
         {
         public:
             FileChangeWatcher(const std::string& filePath);
@@ -53,7 +53,7 @@ namespace JsonDatabase
         };
 
 
-        class JSON_DATABASE_EXPORT_EXPORT ManagedFileChangeWatcher
+        class JSON_DATABASE_EXPORT ManagedFileChangeWatcher
         {
             friend JDManagerFileSystem;
             friend JDObjectLocker;

@@ -14,6 +14,8 @@ cmake_minimum_required(VERSION 3.1.0)
 #                                         # Network
 #                                         # Add any other required modules here
 #                                     )
+#         ADDITIONAL_SOURCES    Additional source files that should be added to the project. Example: "Application icon"
+#         ADDITIONAL_LIBRARIES  Additional libraries that should be added to the project.
 #         INSTALL_BIN_PATH      Specifies the install path. Example: "${CMAKE_INSTALL_PREFIX}/bin"
 function(exampleMaster 
 			PARENT_LIBRARY_NAME 
@@ -22,6 +24,7 @@ function(exampleMaster
 			QT_DEPLOY 
 			QT_MODULES
             ADDITIONAL_SOURCES
+            ADDITIONAL_LIBRARIES
             INSTALL_BIN_PATH)
 
 			
@@ -76,6 +79,13 @@ if(QT_ENABLE)
     qt5_wrap_ui(UIS_HDRS ${UI_FILES})
     qt5_add_resources(RESOURCE_FILES ${RES_FILES})
 
+    list(APPEND DEFINES QT_ENABLED)
+    # Check if QT_MODULES contains Widgets
+    list(FIND QT_MODULES "Widgets" _index)
+    if(NOT ${_index} EQUAL -1)
+        list(APPEND DEFINES QT_WIDGETS_ENABLED)
+    endif()
+
     set(SOURCES ${SOURCES}
 	    ${CPP_MOC_FILES}
 	    ${UIS_HDRS}
@@ -96,11 +106,13 @@ if(${PROFILING_NAME})
         message("ERROR: Target: PARENT_LIBRARY_STATIC_PROFILE does not exist")
         message("ERROR: Target: Make shure you have added the dependency: easy_profiler.cmake and set(EASY_PROFILER_IS_AVAILABLE ON)")
     endif()
-    target_link_libraries(${PROJECT_NAME} ${PARENT_LIBRARY_STATIC_PROFILE} ${QT_LIBS})
+    target_link_libraries(${PROJECT_NAME} ${PARENT_LIBRARY_STATIC_PROFILE} ${QT_LIBS} ${ADDITIONAL_LIBRARIES})
 else()
-    target_link_libraries(${PROJECT_NAME} ${PARENT_LIBRARY_STATIC} ${QT_LIBS})
+    target_link_libraries(${PROJECT_NAME} ${PARENT_LIBRARY_STATIC} ${QT_LIBS} ${ADDITIONAL_LIBRARIES})
 endif()
-target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_STATIC)
+
+list(APPEND DEFINES BUILD_STATIC)
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${DEFINES})
 
 install(TARGETS ${PROJECT_NAME} DESTINATION "${INSTALL_BIN_PATH}")
 

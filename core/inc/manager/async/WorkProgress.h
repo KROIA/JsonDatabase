@@ -9,7 +9,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT_EXPORT WorkProgress
+        class JSON_DATABASE_EXPORT WorkProgress
         {
         public:
             WorkProgress();

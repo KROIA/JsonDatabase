@@ -17,7 +17,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSON_DATABASE_EXPORT_EXPORT JDUserRegistration : public AbstractRegistry
+		class JSON_DATABASE_EXPORT JDUserRegistration : public AbstractRegistry
 		{
 		public:
 
@@ -35,7 +35,7 @@ namespace JsonDatabase
 			int unregisterInactiveUsers() const;
 
 		private:
-			class JSON_DATABASE_EXPORT_EXPORT LockEntryObjectImpl : public LockEntryObject
+			class JSON_DATABASE_EXPORT LockEntryObjectImpl : public LockEntryObject
 			{
 			public:
 				LockEntryObjectImpl(const std::string& key);

@@ -4,7 +4,7 @@
 
 namespace JsonDatabase
 {
-	class JSON_DATABASE_EXPORT_EXPORT Profiler
+	class JSON_DATABASE_EXPORT Profiler
 	{
 		public:
 		static void startProfiler();

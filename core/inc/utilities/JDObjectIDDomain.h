@@ -9,7 +9,7 @@
 
 namespace JsonDatabase
 {
-	class JSON_DATABASE_EXPORT_EXPORT JDObjectIDDomainInterface
+	class JSON_DATABASE_EXPORT JDObjectIDDomainInterface
 	{
 		friend JDObjectIDDomain;
 		JDObjectIDDomainInterface(JDObjectIDDomain* domain);
@@ -30,7 +30,7 @@ namespace JsonDatabase
 		JDObjectIDDomain* m_domain;
 	};
 
-	class JSON_DATABASE_EXPORT_EXPORT JDObjectIDDomain
+	class JSON_DATABASE_EXPORT JDObjectIDDomain
 	{
 	public:
 		JDObjectIDDomain();

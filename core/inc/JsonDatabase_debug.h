@@ -6,16 +6,16 @@
 
 // Debugging
 #ifdef NDEBUG
-#define JD_CONSOLE(msg)
-#define JD_CONSOLE_FUNCTION(msg)
+	#define JD_CONSOLE(msg)
+	#define JD_CONSOLE_FUNCTION(msg)
 #else
-#include <iostream>
+	#include <iostream>
 
-#define JD_DEBUG
-#define JD_CONSOLE_STREAM std::cout
+	#define JD_DEBUG
+	#define JD_CONSOLE_STREAM std::cout
 
-#define JD_CONSOLE(msg) JD_CONSOLE_STREAM << msg;
-#define JD_CONSOLE_FUNCTION(msg) JD_CONSOLE_STREAM << __PRETTY_FUNCTION__ << " " << msg;
+	#define JD_CONSOLE(msg) JD_CONSOLE_STREAM << msg;
+	#define JD_CONSOLE_FUNCTION(msg) JD_CONSOLE_STREAM << __PRETTY_FUNCTION__ << " " << msg;
 #endif
 
 /// USER_SECTION_START 2
@@ -23,33 +23,33 @@
 /// USER_SECTION_END
 
 #ifdef JD_PROFILING
-#include "easy/profiler.h"
-#include <easy/arbitrary_value.h> // EASY_VALUE, EASY_ARRAY are defined here
+	#include "easy/profiler.h"
+	#include <easy/arbitrary_value.h> // EASY_VALUE, EASY_ARRAY are defined here
 
-#define JD_PROFILING_BLOCK_C(text, color) EASY_BLOCK(text, color)
-#define JD_PROFILING_NONSCOPED_BLOCK_C(text, color) EASY_NONSCOPED_BLOCK(text, color)
-#define JD_PROFILING_END_BLOCK EASY_END_BLOCK
-#define JD_PROFILING_FUNCTION_C(color) EASY_FUNCTION(color)
-#define JD_PROFILING_BLOCK(text, colorStage) JD_PROFILING_BLOCK_C(text,profiler::colors::  colorStage)
-#define JD_PROFILING_NONSCOPED_BLOCK(text, colorStage) JD_PROFILING_NONSCOPED_BLOCK_C(text,profiler::colors::  colorStage)
-#define JD_PROFILING_FUNCTION(colorStage) JD_PROFILING_FUNCTION_C(profiler::colors:: colorStage)
-#define JD_PROFILING_THREAD(name) EASY_THREAD(name)
+	#define JD_PROFILING_BLOCK_C(text, color) EASY_BLOCK(text, color)
+	#define JD_PROFILING_NONSCOPED_BLOCK_C(text, color) EASY_NONSCOPED_BLOCK(text, color)
+	#define JD_PROFILING_END_BLOCK EASY_END_BLOCK
+	#define JD_PROFILING_FUNCTION_C(color) EASY_FUNCTION(color)
+	#define JD_PROFILING_BLOCK(text, colorStage) JD_PROFILING_BLOCK_C(text,profiler::colors::  colorStage)
+	#define JD_PROFILING_NONSCOPED_BLOCK(text, colorStage) JD_PROFILING_NONSCOPED_BLOCK_C(text,profiler::colors::  colorStage)
+	#define JD_PROFILING_FUNCTION(colorStage) JD_PROFILING_FUNCTION_C(profiler::colors:: colorStage)
+	#define JD_PROFILING_THREAD(name) EASY_THREAD(name)
 
-#define JD_PROFILING_VALUE(name, value) EASY_VALUE(name, value)
-#define JD_PROFILING_TEXT(name, value) EASY_TEXT(name, value)
+	#define JD_PROFILING_VALUE(name, value) EASY_VALUE(name, value)
+	#define JD_PROFILING_TEXT(name, value) EASY_TEXT(name, value)
 
 #else
-#define JD_PROFILING_BLOCK_C(text, color)
-#define JD_PROFILING_NONSCOPED_BLOCK_C(text, color)
-#define JD_PROFILING_END_BLOCK
-#define JD_PROFILING_FUNCTION_C(color)
-#define JD_PROFILING_BLOCK(text, colorStage)
-#define JD_PROFILING_NONSCOPED_BLOCK(text, colorStage)
-#define JD_PROFILING_FUNCTION(colorStage)
-#define JD_PROFILING_THREAD(name)
+	#define JD_PROFILING_BLOCK_C(text, color)
+	#define JD_PROFILING_NONSCOPED_BLOCK_C(text, color)
+	#define JD_PROFILING_END_BLOCK
+	#define JD_PROFILING_FUNCTION_C(color)
+	#define JD_PROFILING_BLOCK(text, colorStage)
+	#define JD_PROFILING_NONSCOPED_BLOCK(text, colorStage)
+	#define JD_PROFILING_FUNCTION(colorStage)
+	#define JD_PROFILING_THREAD(name)
 
-#define JD_PROFILING_VALUE(name, value)
-#define JD_PROFILING_TEXT(name, value)
+	#define JD_PROFILING_VALUE(name, value)
+	#define JD_PROFILING_TEXT(name, value)
 #endif
 
 // Special expantion tecniques are required to combine the color name

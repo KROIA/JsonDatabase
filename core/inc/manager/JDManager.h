@@ -26,7 +26,7 @@
 namespace JsonDatabase
 {
 
-class JSON_DATABASE_EXPORT_EXPORT JDManager: 
+class JSON_DATABASE_EXPORT JDManager: 
     public Internal::JDManagerObjectManager, 
     public Internal::JDManagerFileSystem,
     //public Internal::JDObjectLocker,

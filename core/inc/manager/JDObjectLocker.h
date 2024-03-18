@@ -17,7 +17,7 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSON_DATABASE_EXPORT_EXPORT JDObjectLocker : public Utilities::AbstractRegistry
+		class JSON_DATABASE_EXPORT JDObjectLocker : public Utilities::AbstractRegistry
 		{
 			//friend JDManagerObjectManager;
 		public:
@@ -80,7 +80,7 @@ namespace JsonDatabase
 
 
 		private:
-			class JSON_DATABASE_EXPORT_EXPORT LockEntryObjectImpl : public LockEntryObject
+			class JSON_DATABASE_EXPORT LockEntryObjectImpl : public LockEntryObject
 			{
 			public:
 				LockEntryObjectImpl(const std::string& key);

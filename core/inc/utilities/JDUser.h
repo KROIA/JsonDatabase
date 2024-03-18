@@ -11,7 +11,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSON_DATABASE_EXPORT_EXPORT JDUser : public JDSerializable
+		class JSON_DATABASE_EXPORT JDUser : public JDSerializable
 		{
 		public:
 			JDUser();
