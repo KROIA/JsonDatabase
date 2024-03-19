@@ -10,7 +10,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		std::string JSON_DATABASE_EXPORT_EXPORT getLastErrorString(DWORD error);
+		std::string JSON_DATABASE_EXPORT getLastErrorString(DWORD error);
 
 		
 

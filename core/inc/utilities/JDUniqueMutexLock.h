@@ -7,7 +7,7 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSON_DATABASE_EXPORT_EXPORT JDUniqueMutexLock
+		class JSON_DATABASE_EXPORT JDUniqueMutexLock
 		{
 		public:
 			JDUniqueMutexLock(std::mutex& mutex);

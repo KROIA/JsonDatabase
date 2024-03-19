@@ -13,7 +13,7 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSON_DATABASE_EXPORT_EXPORT JDObjectManager
+		class JSON_DATABASE_EXPORT JDObjectManager
 		{
 			friend JDManagerObjectManager;
 

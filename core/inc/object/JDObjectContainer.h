@@ -10,7 +10,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT_EXPORT JDObjectContainer
+        class JSON_DATABASE_EXPORT JDObjectContainer
         {
         public:
             using iterator = std::vector<JDObjectManager*>::iterator;

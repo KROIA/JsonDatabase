@@ -1,6 +1,8 @@
-## USER_SECTION_START 1
 cmake_minimum_required(VERSION 3.20)
+## USER_SECTION_START 1
+
 ## USER_SECTION_END
+
 
 ## INFO
 ## Template version: 1.0.0
@@ -43,8 +45,8 @@ set(QT_DEPLOY ON)	                            # <AUTO_REPLACED>
 
 # Needed QT modules                             # <AUTO_REPLACED> 
 set(QT_MODULES
-    Core
-    Zlib)
+  Core
+  Zlib)
 
 # Library file name settings
 set(DEBUG_POSTFIX_STR -d)                    # <AUTO_REPLACED> 
@@ -88,6 +90,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/${RELATIVE_BUILD_FOLDER}
 
 set(INSTALL_LIB_PATH "${CMAKE_INSTALL_PREFIX}/${RELATIVE_INSTALL_FOLDER}")
 set(INSTALL_BIN_PATH "${CMAKE_INSTALL_PREFIX}/bin")
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/dependencies/cache")
 # create bin folder
 
 link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -108,9 +111,11 @@ include(cmake/ExampleMaster.cmake)
 
 add_subdirectory(core)
 if(COMPILE_EXAMPLES AND NOT JsonDatabase_NO_EXAMPLES)
+    message("Include examples for ${LIBRARY_NAME}")
     add_subdirectory(examples)
 endif()
 if(COMPILE_UNITTESTS AND NOT JsonDatabase_NO_UNITTESTS)
+    message("Include unittests for ${LIBRARY_NAME}")
     add_subdirectory(unitTests)
 endif()
 

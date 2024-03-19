@@ -12,7 +12,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSON_DATABASE_EXPORT_EXPORT JDSerializable
+		class JSON_DATABASE_EXPORT JDSerializable
 		{
 		public:
 			virtual ~JDSerializable() {}
