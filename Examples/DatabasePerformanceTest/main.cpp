@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     globalTable = createPersons();
 
 #ifdef CONCURENT_TEST
-    JsonDatabase::Profiler::startProfiler();
+    JsonDatabase::Profiler::start();
 
     manager1 = new JDManager("database", "Persons", "USER 1");
     manager2 = new JDManager("database", "Persons", "USER 2");
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
     qDebug() << "Tables equal: " << compareTables(createPersons(), manager.getObjects());
 
 #endif
-    JsonDatabase::Profiler::stopProfiler("Profile.prof");
+    JsonDatabase::Profiler::stop("Profile.prof");
     
 
     return a.exec();

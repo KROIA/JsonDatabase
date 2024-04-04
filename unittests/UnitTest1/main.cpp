@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	UnitTest::Test::printResults(results);
 
 #ifdef QT_WIDGETS_ENABLED
-	QWidget* widget = LibraryNamespace::LibraryInfo::createInfoWidget();
+	QWidget* widget = JsonDatabase::LibraryInfo::createInfoWidget();
 	if (widget)
 		widget->show();
 #endif
