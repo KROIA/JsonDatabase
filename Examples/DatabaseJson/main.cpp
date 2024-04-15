@@ -18,7 +18,7 @@ bool test_stingNormalization();
 int main(int argc, char* argv[])
 {
 	QCoreApplication a(argc, argv);
-	Profiler::startProfiler();
+	Profiler::start();
 	bool success = true;
 	//success &= test_json_stringParse();
 
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	//success &= test_json_deserialize();
 	success &= test_stingNormalization();
 	std::cout << "All tests " << (success ? "passed" : "failed") << "\n\n\n";
-	Profiler::stopProfiler("json.prof");
+	Profiler::stop("json.prof");
 	return a.exec();
 }
 
