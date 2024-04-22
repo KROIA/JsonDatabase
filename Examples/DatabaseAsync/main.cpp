@@ -9,12 +9,12 @@
 int main(int argc, char* argv[])
 {
 	QApplication a(argc, argv);
-	Profiler::startProfiler();
+	Profiler::start();
 	bool ret;
 	{
 		UIWrapper wrapper;
 		ret = a.exec();
 	}
-	Profiler::stopProfiler("profiler.prof");
+	Profiler::stop("profiler.prof");
 	return ret;
 }
