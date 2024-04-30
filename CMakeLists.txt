@@ -42,7 +42,7 @@ set(LIB_PROFILE_DEFINE JD_PROFILING)  # <LIB_PROFILE_DEFINE>
 # Enable/disable QT modules
 set(QT_ENABLE ON)	                            # <AUTO_REPLACED> 
 # Enable/disable QT deployment
-set(QT_DEPLOY ON)	                            # <AUTO_REPLACED> 
+set_if_not_defined(QT_DEPLOY ON)	            # <AUTO_REPLACED> 
 
 # Needed QT modules                             # <AUTO_REPLACED> 
 set(QT_MODULES

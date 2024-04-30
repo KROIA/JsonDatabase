@@ -38,7 +38,7 @@ mkdir %buildType%
 REM Bewege in den Buildpfad
 cd %buildType%
 REM cmake Befehl fürs konfigurieren
-cmake -DRELATIVE_BUILD_FOLDER="%buildFolder%" -DCMAKE_BUILD_TYPE=%buildType% -DCMAKE_INSTALL_PREFIX="%installPrefix%" "%projectRootPath%"
+cmake -DQT_DEPLOY=ON -DRELATIVE_BUILD_FOLDER="%buildFolder%" -DCMAKE_BUILD_TYPE=%buildType% -DCMAKE_INSTALL_PREFIX="%installPrefix%" "%projectRootPath%"
 REM cmake Befehl fürs kompilieren
 cmake --build . --config %buildType% --target install
 
