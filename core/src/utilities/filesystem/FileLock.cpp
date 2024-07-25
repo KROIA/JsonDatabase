@@ -16,8 +16,9 @@ namespace JsonDatabase
         const std::string FileLock::s_lockFileEnding = ".lck";
         std::mutex FileLock::m_mutex;
 
-        FileLock::FileLock(const std::string& filePath, const std::string& fileName)
-            : m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
+        FileLock::FileLock(const std::string& filePath, const std::string& fileName, Log::Logger::ContextLogger *logger)
+            : m_logger(logger)
+            , m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
             , m_fileName(fileName)
             , m_locked(false)
             , m_fileHandle(nullptr)
@@ -80,7 +81,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
             if (err != Error::none)
             {
-                JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+                if(m_logger)m_logger->logError(getErrorStr(err));
             }
 #endif
             return m_locked;
@@ -105,7 +106,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
             if (err != Error::none)
             {
-                JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+                if(m_logger)m_logger->logError(getErrorStr(err));
             }
 #endif
             return m_locked;
@@ -336,13 +337,13 @@ namespace JsonDatabase
             if (!UnlockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD))
             {
                 error1 = GetLastError();
-                JD_CONSOLE_FUNCTION("Error UnlockFile. GetLastError() =  " << error1 << " : " << Utilities::getLastErrorString(error1) << "\n");
+                if(m_logger)m_logger->logError("UnlockFile. GetLastError() =  " + std::to_string(error1) + " : " + Utilities::getLastErrorString(error1));
             }
 
             if (!CloseHandle(m_fileHandle))
             {
                 error2 = GetLastError();
-                JD_CONSOLE_FUNCTION("Error CloseHandle. GetLastError() =  " << error2 << " : " << Utilities::getLastErrorString(error2) << "\n");
+                if(m_logger)m_logger->logError("CloseHandle. GetLastError() =  " + std::to_string(error2) + " : " + Utilities::getLastErrorString(error2));
             }
 
 
@@ -354,7 +355,7 @@ namespace JsonDatabase
                 {
                     // Handle error deleting file
                     err = Error::unableToDeleteLockFile;
-                    JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+                    if(m_logger)m_logger->logError("Deleting lock file: " + m_lockFilePathName +" "+ getErrorStr(err));
                 }
             }
 

@@ -13,6 +13,8 @@
 #define DEBUG DEBUG_SIMPLE << m_manager->getUser().getName().c_str() << "::" << __FUNCTION__ << ": "
 
 
+Log::Logger::ContextLogger logger("main");
+
 MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	: QWidget(parent)
 	, m_manager(nullptr)
@@ -23,7 +25,12 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	//if(m_manager)
 	//	delete m_manager;
 
-	m_manager = new JDManager("asyncDatabase", "Person", user);
+	m_manager = new JDManager("asyncDatabase", "Person", user, &logger);
+
+	Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
+	console->attachLogger(logger);
+	console->show();
+
 	m_manager->setup();
 
 	m_uiPersonEditor = new UIPerson(ui.editor_frame);

@@ -13,11 +13,20 @@ namespace JsonDatabase
             , m_mutex(mtx)
             , m_thread(nullptr)
         {
-
         }
         JDManagerAsyncWorker::~JDManagerAsyncWorker()
         {
             stop();
+            delete m_logger;
+        }
+        void JDManagerAsyncWorker::setParentLogger(Log::Logger::ContextLogger* parentLogger)
+        {
+            if (parentLogger)
+            {
+                if (m_logger)
+                    delete m_logger;
+                m_logger = parentLogger->createContext("JDManagerAsyncWorker");
+            }
         }
         void JDManagerAsyncWorker::setup()
         {
@@ -74,7 +83,7 @@ namespace JsonDatabase
             {
 #ifndef NDEBUG
                 DWORD dwErr = GetLastError();
-                JD_CONSOLE_FUNCTION("SetThreadAffinityMask failed, GLE=" << dwErr << '\n');
+                if(m_logger)m_logger->logError("SetThreadAffinityMask failed, GLE=" + std::to_string(dwErr));
 #endif
             }
         }

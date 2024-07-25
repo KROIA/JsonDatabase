@@ -10,28 +10,31 @@ namespace JsonDatabase
 		JDManagerAysncWorkSaveList::JDManagerAysncWorkSaveList(
 			JDManager& manager,
 			std::mutex& mtx,
-			const std::vector<JDObject>& objects)
+			const std::vector<JDObject>& objects,
+			Log::Logger::ContextLogger* parentLogger)
 			: JDManagerAysncWork(manager, mtx)
 			, m_success(false)
 		{
+			if (parentLogger)
+				m_logger = parentLogger->createContext("JDManagerAysncWorkSaveList");
 			m_objects = objects;
 			m_progress.setTaskName("Speichere " + std::to_string(m_objects.size()) + " Objekte");
 			m_objects.resize(objects.size());
-			JD_CONSOLE("Save list of " << objects.size() << " objects. Create deepClone...\n");
+			if(m_logger) m_logger->logInfo("Save list of " + std::to_string(objects.size()) + " objects. Create deepClone...");
 			for (size_t i = 0; i < objects.size(); ++i)
 			{
 				//objects[i]->incrementVersionValue();
 				m_objects[i] = manager.createDeepClone(objects[i]);
 				//m_objects[i] = objects[i]->clone();
 			}
-			JD_CONSOLE("Save list of " << objects.size() << " objects. Create deepClone done\n");
-			
+			if (m_logger) m_logger->logInfo("Save list of " + std::to_string(objects.size()) + " objects. Create deepClone done");			
 		}
 		JDManagerAysncWorkSaveList::~JDManagerAysncWorkSaveList()
 		{
 			// Delete all objects asynchroneously
 			AsyncContextDrivenDeleter asyncDeleter(m_objects);
 			m_objects.clear();
+			delete m_logger;
 		}
 		bool JDManagerAysncWorkSaveList::hasSucceeded() const
 		{

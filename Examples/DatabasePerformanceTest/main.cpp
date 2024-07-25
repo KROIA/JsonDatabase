@@ -55,6 +55,8 @@ bool compareTables(const std::vector<JDObject>& t1, const std::vector<JDObject>&
 bool lockRandomPerson(JDManager *manager, JDObject& obj);
 bool unlockPerson(JDManager* manager, JDObject& obj);
 
+Log::Logger::ContextLogger logger("main");
+
 int main(int argc, char* argv[])
 {
     EASY_THREAD("main");
@@ -65,11 +67,15 @@ int main(int argc, char* argv[])
 #ifdef CONCURENT_TEST
     JsonDatabase::Profiler::start();
 
-    manager1 = new JDManager("database", "Persons", "USER 1");
-    manager2 = new JDManager("database", "Persons", "USER 2");
-    manager3 = new JDManager("database", "Persons", "USER 3");
-    manager4 = new JDManager("database", "Persons", "USER 4");
-    manager5 = new JDManager("database", "Persons", "USER 5");
+    manager1 = new JDManager("database", "Persons", "USER 1",&logger);
+    manager2 = new JDManager("database", "Persons", "USER 2",&logger);
+    manager3 = new JDManager("database", "Persons", "USER 3",&logger);
+    manager4 = new JDManager("database", "Persons", "USER 4",&logger);
+    manager5 = new JDManager("database", "Persons", "USER 5",&logger);
+
+    Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
+    console->attachLogger(logger);
+    console->show();
 
     manager1->setup();
     manager2->setup();
@@ -82,7 +88,7 @@ int main(int argc, char* argv[])
 #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
     watcher = new Internal::FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
 #endif
-    watcher->setup();
+    watcher->setup(&logger);
     //manager1->addObjectDefinition<Person>();
     //manager2->addObjectDefinition<Person>();
     //manager3->addObjectDefinition<Person>();

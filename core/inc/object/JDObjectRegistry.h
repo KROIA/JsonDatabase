@@ -3,6 +3,7 @@
 #include "JsonDatabase_base.h"
 #include "JDObjectInterface.h"
 #include <map>
+#include "Logger.h"
 
 namespace JsonDatabase
 {
@@ -22,6 +23,7 @@ namespace JsonDatabase
 
 
             static JDObjectRegistry& getInstance();
+            static Log::Logger::ContextLogger& getLogger();
 
 
             static Error registerType(const JDObject& obj);
@@ -34,6 +36,7 @@ namespace JsonDatabase
 
         private:
             std::map<std::string, JDObject> m_registry;
+            Log::Logger::ContextLogger m_logger;
         };
     }
 }

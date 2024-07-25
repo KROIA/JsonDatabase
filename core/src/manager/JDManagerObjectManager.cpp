@@ -13,12 +13,20 @@ namespace JsonDatabase
             : m_manager(manager)
             , m_mutex(mtx)
             , m_objLocker(manager, mtx)
-        {
-
-        }
+        {   }
         JDManagerObjectManager::~JDManagerObjectManager()
         {
-
+            delete m_logger;
+        }
+        void JDManagerObjectManager::setParentLogger(Log::Logger::ContextLogger* parentLogger)
+        {
+            if (parentLogger)
+            {
+                if (m_logger)
+                    delete m_logger;
+                m_logger = parentLogger->createContext("JDManagerObjectManager");
+                m_objLocker.setParentLogger(m_logger);
+            }
         }
         bool JDManagerObjectManager::setup()
         {
@@ -28,6 +36,7 @@ namespace JsonDatabase
             m_objLocker.removeInactiveObjectLocks();
             return true;
         }
+        
 
         void JDManagerObjectManager::setDomainName(const std::string& name)
         {
@@ -217,7 +226,7 @@ namespace JsonDatabase
                 return false; // Object already managed
 			
             JDObjectIDptr id = m_idDomain.getNewID();
-            JDObjectManager *manager = new JDObjectManager(obj, id);
+            JDObjectManager *manager = new JDObjectManager(obj, id, m_logger);
             return m_objs.addObject(manager);
 			//return addObject_internal(manager);
         }
@@ -235,16 +244,16 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
                 if (m_idDomain.getExistingID(presetID))
                 {
-                    JD_CONSOLE_FUNCTION("Failed to add object with preset ID: " << presetID << " ID already exists\n");
+                    if(m_logger)m_logger->logError("Failed to add object with preset ID: " + std::to_string(presetID) + " ID already exists");
                 }
                 else
                 {
-                    JD_CONSOLE_FUNCTION("Failed to add object with preset ID: " << presetID << " ID unknown fail\n");
+                    if(m_logger)m_logger->logError("Failed to add object with preset ID: " + std::to_string(presetID) + " ID unknown fail");
                 }
 #endif
                 return false; 
             }
-            JDObjectManager* manager = new JDObjectManager(obj, id);
+            JDObjectManager* manager = new JDObjectManager(obj, id, m_logger);
             return m_objs.addObject(manager);
         }
         bool JDManagerObjectManager::packAndAddObject_internal(const std::vector<JDObject>& objs)
@@ -267,7 +276,7 @@ namespace JsonDatabase
             m_objs.reserve(m_objs.size() + objs.size());
             for (size_t i = 0; i < objs.size(); ++i)
             {
-                JDObjectManager* manager = new JDObjectManager(objs[i], generatedIDs[i]);
+                JDObjectManager* manager = new JDObjectManager(objs[i], generatedIDs[i], m_logger);
                 success &= m_objs.addObject(manager);
             }
             
@@ -290,7 +299,7 @@ namespace JsonDatabase
 
             delete replacedManager;
             replacedManager = nullptr;
-            JDObjectManager* newManager = new JDObjectManager(obj, id);
+            JDObjectManager* newManager = new JDObjectManager(obj, id, m_logger);
             m_objs.addObject(newManager);
             return replacedObj;
         }
@@ -376,7 +385,7 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if (!obj->loadInternal(json))
             {
-                JD_CONSOLE_FUNCTION("Can't load data in object: " << obj->getObjectID() << " classType: " << obj->className() + "\n");
+                if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
                 return false;
             }
             return true;
@@ -448,7 +457,7 @@ namespace JsonDatabase
               
                 if(!jsons[i].holds<JsonObject>())
 				{
-					JD_CONSOLE_FUNCTION("Json data is not an object: \"" << jsons[i] << "\"");
+                    if (m_logger)m_logger->logError("Json data is not an object: \"" + jsons[i].toString() + "\"");
 					success = false;
 					continue;
 				}
@@ -479,13 +488,13 @@ namespace JsonDatabase
                             long idValueLong = std::stol(idStr);
                             if(idValueLong < 0)
 							{
-								JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+                                if(m_logger)m_logger->logError("Invalid ID type in object: \"" + JsonValue(json).toString() + "\"");
 								success = false;
 								continue;
 							}
                             if(std::to_string(idValueLong) != idStr)
                             {
-                                JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+                                if (m_logger)m_logger->logError("Invalid ID type in object: \"" + JsonValue(json).toString() + "\"");
 								success = false;
 								continue;
 							}
@@ -493,12 +502,12 @@ namespace JsonDatabase
                         }
                         else
                         {
-                            JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+                            if(m_logger)m_logger->logError("Invalid ID type in object: \"" + JsonValue(json).toString() + "\"");
                             success = false;
                             continue;
                         }
 #else
-                        JD_CONSOLE_FUNCTION("Invalid ID type in object: \"" << json << "\"\n");
+                        if (m_logger)m_logger->logError("Invalid ID type in object: \"" + JsonValue(json).toString() + "\"");
                         success = false;
                         continue;
 #endif
@@ -508,9 +517,9 @@ namespace JsonDatabase
 				
                 if (!loaded)
                 {
-                    JD_CONSOLE_FUNCTION("Objet has incomplete data. Key: \""
-                        << JDObjectInterface::s_tag_objID << "\" is missed\n"
-                        << "Object: \"" << json << "\"\n");
+                    if(m_logger)m_logger->logError("Objet has incomplete data. Key: \"" 
+						+ JDObjectInterface::s_tag_objID + "\" is missed\n"
+						+ "Object: \"" + JsonValue(json).toString() + "\"");
                     success = false;
                     continue;
                 }
@@ -518,13 +527,13 @@ namespace JsonDatabase
                 JDObjectManager *manager = getObjectManager_internal(loaderMisc.id);
 
                 JDObjectManager::ManagedLoadStatus status = JDObjectManager::managedLoad(
-                    json, manager, loaderContainers, loadMode, loaderMisc);
+                    json, manager, loaderContainers, loadMode, loaderMisc, m_logger);
 
                 if(status != JDObjectManager::ManagedLoadStatus::success)
 				{
 					success = false;
-                    JD_CONSOLE_FUNCTION("Failed to load object with ID: " << loaderMisc.id << " Error: \""
-                        << JDObjectManager::managedLoadStatusToString(status) << "\"\n");
+                    if (m_logger)m_logger->logError("Failed to load object with ID: " + std::to_string(loaderMisc.id) + " Error: \""
+                        + JDObjectManager::managedLoadStatusToString(status) + "\"");
 					continue;
 				}
 				if (progress)

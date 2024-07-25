@@ -53,6 +53,15 @@ namespace JsonDatabase
 			m_lockTableWatcher.stop();
 			Error err;
 			unlockAllObjs(err);
+			delete m_logger;
+		}
+		void JDObjectLocker::setParentLogger(Log::Logger::ContextLogger* parentLogger)
+		{
+			delete m_logger;
+			m_logger = nullptr;
+			if(parentLogger)
+				m_logger = parentLogger->createContext("JDObjectLocker");
+			AbstractRegistry::m_logger = m_logger;
 		}
 		/*bool JDObjectLocker::setup(Error& err)
 		{
@@ -105,21 +114,19 @@ namespace JsonDatabase
 					if (loadedObjects[i]->data.user.getSessionID() == user.getSessionID())
 					{
 						// Already locked by this session
-						JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\""
-							<< obj->getObjectID()->toString() << "\") Lock for object: \""
-							+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
-							+ "\" is already aquired in this session\n");
+						if(m_logger)m_logger->logWarning("Lock for object: \""
+							+ obj->getObjectID()->toString() + "\" type: \""
+							+ obj->className() + "\" is already aquired in this session\n");
 						err = Error::none;
 						return true;
 					}
 					else
 					{
 						err = Error::lockedByOther;
-						JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\""
-							<< obj->getObjectID()->toString() << "\") Can't aquire lock for object: \""
-							+ obj->getObjectID()->toString() + "\" type: \"" + obj->className() +
-							"\"\nLock Data: \n" + loadedObjects[i]->toString() + "\n"
-							"Lock is already aquired from user: \"" + loadedObjects[i]->data.user.toString() + "\"\n");
+						if(m_logger)m_logger->logWarning("Can't aquire lock for object: \""
+							+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+							+ "\"\nLock Data: \n" + loadedObjects[i]->toString() + "\n"
+							"Lock is already aquired from user: \"" + loadedObjects[i]->data.user.toString() + "\"");
 						return false;
 					}
 				}
@@ -131,7 +138,9 @@ namespace JsonDatabase
 			if ((ret = AbstractRegistry::addObjects({ newEntry })) != 1)
 			{
 				err = Error::unableToLock;
-				JD_CONSOLE("Can't lock object: " << obj->getObjectID());
+				if(m_logger)m_logger->logWarning("Can't lock object: \""
+					+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+					+ "\"");
 				return false;
 			}
 			err = Error::none;
@@ -238,27 +247,27 @@ namespace JsonDatabase
 			if(!AbstractRegistry::lockExists(key))
 			{
 				err = Error::none;
-				JD_CONSOLE_FUNCTION("Lock for object: \"" +
-					obj->getObjectID()->toString() + "\" type: \"" +
-					obj->className() + "\" did not exist\n");
+				if(m_logger)m_logger->logWarning("Lock for object: \"" 
+					+ obj->getObjectID()->toString() + "\" type: \"" 
+					+ obj->className() + "\" did not exist");
 				return false;
 			}
 
 			if (!AbstractRegistry::isSelfOwned(key))
 			{
 				err = Error::lockedByOther;
-				JD_CONSOLE_FUNCTION("Can't release lock for object: \"" 
-					<< obj->getObjectID()->toString() << "\" type: \"" << obj->className()
-					<< "\"\nLock is owned by another session\n");
+				if(m_logger)m_logger->logWarning("Can't release lock for object: \"" 
+					+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+					+ "\"\nLock is owned by another session");
 				return false;
 			}
 
 			int removed = 0;
 			if ((removed = AbstractRegistry::removeObjects({ key })) != 1)
 			{
-				JD_CONSOLE_FUNCTION("Can't release lock for object: \""
-					<< obj->getObjectID()->toString() << "\" type: \"" << obj->className()
-					<< "\"\n");
+				if(m_logger)m_logger->logWarning("Can't release lock for object: \"" 
+					+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+					+ "\"");
 				return false;
 			}
 			return true;
@@ -273,7 +282,7 @@ namespace JsonDatabase
 			AbstractRegistry::AutoClose autoClose(this);
 			if (!AbstractRegistry::removeAllSelfOwnedObjects())
 			{
-				JD_CONSOLE_FUNCTION("Can't release all locked objects\n");
+				if(m_logger)m_logger->logWarning("Can't release all locked objects");
 				return false;
 			}
 			return true;
@@ -362,8 +371,8 @@ namespace JsonDatabase
 					lockedObjectsOut.push_back(obj->data);
 				else
 				{
-					JD_CONSOLE_FUNCTION("Object has empty objectID: "
-						<< obj->toString() << "\n");
+					if(m_logger)m_logger->logWarning("Object has empty objectID: "
+						+ obj->toString() + "\n");
 					err = corruptTableData;
 					success = false;
 				}
@@ -414,7 +423,7 @@ namespace JsonDatabase
 
 		void JDObjectLocker::onCreateFiles()
 		{
-			m_lockTableWatcher.setup(AbstractRegistry::getRegistrationFilePath());
+			m_lockTableWatcher.setup(AbstractRegistry::getRegistrationFilePath(), m_logger);
 		}
 
 		void JDObjectLocker::onDatabasePathChangeStart(const std::string& newPath)

@@ -13,6 +13,8 @@
 #include "Json/JsonValue.h"
 #include <mutex>
 
+#include "Logger.h"
+
 namespace JsonDatabase
 {
 	namespace Internal
@@ -40,6 +42,7 @@ namespace JsonDatabase
 		public:
 			JDObjectLocker(JDManager& manager, std::mutex& mtx);
 			~JDObjectLocker();
+			void setParentLogger(Log::Logger::ContextLogger* parentLogger);
 
 			bool lockObject(const JDObject & obj, Error& err);
 			bool unlockObject(const JDObject & obj, Error& err);
@@ -107,6 +110,8 @@ namespace JsonDatabase
 			void onDatabasePathChangeStart(const std::string& newPath) override;
 			void onDatabasePathChangeEnd() override;
 			void onNameChange(const std::string& newName) override;
+
+			Log::Logger::ContextLogger* m_logger = nullptr;
 
 			JDManager& m_manager;
 			std::mutex& m_mutex;

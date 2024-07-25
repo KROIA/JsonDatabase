@@ -12,6 +12,8 @@
 #include <atomic>
 #include <filesystem>
 
+#include "Logger.h"
+
 namespace JsonDatabase
 {
     namespace Internal
@@ -21,7 +23,7 @@ namespace JsonDatabase
         public:
             FileChangeWatcher(const std::string& filePath);
             ~FileChangeWatcher();
-            bool setup();
+            bool setup(Log::Logger::ContextLogger* parentLogger);
             DWORD getSetupError() const;
 
             bool startWatching();
@@ -39,6 +41,7 @@ namespace JsonDatabase
             void monitorFileChanges();
             bool fileChanged();
 
+            Log::Logger::ContextLogger* m_logger = nullptr;
             std::string m_filePath;
             HANDLE m_eventHandle;
             DWORD m_setupError;
@@ -57,7 +60,7 @@ namespace JsonDatabase
         {
             friend JDManagerFileSystem;
             friend JDObjectLocker;
-            bool setup(const std::string& targetFile);
+            bool setup(const std::string& targetFile, Log::Logger::ContextLogger* parentLogger);
             ManagedFileChangeWatcher();
             ~ManagedFileChangeWatcher();
         public:
@@ -73,6 +76,8 @@ namespace JsonDatabase
             bool isPaused() const;
 
         private:
+            
+            Log::Logger::ContextLogger* m_logger = nullptr;
             FileChangeWatcher* m_databaseFileWatcher;
         };
     }

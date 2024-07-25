@@ -6,6 +6,8 @@
 #include "utilities/JDSerializable.h"
 #include "json/JsonValue.h"
 
+#include "Logger.h"
+
 namespace JsonDatabase
 {
 	namespace Utilities
@@ -110,7 +112,7 @@ namespace JsonDatabase
 			unsigned int getNotSelfLockCount() const;
 
 
-
+			Log::Logger::ContextLogger* m_logger = nullptr;
 
 		private:
 			bool createSelfOwnedLock(const std::string& key);
@@ -121,7 +123,7 @@ namespace JsonDatabase
 
 			
 
-
+			
 			std::string m_databasePath;
 			std::string m_registrationName;
 			std::string m_registrationFileEnding;

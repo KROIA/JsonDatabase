@@ -18,7 +18,8 @@ namespace JsonDatabase
 		LockedFileAccessor::LockedFileAccessor(
 			const std::string& directory,
 			const std::string& name,
-			const std::string& endig)
+			const std::string& endig,
+            Log::Logger::ContextLogger* parentLogger)
 			: m_fileLock(nullptr)
 			, m_directory(directory)
 			, m_name(name)
@@ -26,11 +27,14 @@ namespace JsonDatabase
 			, m_useZipFormat(false)
 			, m_progress(nullptr)
 		{
-
+            if(parentLogger)
+                m_logger = parentLogger->createContext("LockedFileAccessor(" + name + endig + ")");
 		}
 		LockedFileAccessor::~LockedFileAccessor()
 		{
             unlock();
+            m_logger->deleteLater();
+            //delete m_logger;
 		}
 
 		LockedFileAccessor::Error LockedFileAccessor::lock(AccessMode mode)
@@ -39,23 +43,18 @@ namespace JsonDatabase
 			FileReadWriteLock::Access direction = (FileReadWriteLock::Access)mode;
 			if (m_fileLock)
 			{
-				JD_CONSOLE("LockedFileAccessor::lock("
-					<< FileReadWriteLock::accessTypeToString(direction)
-					<< ") Lock already aquired\n");
+                if(m_logger)m_logger->logError("lock(" + FileReadWriteLock::accessTypeToString(direction) + ") Lock already aquired");
 				errorOut = Error::fileLock_alreadyLocked;
 				return errorOut;
 			}
 
-			m_fileLock = new FileReadWriteLock(m_directory, getFullFileName());
+			m_fileLock = new FileReadWriteLock(m_directory, getFullFileName(), m_logger);
 
 			FileLock::Error lockErr;
 			bool wasLockedForWritingByOther = false;
 			if (!m_fileLock->lock(direction, wasLockedForWritingByOther, lockErr))
 			{
-				JD_CONSOLE("bool LockedFileAccessor::lock("
-					<< FileReadWriteLock::accessTypeToString(direction)
-					<< ", bool) Can't aquire lock for: " 
-					<< getFullFilePath() <<"\n");
+                if(m_logger)m_logger->logError("lock(" + FileReadWriteLock::accessTypeToString(direction) + ") Can't aquire lock for: " + getFullFilePath());
 				delete m_fileLock;
 				m_fileLock = nullptr;
 				errorOut = (Error)lockErr;
@@ -68,23 +67,21 @@ namespace JsonDatabase
 			FileReadWriteLock::Access direction = (FileReadWriteLock::Access)mode;
 			if (m_fileLock)
 			{
-				JD_CONSOLE("bool LockedFileAccessor::lock("
-					<< FileReadWriteLock::accessTypeToString(direction)
-					<< ", timeout=" << timeoutMillis << "ms) Lock already aquired\n");
+                if(m_logger)m_logger->logError("lock(" + FileReadWriteLock::accessTypeToString(direction) + ", timeout=" + std::to_string(timeoutMillis) + "ms) Lock already aquired");
 				errorOut = Error::fileLock_alreadyLocked;
 				return errorOut;
 			}
 
-			m_fileLock = new FileReadWriteLock(m_directory, getFullFileName());
+			m_fileLock = new FileReadWriteLock(m_directory, getFullFileName(), m_logger);
 			FileLock::Error lockErr;
 			bool wasLockedForWritingByOther = false;
 			if (!m_fileLock->lock(direction, timeoutMillis, wasLockedForWritingByOther, lockErr))
 			{
-				JD_CONSOLE("LockedFileAccessor::lock("
-					<< FileReadWriteLock::accessTypeToString(direction)
-					<< ", timeout=" << timeoutMillis << "ms) Error while trying to aquire file lock for: " 
-					<< getFullFilePath() << "\n"
-					<< "Error: " << FileLock::getErrorStr(lockErr));
+                if (m_logger)m_logger->logError("lock("
+					+ FileReadWriteLock::accessTypeToString(direction)
+					+ ", timeout=" + std::to_string(timeoutMillis) + "ms) Error while trying to aquire file lock for: "
+					+ getFullFilePath() + "\n"
+					+ "Error: " + FileLock::getErrorStr(lockErr));
 				delete m_fileLock;
 				m_fileLock = nullptr;
 				errorOut = (Error)lockErr;
@@ -145,7 +142,7 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
             if(!isLocked())
             {
-                JD_CONSOLE("LockedFileAccessor::writeJsonFile(const JsonArray&) File is not locked\n");
+                if(m_logger)m_logger->logError("LockedFileAccessor::writeJsonFile(const JsonArray&) File is not locked");
 				return Error::fileLock_notAquired;
 			}
 
@@ -203,7 +200,7 @@ namespace JsonDatabase
 
             if (!isLocked())
             {
-                JD_CONSOLE("LockedFileAccessor::writeJsonFile(const JsonValue&) File is not locked\n");
+                if(m_logger)m_logger->logError("LockedFileAccessor::writeJsonFile(const JsonValue&) File is not locked");
                 return Error::fileLock_notAquired;
             }
 
@@ -260,7 +257,7 @@ namespace JsonDatabase
 
             if (!isLocked())
             {
-                JD_CONSOLE("LockedFileAccessor::readJsonFile(JsonArray&) File is not locked\n");
+                if(m_logger)m_logger->logError("LockedFileAccessor::readJsonFile(JsonArray&) File is not locked");
                 return Error::fileLock_notAquired;
             }
 
@@ -361,7 +358,7 @@ namespace JsonDatabase
         {
             if (!isLocked())
             {
-                JD_CONSOLE("LockedFileAccessor::readJsonFile(JsonValue&) File is not locked\n");
+                if(m_logger)m_logger->logError("LockedFileAccessor::readJsonFile(JsonValue&) File is not locked");
                 return Error::fileLock_notAquired;
             }
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
@@ -431,7 +428,7 @@ namespace JsonDatabase
         {
             if (!isLocked())
             {
-                JD_CONSOLE("LockedFileAccessor::readFile(QByteArray&) File is not locked\n");
+                if(m_logger)m_logger->logError("LockedFileAccessor::readFile(QByteArray&) File is not locked");
                 return Error::fileLock_notAquired;
             }
             return readFile_internal(fileDataOut);
@@ -440,7 +437,7 @@ namespace JsonDatabase
         {
             if (!isLocked())
             {
-                JD_CONSOLE("LockedFileAccessor::writeFile(QByteArray&) File is not locked\n");
+                if(m_logger)m_logger->logError("LockedFileAccessor::writeFile(QByteArray&) File is not locked");
                 return Error::fileLock_notAquired;
             }
             return writeFile_internal(fileData);
@@ -497,8 +494,7 @@ namespace JsonDatabase
 
             if (fileHandle == INVALID_HANDLE_VALUE) {
                 JDFILE_IO_PROFILING_END_BLOCK;
-                JD_CONSOLE("bool LockedFileAccessor::readFile("
-                    << "QByteArray&) Can't open file: " << filePath.c_str() << "\n");
+                if (m_logger)m_logger->logError("bool LockedFileAccessor::readFile(QByteArray&) Can't open file: " + filePath + "\n");
                 Error err;
                 return Error::file_cantOpenFileForRead;
             }
@@ -507,8 +503,7 @@ namespace JsonDatabase
             DWORD fileSize = GetFileSize(fileHandle, nullptr);
             if (fileSize == INVALID_FILE_SIZE) {
                 CloseHandle(fileHandle);
-                JD_CONSOLE("bool LockedFileAccessor::readFile("
-                    << "QByteArray&) Can't get filesize of: " << filePath.c_str() << "\n");
+                if(m_logger)m_logger->logError("bool LockedFileAccessor::readFile(QByteArray&) Can't get filesize of: " + filePath + "\n");
                 JDFILE_IO_PROFILING_END_BLOCK;
                 Error err;                
                 return Error::file_invalidFileSize;;
@@ -560,8 +555,7 @@ namespace JsonDatabase
             JDFILE_IO_PROFILING_END_BLOCK;
 
             if (!readResult) {
-                JD_CONSOLE("bool LockedFileAccessor::readFile("
-                    << "QByteArray&) Can't read file: " << filePath.c_str() << "\n");
+                if(m_logger)m_logger->logError("bool LockedFileAccessor::readFile(QByteArray&) Can't read file: " + filePath + "\n");
                 return Error::file_cantReadFile;
             }
             return Error::none;
@@ -590,8 +584,7 @@ namespace JsonDatabase
             );
             JDFILE_IO_PROFILING_END_BLOCK;
             if (fileHandle == INVALID_HANDLE_VALUE) {
-                JD_CONSOLE("bool LockedFileAccessor::writeFile("
-                    << "QByteArray&) Could not open file " << filePath << " for writing\n");
+                if(m_logger)m_logger->logError("bool LockedFileAccessor::writeFile(QByteArray&) Could not open file " + filePath + " for writing\n");
                 // Error opening file
                 Error err;
 
@@ -648,7 +641,7 @@ namespace JsonDatabase
 
             if (!writeResult) {
                 // Error writing to file
-                JD_CONSOLE("bool LockedFileAccessor::writeFile(QByteArray&) Could not write to file " << filePath << "\n");
+                if(m_logger)m_logger->logError("bool LockedFileAccessor::writeFile(QByteArray&) Could not write to file " + filePath + "\n");
                 return Error::file_cantWriteFile;
             }
 

@@ -39,7 +39,7 @@ namespace JsonDatabase
             , m_userRegistration()
            // , m_databaseLoginFileLock(nullptr)
 		{
-            
+
         }
         JDManagerFileSystem::~JDManagerFileSystem()
         {
@@ -48,8 +48,18 @@ namespace JsonDatabase
                 delete m_fileLock;
 
             logOffDatabase();
+            delete m_logger;
         }
 
+        void JDManagerFileSystem::setParentLogger(Log::Logger::ContextLogger* parentLogger)
+        {
+            if (parentLogger)
+            {
+                if (m_logger)
+                    delete m_logger;
+                m_logger = parentLogger->createContext("JDManagerFileSystem");
+            }
+        }
 
         bool JDManagerFileSystem::setup()
         {
@@ -147,7 +157,7 @@ namespace JsonDatabase
             bool exists = dir.exists();
             if (!exists)
             {
-                JD_CONSOLE("bool JDManagerFileSystem::makeDatabaseDirs() Can't create database folder: " << path.c_str() << "\n");
+                if (m_logger)m_logger->logError("bool JDManagerFileSystem::makeDatabaseDirs() Can't create database folder: " + path);
             }
             success &= exists;
 
@@ -160,13 +170,13 @@ namespace JsonDatabase
             if (!file.exists())
             {
                 // Create empty data
-                LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
+                LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
                 fileAccessor.setProgress(nullptr);
                 LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::write);
 
                 if (fileError != LockedFileAccessor::Error::none)
                 {
-                    JD_CONSOLE("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
                     return false;
                 }
 
@@ -175,7 +185,7 @@ namespace JsonDatabase
                 fileError = fileAccessor.writeJsonFile(jsonData);
                 if (fileError != LockedFileAccessor::Error::none)
                 {
-                    JD_CONSOLE("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
                     return false;
                 }
                 else
@@ -203,7 +213,7 @@ namespace JsonDatabase
             QDir folder(dir.c_str());
             if (folder.exists())
             {
-                JD_CONSOLE("bool JDManagerFileSystem::deleteDir("<<dir<<") Folder could not be deleted : " + dir + "\n");
+                if(m_logger) m_logger->logError("bool JDManagerFileSystem::deleteDir("+dir+") Folder could not be deleted : " + dir);
                 return false;
             }
             return true;
@@ -265,7 +275,7 @@ namespace JsonDatabase
         }
         void JDManagerFileSystem::restartDatabaseFileWatcher()
         {
-            m_fileWatcher.setup(getDatabaseFilePath());
+            m_fileWatcher.setup(getDatabaseFilePath(),m_logger);
         }
         
         void JDManagerFileSystem::update()

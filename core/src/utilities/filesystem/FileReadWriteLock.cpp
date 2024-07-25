@@ -10,8 +10,9 @@ namespace JsonDatabase
         const unsigned int FileReadWriteLock::s_tryLockTimeoutMs = 1000;
 
 
-        FileReadWriteLock::FileReadWriteLock(const std::string& filePath, const std::string& fileName)
-            : m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
+        FileReadWriteLock::FileReadWriteLock(const std::string& filePath, const std::string& fileName, Log::Logger::ContextLogger *logger)
+            : m_logger(logger)
+            , m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
             , m_fileName(fileName)
             , m_locked(false)
             , m_access(Access::unknown)
@@ -40,7 +41,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
             if (err != FileLock::Error::none)
             {
-                JD_CONSOLE("bool FileReadWriteLock::lock(direction=" << accessTypeToString(direction) << ") " << FileLock::getErrorStr(err) + "\n");
+                if(m_logger)m_logger->logError("bool FileReadWriteLock::lock(direction=" + accessTypeToString(direction) + ") " + FileLock::getErrorStr(err));
             }
 #endif
             return err == FileLock::Error::none;
@@ -75,7 +76,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
             if (err != FileLock::Error::none)
             {
-                JD_CONSOLE("bool FileReadWriteLock::lock(direction=" << accessTypeToString(direction) << ") " << FileLock::getErrorStr(err) + "\n");
+                if(m_logger)m_logger->logError("bool FileReadWriteLock::lock(direction=" + accessTypeToString(direction) + ") " + FileLock::getErrorStr(err));
             }
 #endif
             return m_locked;
@@ -128,7 +129,7 @@ namespace JsonDatabase
             if (m_lock)
                 return FileLock::Error::alreadyLocked;
             FileLock::Error lockErr1;
-            FileLock tmpLock(m_directory, m_fileName);
+            FileLock tmpLock(m_directory, m_fileName, m_logger);
             if (!tmpLock.lock(s_tryLockTimeoutMs, lockErr1))
                 return lockErr1;
 
@@ -165,7 +166,7 @@ namespace JsonDatabase
             std::string lockFileName = m_fileName + "_" + accessType + "-" + randStr;
 
             FileLock::Error lockErr2;
-            m_lock = new FileLock(m_directory, lockFileName);
+            m_lock = new FileLock(m_directory, lockFileName, m_logger);
             if (!m_lock->lock(lockErr2))
             {
                 delete m_lock;

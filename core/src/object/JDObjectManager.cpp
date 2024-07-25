@@ -12,17 +12,21 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		JDObjectManager::JDObjectManager(const JDObject& obj, const JDObjectIDptr& id)
+		JDObjectManager::JDObjectManager(const JDObject& obj, const JDObjectIDptr& id, Log::Logger::ContextLogger* parentLogger)
 			: m_obj(obj)
 			, m_id(id)
 			, m_lockstate(Lockstate::unlocked)
 			, m_changestate(ChangeState::unchanged)
 		{
+			JD_UNUSED(parentLogger);
+			//if(parentLogger)
+			//	m_logger = parentLogger->createContext("OBJ:"+id.get()->toString());
 			m_obj->setManager(this);
 		}
 		JDObjectManager::~JDObjectManager()
 		{
 			m_obj->setManager(nullptr);
+			delete m_logger;
 		}
 
 
@@ -196,18 +200,21 @@ namespace JsonDatabase
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers, 
 			const ManagedLoadMode& loadMode,
-			const ManagedLoadMisc& misc)
+			const ManagedLoadMisc& misc,
+			Log::Logger::ContextLogger* logger)
 		{
 			if (manager)
-				return managedLoadExisting_internal(json, manager, containers, loadMode);
-			return managedLoadNew_internal(json, containers, misc);
+				return managedLoadExisting_internal(json, manager, containers, loadMode, logger);
+			return managedLoadNew_internal(json, containers, misc, logger);
 		}
 		JDObjectManager::ManagedLoadStatus JDObjectManager::managedLoadExisting_internal(
 			const JsonObject& json,
 			JDObjectManager* manager,
 			ManagedLoadContainers& containers,
-			const ManagedLoadMode& loadMode)
+			const ManagedLoadMode& loadMode,
+			Log::Logger::ContextLogger *logger)
 		{
+			JD_UNUSED(logger);
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject obj = manager->getObject();
 			bool hasChanged = !obj->equalData(json);
@@ -228,7 +235,7 @@ namespace JsonDatabase
 					JDObject instance = obj->shallowClone();
 					if (!instance.get())
 						return ManagedLoadStatus::loadFailed;
-					if (!deserializeOverrideFromJson_internal(json, instance))
+					if (!manager->deserializeOverrideFromJson_internal(json, instance))
 						return ManagedLoadStatus::loadFailed;
 
 					containers.replaceObjs.push_back(instance);
@@ -242,7 +249,8 @@ namespace JsonDatabase
 			const JsonObject& json,
 			ManagedLoadContainers& containers/*,
 			const ManagedLoadMode& loadMode*/,
-			const ManagedLoadMisc& misc)
+			const ManagedLoadMisc& misc,
+			Log::Logger::ContextLogger* logger)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject templateObj = JDObjectRegistry::getObjectDefinition(json);
@@ -250,7 +258,7 @@ namespace JsonDatabase
 			{
 #ifdef JD_DEBUG
 				std::string objType = JDObjectRegistry::getObjectTypeString(json);
-				JD_CONSOLE_FUNCTION("Can't find object definition for object type: \"" << objType << "\"\n");
+				if(logger)logger->logError("Can't find object definition for object type: \"" + objType + "\"\n");
 #endif
 				return ManagedLoadStatus::loadFailed_UnknownObjectType;
 			}
@@ -276,7 +284,7 @@ namespace JsonDatabase
 			return deserializeOverrideFromJsonIfChanged_internal(json, m_obj, hasChangesOut);
 		}
 
-		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id)
+		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::Logger::ContextLogger* parentLogger)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject templateObj = JDObjectRegistry::getObjectDefinition(json);
@@ -284,21 +292,18 @@ namespace JsonDatabase
 			{
 #ifdef JD_DEBUG
 				std::string objType = JDObjectRegistry::getObjectTypeString(json);
-
-				JD_CONSOLE_FUNCTION("Can't find object definition for object: \"" 
-					<< id->toString() << "\" type: \"" << objType << "\"\n");
-
+				if(parentLogger)parentLogger->logError("Can't find object definition for object: \"" + id->toString() + "\" type: \"" + objType + "\"\n");
 #endif
 				return nullptr; // Object type not defined
 			}
 
-			return cloneAndLoadObject(templateObj, json, id);
+			return cloneAndLoadObject(templateObj, json, id, parentLogger);
 		}
-		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const JsonObject& json, const JDObjectIDptr& id)
+		JDObjectManager* JDObjectManager::cloneAndLoadObject(const JDObject& original, const JsonObject& json, const JDObjectIDptr& id, Log::Logger::ContextLogger* parentLogger)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject instance = original->shallowClone();
-			JDObjectManager* manager = new JDObjectManager(original, id);
+			JDObjectManager* manager = new JDObjectManager(original, id, parentLogger);
 			if (!manager->loadAndOverrideData(json))
 			{
 				delete manager;
@@ -317,7 +322,7 @@ namespace JsonDatabase
 			}
 			if (!obj->loadInternal(json))
 			{
-				JD_CONSOLE_FUNCTION("Can't load data in object: " << obj->getObjectID() << " classType: " << obj->className() + "\n");
+				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
 				return false;
 			}
 			return true;
@@ -327,7 +332,7 @@ namespace JsonDatabase
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			if (!obj->loadInternal(json))
 			{
-				JD_CONSOLE_FUNCTION("Can't load data in object: " << obj->getObjectID() << " classType: " << obj->className() + "\n");
+				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
 				return false;
 			}
 			return true;

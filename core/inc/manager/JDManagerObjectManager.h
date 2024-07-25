@@ -9,6 +9,7 @@
 #include <vector>
 #include <mutex>
 
+#include "Logger.h"
 
 #include <json/JsonValue.h>
 
@@ -21,9 +22,13 @@ namespace JsonDatabase
         {
             friend class JDManager;
         protected:
-			JDManagerObjectManager(JDManager& manager, std::mutex &mtx);
+			JDManagerObjectManager(
+                JDManager& manager, 
+                std::mutex &mtx);
             virtual ~JDManagerObjectManager();
+            void setParentLogger(Log::Logger::ContextLogger* parentLogger);
             bool setup();
+            
         public:
             
             void setDomainName(const std::string& name);
@@ -131,6 +136,8 @@ namespace JsonDatabase
             mutable std::mutex m_objsMutex;
             JDObjectContainer m_objs;
             Internal::JDObjectLocker m_objLocker;
+
+            Log::Logger::ContextLogger* m_logger = nullptr;
         };
 
 

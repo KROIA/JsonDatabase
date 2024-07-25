@@ -17,6 +17,8 @@
 #include "utilities/Signal.h"
 #include "utilities/JDUser.h"
 
+#include "Logger.h"
+
 
 
 #include <string>
@@ -45,11 +47,15 @@ class JSON_DATABASE_EXPORT JDManager:
     friend class Internal::JDManagerAysncWorkSaveList;
 
     public:
-        JDManager(const std::string& databasePath,
-            const std::string& databaseName);
-        JDManager(const std::string &databasePath,
-                  const std::string &databaseName,
-                  const std::string &user);
+        JDManager(
+            const std::string& databasePath,
+            const std::string& databaseName,
+            Log::Logger::ContextLogger* parentLogger);
+        JDManager(
+            const std::string &databasePath,
+            const std::string &databaseName,
+            const std::string &user,
+            Log::Logger::ContextLogger* parentLogger);
         JDManager(const JDManager &other);
         virtual ~JDManager();
 
@@ -171,7 +177,7 @@ class JSON_DATABASE_EXPORT JDManager:
 
         
 
-        
+        Log::Logger::ContextLogger* m_logger = nullptr;
         Utilities::JDUser m_user;
 
         mutable std::mutex m_mutex;
@@ -183,17 +189,9 @@ class JSON_DATABASE_EXPORT JDManager:
 
         
         
-        Internal::JDManagerSignals m_signals;
-        //Internal::JDManagerAsyncWorker m_asyncWorker;
         
+        Internal::JDManagerSignals m_signals;
 
-        //static const QString s_timeFormat;
-        //static const QString s_dateFormat;
-        //
-        //static const QString s_tag_sessionID;
-        //static const QString s_tag_user;
-        //static const QString s_tag_date;
-        //static const QString s_tag_time;
 
         static const unsigned int s_fileLockTimeoutMs;
 

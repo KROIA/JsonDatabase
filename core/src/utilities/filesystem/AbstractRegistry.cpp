@@ -263,7 +263,7 @@ namespace JsonDatabase
 			if(isRegistryFileOpen())
 				return true;
 			
-			Internal::LockedFileAccessor *file = new Internal::LockedFileAccessor(getPath(), getRegistrationFileName(), getFileEnding());
+			Internal::LockedFileAccessor *file = new Internal::LockedFileAccessor(getPath(), getRegistrationFileName(), getFileEnding(), m_logger);
 			Internal::LockedFileAccessor::Error err = file->lock(Internal::LockedFileAccessor::AccessMode::readWrite);
 			if (err != Internal::LockedFileAccessor::Error::none)
 			{
@@ -280,7 +280,7 @@ namespace JsonDatabase
 			if (isRegistryFileOpen())
 				return true;
 
-			Internal::LockedFileAccessor* file = new Internal::LockedFileAccessor(getPath(), getRegistrationFileName(), getFileEnding());
+			Internal::LockedFileAccessor* file = new Internal::LockedFileAccessor(getPath(), getRegistrationFileName(), getFileEnding(), m_logger);
 			Internal::LockedFileAccessor::Error err = file->lock(Internal::LockedFileAccessor::AccessMode::readWrite, timeoutMillis);
 			if (err != Internal::LockedFileAccessor::Error::none)
 			{
@@ -451,7 +451,7 @@ namespace JsonDatabase
 			if(m_fileLocks.find(name) != m_fileLocks.end())
 				return false;
 
-			Internal::FileLock* lock = new Internal::FileLock(getLocksPath(), name);
+			Internal::FileLock* lock = new Internal::FileLock(getLocksPath(), name, m_logger);
 			Internal::FileLock::Error err;
 			if (!lock->lock(err))
 			{

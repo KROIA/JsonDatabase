@@ -25,7 +25,8 @@ namespace JsonDatabase
 
 
     JDManager::JDManager(const std::string& databasePath,
-                         const std::string& databaseName)
+                         const std::string& databaseName,
+                         Log::Logger::ContextLogger* parentLogger)
         : JDManagerObjectManager(*this, m_mutex)
         , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
         //, JDObjectLocker(*this, m_mutex)
@@ -34,12 +35,21 @@ namespace JsonDatabase
         , m_signleEntryUpdateLock(false)
         , m_signals(*this, m_mutex)
     {
+        if (parentLogger)
+        {
+            m_logger = parentLogger->createContext("JDManager");
+            JDManagerObjectManager::setParentLogger(m_logger);
+            JDManagerFileSystem::setParentLogger(m_logger);
+            JDManagerAsyncWorker::setParentLogger(m_logger);
+        }
+
         m_user = Utilities::JDUser::generateUser();
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
     JDManager::JDManager(const std::string& databasePath,
         const std::string& databaseName,
-        const std::string& user)
+        const std::string& user,
+        Log::Logger::ContextLogger* parentLogger)
         : JDManagerObjectManager(*this, m_mutex)
         , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
         //, JDObjectLocker(*this, m_mutex)
@@ -48,6 +58,13 @@ namespace JsonDatabase
         , m_signleEntryUpdateLock(false)
         , m_signals(*this, m_mutex)
     {
+        if (parentLogger)
+        {
+            m_logger = parentLogger->createContext("JDManager");
+            JDManagerObjectManager::setParentLogger(m_logger);
+            JDManagerFileSystem::setParentLogger(m_logger);
+            JDManagerAsyncWorker::setParentLogger(m_logger);
+        }
         m_user = Utilities::JDUser::generateUser(user);
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
@@ -61,6 +78,16 @@ namespace JsonDatabase
         , m_signleEntryUpdateLock(false)
         , m_signals(*this, m_mutex)
     {
+        if (other.m_logger)
+        {
+            if (other.m_logger->getParent())
+            {
+                m_logger = other.m_logger->getParent()->createContext("JDManager");
+                JDManagerObjectManager::setParentLogger(m_logger);
+                JDManagerFileSystem::setParentLogger(m_logger);
+                JDManagerAsyncWorker::setParentLogger(m_logger);
+            }
+        }
         m_user = Utilities::JDUser::generateUser(m_user.getName());
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
@@ -69,6 +96,7 @@ JDManager::~JDManager()
     JDObjectLocker::Error lockerError;
     JDManagerAsyncWorker::stop();
     JDManagerFileSystem::getDatabaseFileWatcher().stop();
+    delete m_logger;
 }
 
 bool JDManager::setup()
@@ -129,7 +157,7 @@ bool JDManager::saveObjects()
 void JDManager::saveObjectsAsync()
 {
     std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
-    JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs));
+    JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs, m_logger));
 }
 
 bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress* progress)
@@ -138,13 +166,13 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     if (!JDManagerObjectManager::exists_internal(obj))
         return false;
 
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::read, s_fileLockTimeoutMs);
 
     if (fileError != LockedFileAccessor::Error::none)
     {
-		JD_CONSOLE("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::loadObject_internal(JDObject) : Error: " + LockedFileAccessor::getErrorStr(fileError));
 		return false;
     }
     double progressScalar = 0;
@@ -166,7 +194,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     fileAccessor.unlock();
     if (fileError != LockedFileAccessor::Error::none)
     {
-		JD_CONSOLE("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError));
 		return false;
 	}
 
@@ -174,7 +202,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, id);
     if (index == std::string::npos)
     {
-        JD_CONSOLE("bool JDManager::loadObject_internal(JDObject) Object with ID: \"" << id << "\" not found");
+        if (m_logger)m_logger->logError("bool JDManager::loadObject_internal(JDObject) Object with ID: \"" + id->toString() + "\" not found");
         return false;
     }
 
@@ -203,13 +231,13 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         
     }
     bool success = true;
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::read, s_fileLockTimeoutMs);
 
     if (fileError != LockedFileAccessor::Error::none)
     {
-        JD_CONSOLE("bool JDManager::loadObjects_internal(mode): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::loadObjects_internal(mode): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
         return false;
     }
 
@@ -226,7 +254,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     
     if (fileError != LockedFileAccessor::Error::none)
     {
-        JD_CONSOLE("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::loadObject_internal(JDObject): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
         return false;
     }
 
@@ -318,7 +346,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     }
     bool success = true;
 
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, timeoutMillis);
 
@@ -327,7 +355,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
         if(fileError == LockedFileAccessor::Error::fileLock_alreadyLockedForWritingByOther)
             m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
 
-        JD_CONSOLE("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
 
@@ -352,7 +380,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
 
     if (fileError != LockedFileAccessor::Error::none)
     {
-        JD_CONSOLE("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis,): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis,): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
@@ -375,7 +403,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
 
     if (fileError != LockedFileAccessor::Error::none)
     {
-        JD_CONSOLE("bool JDManager::saveObject_internal(JDObject, unsigned int timeoutMs): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(JDObject, unsigned int timeoutMs): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
     return success;
@@ -394,7 +422,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     if(progress)
         progressScalar = progress->getScalar();
 
-    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
+    LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
     fileAccessor.setProgress(progress);
     LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::readWrite, timeoutMillis);
 
@@ -403,7 +431,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
         if (fileError == LockedFileAccessor::Error::fileLock_alreadyLockedForWritingByOther)
             m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
 
-        JD_CONSOLE("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
     FileWatcherAutoPause paused(JDManagerFileSystem::getDatabaseFileWatcher());
@@ -429,7 +457,7 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     fileError = fileAccessor.writeJsonFile(*jsonData);
     if (fileError != LockedFileAccessor::Error::none)
     {
-        JD_CONSOLE("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+        if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
     return success;
@@ -468,7 +496,7 @@ void JDManager::onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> wo
 }
 void JDManager::onAsyncWorkError(std::shared_ptr<Internal::JDManagerAysncWork> work)
 {
-    JD_CONSOLE("Async work failed: " + work->getErrorMessage() + "\n");
+    if (m_logger)m_logger->logError("Async work failed: " + work->getErrorMessage());
 }
 
 void JDManager::onObjectLockerFileChanged()

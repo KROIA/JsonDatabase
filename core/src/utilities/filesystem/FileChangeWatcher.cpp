@@ -23,7 +23,7 @@ namespace JsonDatabase
             stopWatching();
         }
 
-        bool FileChangeWatcher::setup()
+        bool FileChangeWatcher::setup(Log::Logger::ContextLogger* parentLogger)
         {
             std::string directory = m_filePath.substr(0, m_filePath.find_last_of("\\") + 1);
             /*m_eventHandle = FindFirstChangeNotificationA(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
@@ -33,6 +33,7 @@ namespace JsonDatabase
                 JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << m_setupError << " : " << Utilities::getLastErrorString(m_setupError) << "\n");
                 return false;
             }*/
+            m_logger = parentLogger;
             m_setupError = 0;
             return true;
         }
@@ -46,7 +47,7 @@ namespace JsonDatabase
             if (m_watchThread)
                 return true;
             if (!m_eventHandle)
-                if (!setup())
+                if (!setup(m_logger))
                     return false;
 
             m_watchThread = new std::thread(&FileChangeWatcher::monitorFileChanges, this);
@@ -129,7 +130,7 @@ namespace JsonDatabase
             m_eventHandle = FindFirstChangeNotification(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
 
             if (m_eventHandle == INVALID_HANDLE_VALUE) {
-                JD_CONSOLE_FUNCTION("Error starting directory watch: " << Utilities::getLastErrorString(GetLastError()) << "\n");
+                if (m_logger)m_logger->logError("starting directory watch: " + Utilities::getLastErrorString(GetLastError()) + "\n");
                 return;
             }
 
@@ -157,7 +158,7 @@ namespace JsonDatabase
                     if (!res)
                     {
                         DWORD error = GetLastError();
-                        JD_CONSOLE_FUNCTION("Error FindNextChangeNotification. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
+                        if(m_logger)m_logger->logError("FindNextChangeNotification. GetLastError() =  " + std::to_string(error) + " : " + Utilities::getLastErrorString(error));
                     }
 #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
                     JD_UNUSED(res);
@@ -182,7 +183,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
                 else {
                     DWORD error = GetLastError();
-                    JD_CONSOLE_FUNCTION("Error waiting for file changes. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
+                    if(m_logger)m_logger->logError("Waiting for file changes. GetLastError() =  " + std::to_string(error) + " : " + Utilities::getLastErrorString(error));
                 }
 #endif
             }
@@ -193,7 +194,7 @@ namespace JsonDatabase
             std::filesystem::path file(m_filePath);
 
             if (!std::filesystem::exists(file)) {
-                JD_CONSOLE_FUNCTION("File: \"" << m_filePath.c_str() << "\" does not exist!\n");
+                if(m_logger)m_logger->logError("File: \"" + m_filePath + "\" does not exist!");
                 return false;
             }
 
@@ -272,8 +273,11 @@ namespace JsonDatabase
                 delete m_databaseFileWatcher;
             }
         }
-        bool ManagedFileChangeWatcher::setup(const std::string& targetFile)
+        bool ManagedFileChangeWatcher::setup(const std::string& targetFile, Log::Logger::ContextLogger* parentLogger)
         {
+            delete m_logger;
+            if(parentLogger)
+                m_logger = parentLogger->createContext(targetFile);
             return restart(targetFile);
         }
         bool ManagedFileChangeWatcher::restart(const std::string& targetFile)
@@ -285,12 +289,12 @@ namespace JsonDatabase
                 m_databaseFileWatcher = nullptr;
             }
             m_databaseFileWatcher = new FileChangeWatcher(targetFile);
-            bool success = m_databaseFileWatcher->setup();
+            bool success = m_databaseFileWatcher->setup(m_logger);
             DWORD lastError = m_databaseFileWatcher->getSetupError();
             JD_UNUSED(lastError);
             if (!success)
             {
-				JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << lastError << " : " << Utilities::getLastErrorString(lastError) << "\n");
+                if(m_logger)m_logger->logError("Initializing file change monitoring. GetLastError() =  " + std::to_string(lastError) + " : " + Utilities::getLastErrorString(lastError));
 				return false;
 			}
             m_databaseFileWatcher->startWatching();
