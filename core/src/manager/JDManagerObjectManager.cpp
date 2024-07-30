@@ -16,16 +16,17 @@ namespace JsonDatabase
         {   }
         JDManagerObjectManager::~JDManagerObjectManager()
         {
+            stop();
             delete m_logger;
         }
-        void JDManagerObjectManager::setParentLogger(Log::Logger::ContextLogger* parentLogger)
+        void JDManagerObjectManager::setParentLogger(Log::LogObject* parentLogger)
         {
             if (parentLogger)
             {
                 if (m_logger)
                     delete m_logger;
-                m_logger = parentLogger->createContext("JDManagerObjectManager");
-                m_objLocker.setParentLogger(m_logger);
+                m_logger = new Log::LogObject(*parentLogger,"JDManagerObjectManager");
+                m_objLocker.setParentLogger(m_logger, "Object locker");
             }
         }
         bool JDManagerObjectManager::setup()
@@ -34,6 +35,10 @@ namespace JsonDatabase
             m_objLocker.createFiles();
 
             m_objLocker.removeInactiveObjectLocks();
+            return true;
+        }
+        bool JDManagerObjectManager::stop()
+        {
             return true;
         }
         
@@ -288,18 +293,28 @@ namespace JsonDatabase
         JDObject JDManagerObjectManager::replaceObject_internal(const JDObject& obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            JDObjectIDptr id = obj->getObjectID();
-            if (!JDObjectID::isValid(id))
-                return nullptr; // No valid ID
 
+            JDObjectID::IDType id = obj->getShallowObjectID();
+            //JDObjectIDptr id = obj->getObjectID();
+            //if (!JDObjectID::isValid(id))
+            //    return nullptr; // No valid ID
+
+            //m_idDomain.
             JDObjectManager* replacedManager = m_objs.getObjectByID(id);
+            if(!replacedManager)
+                return nullptr; // Object not found
+
+
+
             JDObject replacedObj = replacedManager->getObject();
-            if(m_objs.removeObject(id))
+            if(!m_objs.removeObject(replacedObj->getObjectID()))
 				return nullptr; // Object not found
 
+            JDObjectIDptr idPtr = replacedObj->getObjectID();
             delete replacedManager;
             replacedManager = nullptr;
-            JDObjectManager* newManager = new JDObjectManager(obj, id, m_logger);
+            
+            JDObjectManager* newManager = new JDObjectManager(obj, idPtr, m_logger);
             m_objs.addObject(newManager);
             return replacedObj;
         }
@@ -446,7 +461,7 @@ namespace JsonDatabase
             newObjInstances.reserve(jsonCount);
             changedPairs.reserve(jsonCount);
             replaceObjs.reserve(jsonCount);
-            replaceObjs.reserve(jsonCount);
+            //replaceObjs.reserve(jsonCount);
             loadedObjects.reserve(jsonCount);
 
             double factor = 1 / (double)jsonCount;
@@ -576,6 +591,8 @@ namespace JsonDatabase
                 if (progress)
                     progress->setComment("Remove " + std::to_string(removedObjs.size()) + " objects");
                 success &= removeObject_internal(removedObjs);
+                if(m_logger)
+                    m_logger->logInfo("Removed " + std::to_string(removedObjs.size()) + " objects");
                 if (progress)
                 {
                     progress->addProgress(0.1);
@@ -590,6 +607,8 @@ namespace JsonDatabase
                 if(progress)
                     progress->setComment("Replace " + std::to_string(replaceObjs.size()) + " objects");
                 replaceObject_internal(replaceObjs);
+                if(m_logger)
+                    m_logger->logInfo("Replaced " + std::to_string(replaceObjs.size()) + " objects");
                 if (progress)
                 {
                     progress->addProgress(0.1);
@@ -604,12 +623,19 @@ namespace JsonDatabase
                 if (progress)
                     progress->setComment("Add " + std::to_string(newObjIDs.size()) + " new objects");
                 success &= packAndAddObject_internal(newObjIDs, newObjInstances);
+                if (m_logger)
+                    m_logger->logInfo("Added " + std::to_string(newObjIDs.size()) + " new objects");
                 if (progress)
                 {
                     progress->addProgress(0.1);
                     ++counter;
                 }
                 
+            }
+
+            if (overridingObjs.size() && m_logger)
+            {
+                m_logger->logInfo(std::to_string(newObjIDs.size()) + " overwritten objects");
             }
 
             if (progress)

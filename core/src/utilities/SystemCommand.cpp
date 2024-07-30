@@ -8,7 +8,7 @@ namespace JsonDatabase
     {
         namespace SystemCommand
         {
-            int execute(const std::string& command, Log::Logger::ContextLogger* logger)
+            int execute(const std::string& command, Log::LogObject* logger)
             {
                 JD_UNUSED(logger);
                 JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
@@ -48,7 +48,7 @@ namespace JsonDatabase
 
                 return -1; // Return -1 if the command execution fails
             }
-            std::string executePiped(const std::string& command, Log::Logger::ContextLogger* logger)
+            std::string executePiped(const std::string& command, Log::LogObject* logger)
             {
                 JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 

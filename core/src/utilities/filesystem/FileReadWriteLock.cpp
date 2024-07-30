@@ -10,7 +10,7 @@ namespace JsonDatabase
         const unsigned int FileReadWriteLock::s_tryLockTimeoutMs = 1000;
 
 
-        FileReadWriteLock::FileReadWriteLock(const std::string& filePath, const std::string& fileName, Log::Logger::ContextLogger *logger)
+        FileReadWriteLock::FileReadWriteLock(const std::string& filePath, const std::string& fileName, Log::LogObject *logger)
             : m_logger(logger)
             , m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
             , m_fileName(fileName)

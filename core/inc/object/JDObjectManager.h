@@ -19,7 +19,7 @@ namespace JsonDatabase
 		{
 			friend JDManagerObjectManager;
 
-			JDObjectManager(const JDObject& obj, const JDObjectIDptr& id, Log::Logger::ContextLogger* parentLogger);
+			JDObjectManager(const JDObject& obj, const JDObjectIDptr& id, Log::LogObject* parentLogger);
 			~JDObjectManager();
 		public:
 			
@@ -99,32 +99,32 @@ namespace JsonDatabase
 				ManagedLoadContainers& containers,
 				const ManagedLoadMode& loadMode,
 				const ManagedLoadMisc& misc,
-				Log::Logger::ContextLogger* logger);
+				Log::LogObject* logger);
 
 			bool loadAndOverrideData(const JsonObject& json);
 			bool loadAndOverrideDataIfChanged(const JsonObject& json, bool& hasChangesOut);
 
-			static JDObjectManager* instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::Logger::ContextLogger * parentLogger);
-			static JDObjectManager* cloneAndLoadObject(const JDObject &original, const JsonObject& json, const JDObjectIDptr& id, Log::Logger::ContextLogger* parentLogger);
+			static JDObjectManager* instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::LogObject * parentLogger);
+			static JDObjectManager* cloneAndLoadObject(const JDObject &original, const JsonObject& json, const JDObjectIDptr& id, Log::LogObject* parentLogger);
 
 			static ManagedLoadStatus managedLoadExisting_internal(
 				const JsonObject& json,
 				JDObjectManager* manager,
 				ManagedLoadContainers& containers,
 				const ManagedLoadMode& loadMode,
-				Log::Logger::ContextLogger *logger);
+				Log::LogObject *logger);
 
 			static ManagedLoadStatus managedLoadNew_internal(
 				const JsonObject& json,
 				ManagedLoadContainers& containers/*,
 				const ManagedLoadMode& loadMode*/,
 				const ManagedLoadMisc& misc,
-				Log::Logger::ContextLogger* logger);
+				Log::LogObject* logger);
 
 			bool deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut);
 			bool deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj);
 
-			Log::Logger::ContextLogger* m_logger = nullptr;
+			Log::LogObject* m_logger = nullptr;
 			JDObject m_obj;
 			JDObjectIDptr m_id;
 			Lockstate m_lockstate;

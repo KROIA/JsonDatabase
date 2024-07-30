@@ -1,5 +1,6 @@
-#include <QCoreApplication>
+#include <QApplication>
 #include <iostream>
+#include <QObject>
 #include "Person.h"
 
 #ifndef JD_PROFILING
@@ -55,26 +56,26 @@ bool compareTables(const std::vector<JDObject>& t1, const std::vector<JDObject>&
 bool lockRandomPerson(JDManager *manager, JDObject& obj);
 bool unlockPerson(JDManager* manager, JDObject& obj);
 
-Log::Logger::ContextLogger logger("main");
+Log::LogObject logger("main");
 
 int main(int argc, char* argv[])
 {
     EASY_THREAD("main");
-    QCoreApplication a(argc, argv);
+    QApplication a(argc, argv);
 
     globalTable = createPersons();
 
 #ifdef CONCURENT_TEST
     JsonDatabase::Profiler::start();
 
-    manager1 = new JDManager("database", "Persons", "USER 1",&logger);
-    manager2 = new JDManager("database", "Persons", "USER 2",&logger);
-    manager3 = new JDManager("database", "Persons", "USER 3",&logger);
-    manager4 = new JDManager("database", "Persons", "USER 4",&logger);
-    manager5 = new JDManager("database", "Persons", "USER 5",&logger);
+    manager1 = new JDManager("database", "Persons", "USER 1");
+    manager2 = new JDManager("database", "Persons", "USER 2");
+    manager3 = new JDManager("database", "Persons", "USER 3");
+    manager4 = new JDManager("database", "Persons", "USER 4");
+    manager5 = new JDManager("database", "Persons", "USER 5");
 
     Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
-    console->attachLogger(logger);
+//    console->attachLogger(logger);
     console->show();
 
     manager1->setup();
@@ -257,10 +258,17 @@ void threadFunction1() {
     //bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    
+    QObject::connect(manager1, &JDManager::onDatabaseFileChanged, [] {manager1->loadObjectsAsync(); });
+    QObject::connect(manager1, &JDManager::onSaveObjectsDone, [](bool success)
+        {
+            std::cout << "Save Objects success: " << success << "\n";
+            finishSave = true; 
+        });
 
-    manager1->getSignals().connect_databaseFileChanged_slot([] {manager1->loadObjectsAsync(); });
-    manager1->getSignals().connect_onSaveObjectsDone_slot(saveObjectsSlot);
+
+
+   // manager1->getSignals().connect_databaseFileChanged_slot([] {manager1->loadObjectsAsync(); });
+   // manager1->getSignals().connect_onSaveObjectsDone_slot(saveObjectsSlot);
     bool doesRemove = true;
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
     //    std::cout << "Thread 1 is running..." << std::endl;
@@ -360,10 +368,15 @@ void threadFunction2() {
     //JDObject lockedPerson = nullptr;
     auto start = std::chrono::high_resolution_clock::now();
 
-    manager2->getSignals().connect_databaseFileChanged_slot(callback);
-    manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);
-    manager2->getSignals().connect_objectRemovedFromDatabase_slot(onObjectRemoved);
-    manager2->getSignals().connect_objectChangedFromDatabase_slot(onObjectChange);
+    QObject::connect(manager2, &JDManager::onDatabaseFileChanged, []() {callback(); });
+    QObject::connect(manager2, &JDManager::onObjectAddedToDatabase, [](const std::vector<JDObject>& list) {onObjectAdded(list); });
+    QObject::connect(manager2, &JDManager::onObjectRemovedFromDatabase, [](const std::vector<JDObject>& list) {onObjectRemoved(list); });
+    QObject::connect(manager2, &JDManager::onObjectChangedFromDatabase, [](const std::vector<JDObjectPair>& list) {onObjectChange(list); });
+
+    //manager2->getSignals().connect_databaseFileChanged_slot(callback);
+    //manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);
+    //manager2->getSignals().connect_objectRemovedFromDatabase_slot(onObjectRemoved);
+    //manager2->getSignals().connect_objectChangedFromDatabase_slot(onObjectChange);
     //manager2->connectObjectOverrideChangeFromDatabaseSlot(onObjectOverrideChange);
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
@@ -414,10 +427,11 @@ void threadFunction3() {
    // bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    manager3->getSignals().connect_databaseFileChanged_slot([] {
+    QObject::connect(manager3, &JDManager::onDatabaseFileChanged, [] {
         //manager3->loadObjectsAsync();
         });
 
+  
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
       //  std::cout << "Thread 3 is running..." << std::endl;
 
@@ -455,9 +469,7 @@ void threadFunction4() {
     //bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    manager4->getSignals().connect_databaseFileChanged_slot([] {
-        //manager4->loadObjectsAsync(); 
-        });
+  
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
       //  std::cout << "Thread 4 is running..." << std::endl;
@@ -497,9 +509,11 @@ void threadFunction5() {
     //bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    manager5->getSignals().connect_databaseFileChanged_slot([] {
-        //manager5->loadObjectsAsync();
-        });
+    QObject::connect(manager5, &JDManager::onDatabaseFileChanged, [] {
+		//manager5->loadObjectsAsync();
+		});
+
+ 
 
     while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < THREAD_END_SECONDS) {
       //  std::cout << "Thread 5 is running..." << std::endl;

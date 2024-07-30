@@ -13,7 +13,7 @@
 #define DEBUG DEBUG_SIMPLE << m_manager->getUser().getName().c_str() << "::" << __FUNCTION__ << ": "
 
 
-Log::Logger::ContextLogger logger("main");
+Log::LogObject logger("main");
 
 MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	: QWidget(parent)
@@ -25,10 +25,10 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	//if(m_manager)
 	//	delete m_manager;
 
-	m_manager = new JDManager("asyncDatabase", "Person", user, &logger);
+	m_manager = new JDManager("asyncDatabase", "Person", user);
 
-	Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
-	console->attachLogger(logger);
+	//Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
+	Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
 	console->show();
 
 	m_manager->setup();
@@ -41,21 +41,40 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	//m_manager->addObject(createPersons());
 	//m_manager->saveObjects();
 
-    m_manager->getSignals().connect_databaseFileChanged_slot(this, &MainWindow::onDatabaseFileChanged);
-    m_manager->getSignals().connect_lockedObjectsChanged_slot(this, &MainWindow::onLockedObjectsChanged);
-    m_manager->getSignals().connect_objectRemovedFromDatabase_slot(this, &MainWindow::onObjectRemovedFromDatabase);
-    m_manager->getSignals().connect_objectAddedToDatabase_slot(this, &MainWindow::onObjectAddedToDatabase);
-    m_manager->getSignals().connect_objectChangedFromDatabase_slot(this, &MainWindow::onObjectChangedFromDatabase);
-    m_manager->getSignals().connect_objectOverrideChangeFromDatabase_slot(this, &MainWindow::onObjectOverrideChangeFromDatabase);
-    m_manager->getSignals().connect_databaseOutdated_slot(this, &MainWindow::onDatabaseOutdated);
+	
+
+    //m_manager->getSignals().connect_databaseFileChanged_slot(this, &MainWindow::onDatabaseFileChanged);
+    //m_manager->getSignals().connect_lockedObjectsChanged_slot(this, &MainWindow::onLockedObjectsChanged);
+    //m_manager->getSignals().connect_objectRemovedFromDatabase_slot(this, &MainWindow::onObjectRemovedFromDatabase);
+    //m_manager->getSignals().connect_objectAddedToDatabase_slot(this, &MainWindow::onObjectAddedToDatabase);
+    //m_manager->getSignals().connect_objectChangedFromDatabase_slot(this, &MainWindow::onObjectChangedFromDatabase);
+    //m_manager->getSignals().connect_objectOverrideChangeFromDatabase_slot(this, &MainWindow::onObjectOverrideChangeFromDatabase);
+    //m_manager->getSignals().connect_databaseOutdated_slot(this, &MainWindow::onDatabaseOutdated);
+	//
+	//
+    //m_manager->getSignals().connect_onStartAsyncWork_slot(this, &MainWindow::onAsyncWorkStarted);
+    //m_manager->getSignals().connect_onEndAsyncWork_slot(this, &MainWindow::onAsyncWorkFinished);
+    //m_manager->getSignals().connect_onLoadObjectsDone_slot(this, &MainWindow::onLoadAllDone);
+	//m_manager->getSignals().connect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
+    //m_manager->getSignals().connect_onSaveObjectsDone_slot(this, &MainWindow::onSaveAllDone);
+    //m_manager->getSignals().connect_onSaveObjectDone_slot(this, &MainWindow::onSaveIndividualDone);
 
 
-    m_manager->getSignals().connect_onStartAsyncWork_slot(this, &MainWindow::onAsyncWorkStarted);
-    m_manager->getSignals().connect_onEndAsyncWork_slot(this, &MainWindow::onAsyncWorkFinished);
-    m_manager->getSignals().connect_onLoadObjectsDone_slot(this, &MainWindow::onLoadAllDone);
-	m_manager->getSignals().connect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
-    m_manager->getSignals().connect_onSaveObjectsDone_slot(this, &MainWindow::onSaveAllDone);
-    m_manager->getSignals().connect_onSaveObjectDone_slot(this, &MainWindow::onSaveIndividualDone);
+
+	connect(m_manager, &JDManager::onDatabaseFileChanged, this, &MainWindow::onDatabaseFileChanged);
+	connect(m_manager, &JDManager::onLockedObjectsChanged, this, &MainWindow::onLockedObjectsChanged);
+	connect(m_manager, &JDManager::onObjectRemovedFromDatabase, this, &MainWindow::onObjectRemovedFromDatabase);
+	connect(m_manager, &JDManager::onObjectAddedToDatabase, this, &MainWindow::onObjectAddedToDatabase);
+	connect(m_manager, &JDManager::onObjectChangedFromDatabase, this, &MainWindow::onObjectChangedFromDatabase);
+	connect(m_manager, &JDManager::onObjectOverrideChangeFromDatabase, this, &MainWindow::onObjectOverrideChangeFromDatabase);
+	connect(m_manager, &JDManager::onDatabaseOutdated, this, &MainWindow::onDatabaseOutdated);
+
+	connect(m_manager, &JDManager::onStartAsyncWork, this, &MainWindow::onAsyncWorkStarted);
+	connect(m_manager, &JDManager::onEndAsyncWork, this, &MainWindow::onAsyncWorkFinished);
+	connect(m_manager, &JDManager::onLoadObjectDone, this, &MainWindow::onLoadIndividualDone);
+	connect(m_manager, &JDManager::onLoadObjectsDone, this, &MainWindow::onLoadAllDone);
+	connect(m_manager, &JDManager::onSaveObjectDone, this, &MainWindow::onSaveIndividualDone);
+	connect(m_manager, &JDManager::onSaveObjectsDone, this, &MainWindow::onSaveAllDone);
 
 
 

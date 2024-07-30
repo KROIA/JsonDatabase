@@ -6,7 +6,6 @@
 #include "async/JDManagerAsyncWorker.h"
 #include "async/work/JDManagerWorkLoadSingleObject.h"
 #include "async/WorkProgress.h"
-#include "JDManagerSignals.h"
 #include "JDManagerFileSystem.h"
 #include "JDManagerObjectManager.h"
 
@@ -14,21 +13,21 @@
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
 
-#include "utilities/Signal.h"
 #include "utilities/JDUser.h"
 
 #include "Logger.h"
 
-
-
 #include <string>
 #include <mutex>
+
+#include <QObject>
 
 
 namespace JsonDatabase
 {
 
 class JSON_DATABASE_EXPORT JDManager: 
+    public QObject,
     public Internal::JDManagerObjectManager, 
     public Internal::JDManagerFileSystem,
     //public Internal::JDObjectLocker,
@@ -46,26 +45,26 @@ class JSON_DATABASE_EXPORT JDManager:
     friend class Internal::JDManagerAysncWorkSaveSingle;
     friend class Internal::JDManagerAysncWorkSaveList;
 
+    Q_OBJECT
     public:
         JDManager(
             const std::string& databasePath,
-            const std::string& databaseName,
-            Log::Logger::ContextLogger* parentLogger);
+            const std::string& databaseName);
         JDManager(
             const std::string &databasePath,
             const std::string &databaseName,
-            const std::string &user,
-            Log::Logger::ContextLogger* parentLogger);
+            const std::string &user);
         JDManager(const JDManager &other);
         virtual ~JDManager();
 
         bool setup();
+        bool stop();
 
         /*
             Returns the signals handler of this manager.
             Connect callbacks to the available signals.
         */
-        Internal::JDManagerSignals& getSignals();
+        //Internal::JDManagerSignals& getSignals();
 
         
 
@@ -157,7 +156,23 @@ class JSON_DATABASE_EXPORT JDManager:
         void update();
         
 
-        
+        signals:
+            void onDatabaseFileChanged(); // Emitted when the database file has changed
+            void onLockedObjectsChanged(); // Emitted when the locked objects have changed
+            void onObjectRemovedFromDatabase(std::vector<JDObject> objs); // Emitted when an object is removed from the database
+            void onObjectAddedToDatabase(std::vector<JDObject> objs); // Emitted when an object is added to the database
+            void onObjectChangedFromDatabase(std::vector<JDObjectPair> objs); // Emitted when an object is changed in the database
+            void onObjectOverrideChangeFromDatabase(std::vector<JDObject> objs); // Emitted when an object is changed in the database
+            void onDatabaseOutdated(); // Emitted when the database is outdated
+
+            void onStartAsyncWork(); // Emitted when an async work is started
+            void onEndAsyncWork(); // Emitted when an async work is done
+            void onLoadObjectDone(bool success, JDObject obj); 
+            void onLoadObjectsDone(bool success); 
+            void onSaveObjectDone(bool success, JDObject obj);
+            void onSaveObjectsDone(bool success);
+
+
     protected:
 
 
@@ -177,7 +192,7 @@ class JSON_DATABASE_EXPORT JDManager:
 
         
 
-        Log::Logger::ContextLogger* m_logger = nullptr;
+        Log::LogObject* m_logger = nullptr;
         Utilities::JDUser m_user;
 
         mutable std::mutex m_mutex;
@@ -189,8 +204,38 @@ class JSON_DATABASE_EXPORT JDManager:
 
         
         
-        
-        Internal::JDManagerSignals m_signals;
+        /*struct SignalData
+        {
+            std::vector<JDObject> onObjectRemovedFromDatabase;
+            std::vector<JDObject> onObjectAddedToDatabase;
+            std::vector<JDObjectPair> onObjectChangedFromDatabase;
+            std::vector<JDObject> onObjectOverrideChangeFromDatabase;
+
+            struct OnLoadObjectDone
+            {
+				bool success;
+				JDObject obj;
+			} onLoadObjectDone;
+            struct OnLoadObjectsDone
+            {
+                bool signalActive = false;
+				bool success;
+			} onLoadObjectsDone;
+
+            struct OnSaveObjectDone
+            {
+                bool success;
+                JDObject obj;
+            } onSaveObjectDone;
+            struct OnSaveObjectsDone
+            {
+				bool signalActive = false;
+				bool success;
+			} onSaveObjectsDone;
+        } m_signalData;
+        std::mutex m_signalDataMutex;*/
+
+        //Internal::JDManagerSignals m_signals;
 
 
         static const unsigned int s_fileLockTimeoutMs;

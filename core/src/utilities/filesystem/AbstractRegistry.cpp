@@ -15,7 +15,7 @@ namespace JsonDatabase
 			, m_nameSet(false)
 			, m_databasePathSet(false)
 		{
-
+			
 		}
 		AbstractRegistry::~AbstractRegistry()
 		{
@@ -26,6 +26,12 @@ namespace JsonDatabase
 			}
 			
 			delete m_registryFile;
+		}
+
+		void AbstractRegistry::setParentLogger(Log::LogObject* parentLogger, const std::string& registryName)
+		{
+			if(parentLogger)
+				m_logger = new Log::LogObject(*parentLogger, registryName);
 		}
 
 		void AbstractRegistry::setDatabasePath(const std::string& path)
@@ -163,13 +169,32 @@ namespace JsonDatabase
 			if (!dir.exists())
 			{
 				QDir dir2;
-				dir2.mkpath(path);
+				
+				if (dir2.mkpath(path))
+				{
+					if (m_logger)
+						m_logger->logInfo("Creating directory: " + path.toStdString());
+				}
+				else
+				{
+					if (m_logger)
+						m_logger->logError("Failed to create directory: " + path.toStdString());
+				}
 			}
 			dir.setPath(QString::fromStdString(getLocksPath()));
 			if (!dir.exists())
 			{
 				QDir dir2;
-				dir2.mkpath(QString::fromStdString(getLocksPath()));
+				if (dir2.mkpath(QString::fromStdString(getLocksPath())))
+				{
+					if (m_logger)
+						m_logger->logInfo("Creating directory: " + getLocksPath());
+				}
+				else
+				{
+					if (m_logger)
+						m_logger->logError("Failed to create directory: " + getLocksPath());
+				}
 			}
 			std::string registrationFile = getRegistrationFilePath();
 			if (!QFile::exists(QString::fromStdString(registrationFile)))
@@ -267,6 +292,8 @@ namespace JsonDatabase
 			Internal::LockedFileAccessor::Error err = file->lock(Internal::LockedFileAccessor::AccessMode::readWrite);
 			if (err != Internal::LockedFileAccessor::Error::none)
 			{
+				if (m_logger)
+					m_logger->logError("Failed to open registry file: " + file->getFullFilePath() + " Error: "+file->getErrorStr(err));
 				delete file;
 				return false;
 			}
@@ -541,10 +568,10 @@ namespace JsonDatabase
 				const auto &it = objectsFromFile.find(lockFiles[i]);
 				if (Internal::FileLock::deleteFile(getLocksPath(), lockFiles[i]))
 				{
+					removed++;
 					if (it != objectsFromFile.end())
 					{
 						objectsFromFile.erase(it);
-						removed++;
 					}
 				}	
 				else
@@ -564,6 +591,9 @@ namespace JsonDatabase
 				}*/
 				saveObjects_internal(jsonsOut);
 			}
+			if(removed > 0 && m_logger)
+				m_logger->logInfo("Removed " + std::to_string(removed) + " inactive locks");
+				
 			return removed;
 		}
 		bool AbstractRegistry::lockExists(const std::string& name) const

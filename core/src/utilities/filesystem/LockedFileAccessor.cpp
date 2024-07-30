@@ -19,7 +19,7 @@ namespace JsonDatabase
 			const std::string& directory,
 			const std::string& name,
 			const std::string& endig,
-            Log::Logger::ContextLogger* parentLogger)
+            Log::LogObject* parentLogger)
 			: m_fileLock(nullptr)
 			, m_directory(directory)
 			, m_name(name)
@@ -27,13 +27,14 @@ namespace JsonDatabase
 			, m_useZipFormat(false)
 			, m_progress(nullptr)
 		{
-            if(parentLogger)
-                m_logger = parentLogger->createContext("LockedFileAccessor(" + name + endig + ")");
+            m_logger = parentLogger;
+            //if(parentLogger)
+            //    m_logger = new Log::LogObject(*parentLogger,"LockedFileAccessor(" + name + endig + ")");
 		}
 		LockedFileAccessor::~LockedFileAccessor()
 		{
             unlock();
-            m_logger->deleteLater();
+            //m_logger->deleteLater();
             //delete m_logger;
 		}
 

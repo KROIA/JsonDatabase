@@ -18,6 +18,7 @@ namespace JsonDatabase
 			AbstractRegistry();
 			virtual ~AbstractRegistry();
 
+			void setParentLogger(Log::LogObject* parentLogger, const std::string &registryName);
 
 			void setDatabasePath(const std::string& path);
 			void setName(const std::string& name); // creates a subfolder in the database folder
@@ -112,7 +113,7 @@ namespace JsonDatabase
 			unsigned int getNotSelfLockCount() const;
 
 
-			Log::Logger::ContextLogger* m_logger = nullptr;
+			Log::LogObject* m_logger = nullptr;
 
 		private:
 			bool createSelfOwnedLock(const std::string& key);

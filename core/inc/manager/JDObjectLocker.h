@@ -42,7 +42,7 @@ namespace JsonDatabase
 		public:
 			JDObjectLocker(JDManager& manager, std::mutex& mtx);
 			~JDObjectLocker();
-			void setParentLogger(Log::Logger::ContextLogger* parentLogger);
+			//void setParentLogger(Log::LogObject* parentLogger);
 
 			bool lockObject(const JDObject & obj, Error& err);
 			bool unlockObject(const JDObject & obj, Error& err);
@@ -111,7 +111,7 @@ namespace JsonDatabase
 			void onDatabasePathChangeEnd() override;
 			void onNameChange(const std::string& newName) override;
 
-			Log::Logger::ContextLogger* m_logger = nullptr;
+			//Log::LogObject* m_logger = nullptr;
 
 			JDManager& m_manager;
 			std::mutex& m_mutex;

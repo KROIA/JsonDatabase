@@ -14,7 +14,7 @@ namespace JsonDatabase
             static JDObjectRegistry instance;
             return instance;
         }
-        Log::Logger::ContextLogger& JDObjectRegistry::getLogger()
+        Log::LogObject& JDObjectRegistry::getLogger()
         {
 			return JDObjectRegistry::getInstance().m_logger;
         }

@@ -23,7 +23,7 @@ namespace JsonDatabase
         public:
             FileChangeWatcher(const std::string& filePath);
             ~FileChangeWatcher();
-            bool setup(Log::Logger::ContextLogger* parentLogger);
+            bool setup(Log::LogObject* parentLogger);
             DWORD getSetupError() const;
 
             bool startWatching();
@@ -41,9 +41,9 @@ namespace JsonDatabase
             void monitorFileChanges();
             bool fileChanged();
 
-            Log::Logger::ContextLogger* m_logger = nullptr;
+            Log::LogObject* m_logger = nullptr;
             std::string m_filePath;
-            HANDLE m_eventHandle;
+            std::atomic<HANDLE> m_eventHandle;
             DWORD m_setupError;
             std::thread *m_watchThread;
             std::mutex m_mutex;
@@ -60,7 +60,7 @@ namespace JsonDatabase
         {
             friend JDManagerFileSystem;
             friend JDObjectLocker;
-            bool setup(const std::string& targetFile, Log::Logger::ContextLogger* parentLogger);
+            bool setup(const std::string& targetFile, Log::LogObject* parentLogger);
             ManagedFileChangeWatcher();
             ~ManagedFileChangeWatcher();
         public:
@@ -77,7 +77,7 @@ namespace JsonDatabase
 
         private:
             
-            Log::Logger::ContextLogger* m_logger = nullptr;
+            Log::LogObject* m_logger = nullptr;
             FileChangeWatcher* m_databaseFileWatcher;
         };
     }

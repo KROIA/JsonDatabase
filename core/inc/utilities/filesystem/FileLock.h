@@ -32,7 +32,7 @@ namespace JsonDatabase
 
                 lockTimeout = 20,
             };
-            FileLock(const std::string& filePath, const std::string& fileName, Log::Logger::ContextLogger* logger);
+            FileLock(const std::string& filePath, const std::string& fileName, Log::LogObject* logger);
             ~FileLock();
 
             const std::string& getFilePath() const;
@@ -66,7 +66,7 @@ namespace JsonDatabase
             Error unlockFile();
 
 
-            Log::Logger::ContextLogger* m_logger = nullptr;
+            Log::LogObject* m_logger = nullptr;
 
             //std::string m_filePath;
             std::string m_directory;

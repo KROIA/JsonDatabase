@@ -11,23 +11,23 @@ namespace JsonDatabase
 			JDManager& manager,
 			std::mutex& mtx,
 			const std::vector<JDObject>& objects,
-			Log::Logger::ContextLogger* parentLogger)
+			Log::LogObject* parentLogger)
 			: JDManagerAysncWork(manager, mtx)
 			, m_success(false)
 		{
 			if (parentLogger)
-				m_logger = parentLogger->createContext("JDManagerAysncWorkSaveList");
+				m_logger = new Log::LogObject(*parentLogger,"JDManagerAysncWorkSaveList");
 			m_objects = objects;
 			m_progress.setTaskName("Speichere " + std::to_string(m_objects.size()) + " Objekte");
 			m_objects.resize(objects.size());
-			if(m_logger) m_logger->logInfo("Save list of " + std::to_string(objects.size()) + " objects. Create deepClone...");
+			//if(m_logger) m_logger->logInfo("Save list of " + std::to_string(objects.size()) + " objects. Create deepClone...");
 			for (size_t i = 0; i < objects.size(); ++i)
 			{
 				//objects[i]->incrementVersionValue();
 				m_objects[i] = manager.createDeepClone(objects[i]);
 				//m_objects[i] = objects[i]->clone();
 			}
-			if (m_logger) m_logger->logInfo("Save list of " + std::to_string(objects.size()) + " objects. Create deepClone done");			
+			//if (m_logger) m_logger->logInfo("Save list of " + std::to_string(objects.size()) + " objects. Create deepClone done");			
 		}
 		JDManagerAysncWorkSaveList::~JDManagerAysncWorkSaveList()
 		{

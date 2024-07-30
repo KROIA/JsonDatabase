@@ -55,14 +55,14 @@ namespace JsonDatabase
 			unlockAllObjs(err);
 			delete m_logger;
 		}
-		void JDObjectLocker::setParentLogger(Log::Logger::ContextLogger* parentLogger)
+		/*void JDObjectLocker::setParentLogger(Log::LogObject* parentLogger)
 		{
 			delete m_logger;
 			m_logger = nullptr;
 			if(parentLogger)
-				m_logger = parentLogger->createContext("JDObjectLocker");
+				m_logger = new Log::LogObject(*parentLogger,"Object locker");
 			AbstractRegistry::m_logger = m_logger;
-		}
+		}*/
 		/*bool JDObjectLocker::setup(Error& err)
 		{
 			JDM_UNIQUE_LOCK_P;
@@ -417,7 +417,8 @@ namespace JsonDatabase
 			{
 				m_lockTableWatcher.clearHasFileChanged();
 				m_manager.onObjectLockerFileChanged();
-				m_manager.getSignals().lockedObjectsChanged.emitSignal();
+				//m_manager.getSignals().lockedObjectsChanged.emitSignal();
+				emit m_manager.onLockedObjectsChanged();
 			}
 		}
 

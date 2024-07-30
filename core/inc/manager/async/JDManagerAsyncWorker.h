@@ -23,7 +23,7 @@ namespace JsonDatabase
                 JDManager& manager,
                 std::mutex& mtx);
             ~JDManagerAsyncWorker();
-            void setParentLogger(Log::Logger::ContextLogger* parentLogger);
+            void setParentLogger(Log::LogObject* parentLogger);
             void setup();
             void addWork(std::shared_ptr<JDManagerAysncWork> work);
             bool isWorkDone(std::shared_ptr<JDManagerAysncWork> work);
@@ -57,7 +57,7 @@ namespace JsonDatabase
 
             std::atomic<std::shared_ptr<JDManagerAysncWork>> m_currentWork;
 
-            Log::Logger::ContextLogger* m_logger = nullptr;
+            Log::LogObject* m_logger = nullptr;
             
         };
     }

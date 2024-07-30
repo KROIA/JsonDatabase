@@ -1,5 +1,4 @@
 #include "manager/JDManager.h"
-#include "manager/JDManagerSignals.h"
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
 #include "utilities/JDUniqueMutexLock.h"
@@ -25,46 +24,40 @@ namespace JsonDatabase
 
 
     JDManager::JDManager(const std::string& databasePath,
-                         const std::string& databaseName,
-                         Log::Logger::ContextLogger* parentLogger)
+                         const std::string& databaseName)
         : JDManagerObjectManager(*this, m_mutex)
         , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
         //, JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
-        , m_signals(*this, m_mutex)
+        //, m_signals(*this, m_mutex)
     {
-        if (parentLogger)
-        {
-            m_logger = parentLogger->createContext("JDManager");
-            JDManagerObjectManager::setParentLogger(m_logger);
-            JDManagerFileSystem::setParentLogger(m_logger);
-            JDManagerAsyncWorker::setParentLogger(m_logger);
-        }
+        m_logger  = new Log::LogObject("JDManager");
+        JDManagerObjectManager::setParentLogger(m_logger);
+        JDManagerFileSystem::setParentLogger(m_logger);
+        JDManagerAsyncWorker::setParentLogger(m_logger);
+        
 
         m_user = Utilities::JDUser::generateUser();
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
     JDManager::JDManager(const std::string& databasePath,
         const std::string& databaseName,
-        const std::string& user,
-        Log::Logger::ContextLogger* parentLogger)
+        const std::string& user)
         : JDManagerObjectManager(*this, m_mutex)
         , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
         //, JDObjectLocker(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
-        , m_signals(*this, m_mutex)
+        //, m_signals(*this, m_mutex)
     {
-        if (parentLogger)
-        {
-            m_logger = parentLogger->createContext("JDManager");
-            JDManagerObjectManager::setParentLogger(m_logger);
-            JDManagerFileSystem::setParentLogger(m_logger);
-            JDManagerAsyncWorker::setParentLogger(m_logger);
-        }
+        m_logger = new Log::LogObject("JDManager");
+        JDManagerObjectManager::setParentLogger(m_logger);
+        JDManagerFileSystem::setParentLogger(m_logger);
+        JDManagerAsyncWorker::setParentLogger(m_logger);
+        
         m_user = Utilities::JDUser::generateUser(user);
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
@@ -76,39 +69,61 @@ namespace JsonDatabase
         , m_user(other.m_user)
         , m_useZipFormat(other.m_useZipFormat)
         , m_signleEntryUpdateLock(false)
-        , m_signals(*this, m_mutex)
+        //, m_signals(*this, m_mutex)
     {
         if (other.m_logger)
         {
-            if (other.m_logger->getParent())
-            {
-                m_logger = other.m_logger->getParent()->createContext("JDManager");
-                JDManagerObjectManager::setParentLogger(m_logger);
-                JDManagerFileSystem::setParentLogger(m_logger);
-                JDManagerAsyncWorker::setParentLogger(m_logger);
-            }
+
+            m_logger = new Log::LogObject(other.m_logger->getParentID(),"JDManager");
+            JDManagerObjectManager::setParentLogger(m_logger);
+            JDManagerFileSystem::setParentLogger(m_logger);
+            JDManagerAsyncWorker::setParentLogger(m_logger);
+            
         }
         m_user = Utilities::JDUser::generateUser(m_user.getName());
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
 JDManager::~JDManager()
 {
-    JDObjectLocker::Error lockerError;
-    JDManagerAsyncWorker::stop();
-    JDManagerFileSystem::getDatabaseFileWatcher().stop();
+    stop();
     delete m_logger;
 }
 
 bool JDManager::setup()
 {
     bool success = true;
+    if(m_logger)
+        m_logger->logInfo("JDManager::setup() : Setting up JDManager");
     success &= JDManagerFileSystem::setup();
     success &= JDManagerObjectManager::setup();
     JDObjectLocker::Error lockerError;
     JDManagerAsyncWorker::setup();
+    if (m_logger)
+    {
+        if (success)
+            m_logger->log("JDManager::setup() : JDManager setup successful", Log::Level::info, Log::Colors::green);
+        else
+            m_logger->logError("JDManager::setup() : JDManager setup failed");
+    }
     return success;
 }
-
+bool JDManager::stop()
+{
+    bool success = true;
+    if (m_logger)
+		m_logger->logInfo("JDManager::stop() : Stopping JDManager");
+	success &= JDManagerFileSystem::stop();
+	success &= JDManagerObjectManager::stop();
+    JDManagerAsyncWorker::stop();
+    if (m_logger)
+    {
+		if (success)
+			m_logger->log("JDManager::stop() : JDManager stopped successfully", Log::Level::info, Log::Colors::green);
+		else
+			m_logger->logError("JDManager::stop() : JDManager stop failed");
+	}
+	return success;
+}
 
 
 
@@ -165,6 +180,8 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (!JDManagerObjectManager::exists_internal(obj))
         return false;
+    if (m_logger)
+        m_logger->log("Loading object with ID: " + obj->getObjectID()->toString(), Log::Level::info);
 
     LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
     fileAccessor.setProgress(progress);
@@ -214,7 +231,11 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
         progress->startNewSubProgress(progressScalar * 0.5);
         progress->addProgress(1);
     }
-
+    if (m_logger)
+        if (success)
+            m_logger->log("Object (id=" + id.get()->toString() + ") loaded successfully", Log::Level::info, Log::Colors::green);
+        else
+            m_logger->logError("Object (id=" + id.get()->toString() + ") can't be loaded");
     return success;
 }
 
@@ -224,11 +245,12 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
 bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+    if(m_logger)
+        m_logger->log("Loading objects with mode: " + getLoadModeStr(mode), Log::Level::info);
     double progressScalar = 0;
     if (progress)
     {
         progressScalar = progress->getScalar();
-        
     }
     bool success = true;
     LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
@@ -265,10 +287,10 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
 
     bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
 
-    const bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
-    const bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
-    const bool hasObjectAddedToDatabaseSlots = m_signals.objectAddedToDatabase.signal.getSlotCount();
-    const bool hasObjectRemovedFromDatabaseSlots = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
+    //const bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
+    //const bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
+    //const bool hasObjectAddedToDatabaseSlots = m_signals.objectAddedToDatabase.signal.getSlotCount();
+    //const bool hasObjectRemovedFromDatabaseSlots = m_signals.objectRemovedFromDatabase.signal.getSlotCount();
 
 
 
@@ -297,15 +319,24 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     {
         if (overrideChanges)
         {
-            if (hasOverrideChangeFromDatabaseSlots && overridingObjs.size())
-                m_signals.objectOverrideChangeFromDatabase.addObjs(overridingObjs);
+            //if (hasOverrideChangeFromDatabaseSlots && overridingObjs.size())
+            //    m_signals.objectOverrideChangeFromDatabase.addObjs(overridingObjs);
+            if (overridingObjs.size())
+            {
+                //std::lock_guard lck(m_signalDataMutex);
+                //m_signalData.onObjectOverrideChangeFromDatabase = overridingObjs;
+                emit onObjectOverrideChangeFromDatabase(overridingObjs);
+            }
         }
 		else
 		{
             if (pairsForSignal.size())
             {
-                if (hasChangeFromDatabaseSlots)
-                    m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
+                //std::lock_guard lck(m_signalDataMutex);
+                //m_signalData.onObjectChangedFromDatabase = pairsForSignal;
+                //if (hasChangeFromDatabaseSlots)
+                //    m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
+                emit onObjectChangedFromDatabase(pairsForSignal);
             }
 		}
     }
@@ -313,21 +344,39 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     {
         if (removedObjs.size())
         {
-            if (hasObjectRemovedFromDatabaseSlots)
-                m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
+            //std::lock_guard lck(m_signalDataMutex);
+            //m_signalData.onObjectRemovedFromDatabase = removedObjs;
+            //if (hasObjectRemovedFromDatabaseSlots)
+            //    m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
+            emit onObjectRemovedFromDatabase(removedObjs);
         }
     }
     if (modeNewObjects)
     {
         if (newObjInstances.size())
         {
-            if (hasObjectAddedToDatabaseSlots)
+            //std::lock_guard lck(m_signalDataMutex);
+            //m_signalData.onObjectAddedToDatabase = newObjInstances;
+            /*if (hasObjectAddedToDatabaseSlots)
             {
                 m_signals.objectAddedToDatabase.reserve(m_signals.objectAddedToDatabase.size() + newObjInstances.size());
                 m_signals.objectAddedToDatabase.addObjs(newObjInstances);
-            }
+            }*/
+            emit onObjectAddedToDatabase(newObjInstances);
         }
     }
+    if (m_logger)
+        if (success)
+        {
+            //m_logger->log("Loaded "+std::to_string(newObjInstances.size()) + " new objects successfully", Log::Level::info, Log::Color::green);
+            //m_logger->log("Loaded "+std::to_string(overridingObjs.size()) + " changed objects successfully", Log::Level::info, Log::Color::green);
+            //m_logger->log("Removed "+std::to_string(removedObjs.size()) + " deleted objects successfully", Log::Level::info, Log::Color::green);
+            m_logger->log("Loading done", Log::Level::info, Log::Colors::green);
+        }
+        else
+        {
+            m_logger->logError("Objects can't be loaded");
+        }
     return success;
 }
 
@@ -338,6 +387,8 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (!obj)
         return false;
+    if(m_logger)
+        m_logger->log("Saving object with ID: " + obj->getObjectID()->toString(), Log::Level::info);
     double progressScalar = 0;
     if (progress)
     {
@@ -353,7 +404,8 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     if (fileError != LockedFileAccessor::Error::none)
     {
         if(fileError == LockedFileAccessor::Error::fileLock_alreadyLockedForWritingByOther)
-            m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
+            emit onDatabaseOutdated();
+            //m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
 
         if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
@@ -406,6 +458,11 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
         if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(JDObject, unsigned int timeoutMs): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
+    if(m_logger)
+        if(success)
+            m_logger->log("Object (id="+ ID.get()->toString() + ") saved successfully", Log::Level::info, Log::Colors::green);
+		else
+            m_logger->logError("Object (id=" + ID.get()->toString() + ") can't be saved");
     return success;
 }
 bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress)
@@ -418,6 +475,8 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if(objList.size() == 0)
 		return true;
+    if(m_logger)
+		m_logger->log("Saving " + std::to_string(objList.size()) + " objects", Log::Level::info);
     double progressScalar = 0;
     if(progress)
         progressScalar = progress->getScalar();
@@ -429,7 +488,8 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     if (fileError != LockedFileAccessor::Error::none)
     {
         if (fileError == LockedFileAccessor::Error::fileLock_alreadyLockedForWritingByOther)
-            m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
+            emit onDatabaseOutdated();
+            //m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
 
         if (m_logger)m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
@@ -460,6 +520,11 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
         if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
+    if (m_logger)
+        if (success)
+            m_logger->log(std::to_string(objList.size()) + " objects saved successfully", Log::Level::info, Log::Colors::green);
+        else
+            m_logger->logError(std::to_string(objList.size()) + " objects can't be saved");
     return success;
 }
 
@@ -476,21 +541,28 @@ void JDManager::onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> wo
 
     if (loadAllWork)
     {
-        m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectsDone, loadAllWork->hasSucceeded(), true);
+        emit onLoadObjectsDone(loadAllWork->hasSucceeded());
+        //m_signalData.onLoadObjectsDone.success = loadAllWork->hasSucceeded();
+        //m_signalData.onLoadObjectsDone.signalActive = true;
+        //m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectsDone, loadAllWork->hasSucceeded(), true);
     }
     else if (loadSingle)
     {
-		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectDone, loadSingle->hasSucceeded(), loadSingle->getObject(), true);
+        emit onLoadObjectDone(loadSingle->hasSucceeded(), loadSingle->getObject());
+		//m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectDone, loadSingle->hasSucceeded(), loadSingle->getObject(), true);
 	}
     else if (saveSingle)
     {
-		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectDone, saveSingle->hasSucceeded(), loadSingle->getObject(), true);
+        emit onSaveObjectDone(saveSingle->hasSucceeded(), saveSingle->getObject());
+		//m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectDone, saveSingle->hasSucceeded(), loadSingle->getObject(), true);
 	}
     else if (saveList)
     {
-		m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectsDone, saveList->hasSucceeded(), true);
+        emit onSaveObjectsDone(saveList->hasSucceeded());
+		//m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectsDone, saveList->hasSucceeded(), true);
 	}
-    m_signals.lockedObjectsChanged.emitSignal();
+    emit onLockedObjectsChanged();
+    //m_signals.lockedObjectsChanged.emitSignal();
     if (!work->hasSucceeded())
         onAsyncWorkError(work);
 }
@@ -572,14 +644,36 @@ void JDManager::update()
     JDManagerFileSystem::update();
     JDManagerObjectManager::update();
     
-    m_signals.emitIfNotEmpty();
-    m_signals.emitQueue();
+    //m_signals.emitIfNotEmpty();
+    //m_signals.emitQueue();
     m_signleEntryUpdateLock = false;
     m_updateMutex.unlock();
+
+    /*SignalData data;
+    {
+        std::lock_guard lck(m_signalDataMutex);
+        data = m_signalData;
+        m_signalData = SignalData();
+    }
+    if(data.onObjectRemovedFromDatabase.size() > 0)
+        emit onObjectRemovedFromDatabase(data.onObjectRemovedFromDatabase);
+    if(data.onObjectAddedToDatabase.size() > 0)
+        emit onObjectAddedToDatabase(data.onObjectAddedToDatabase);
+    if(data.onObjectChangedFromDatabase.size() > 0)
+        emit onObjectChangedFromDatabase(data.onObjectChangedFromDatabase);
+    if(data.onObjectOverrideChangeFromDatabase.size() > 0)
+        emit onObjectOverrideChangeFromDatabase(data.onObjectOverrideChangeFromDatabase);
+    if(data.onLoadObjectDone.obj)
+        emit onLoadObjectDone(data.onLoadObjectDone.success, data.onLoadObjectDone.obj);
+   // if(data.onLoadObjectsDone)
+	//	emit onLoadObjectsDone(data.onLoadObjectsDone);
+    if(data.onSaveObjectDone.obj)
+		emit onSaveObjectDone(data.onSaveObjectDone.success, data.onSaveObjectDone.obj);*/
+    
 }
-Internal::JDManagerSignals& JDManager::getSignals()
+/*Internal::JDManagerSignals& JDManager::getSignals()
 {
     return m_signals;
-}
+}*/
 
 }

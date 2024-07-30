@@ -25,8 +25,9 @@ namespace JsonDatabase
                 JDManager& manager,
                 std::mutex &mtx);
             ~JDManagerFileSystem();
-            void setParentLogger(Log::Logger::ContextLogger* parentLogger);
+            void setParentLogger(Log::LogObject* parentLogger);
             bool setup();
+            bool stop();
         public:
 
             void setDatabasePath(const std::string& path);
@@ -91,7 +92,7 @@ namespace JsonDatabase
             // If it can be deleted, the user is offline and did not clean up after himself.
             //FileLock *m_databaseLoginFileLock;
 
-            Log::Logger::ContextLogger* m_logger = nullptr;
+            Log::LogObject* m_logger = nullptr;
 
             static const std::string s_jsonFileEnding;
 

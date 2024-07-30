@@ -4,7 +4,6 @@
 #include "JsonDatabase_Declaration.h"
 #include "utilities/JDSerializable.h"
 #include "JDObjectID.h"
-#include "utilities/Signal.h"
 #include <memory>
 
 #include "Json/JsonValue.h"

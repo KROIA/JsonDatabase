@@ -17,16 +17,17 @@ namespace JsonDatabase
         JDManagerAsyncWorker::~JDManagerAsyncWorker()
         {
             stop();
-            delete m_logger;
+           // delete m_logger;
         }
-        void JDManagerAsyncWorker::setParentLogger(Log::Logger::ContextLogger* parentLogger)
+        void JDManagerAsyncWorker::setParentLogger(Log::LogObject* parentLogger)
         {
-            if (parentLogger)
+            m_logger = parentLogger;
+            /*if (parentLogger)
             {
                 if (m_logger)
                     delete m_logger;
-                m_logger = parentLogger->createContext("JDManagerAsyncWorker");
-            }
+                m_logger = new Log::LogObject(*parentLogger,"JDManagerAsyncWorker");
+            }*/
         }
         void JDManagerAsyncWorker::setup()
         {
@@ -68,13 +69,16 @@ namespace JsonDatabase
                 if (m_workList.size() == 0)
                     return;
             }
-            m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onStartAsyncWork, true);
+            emit m_manager.onStartAsyncWork();
+            //m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onStartAsyncWork, true);
             m_cv.notify_all();
         }
         void JDManagerAsyncWorker::start()
         {
             if (m_thread)
                 return;
+            if (m_logger)
+                m_logger->logInfo("Starting JDManagerAsyncWorker");
             m_stopFlag.store(false);
             m_thread = new std::thread(&JDManagerAsyncWorker::threadLoop, this);
 
@@ -161,7 +165,8 @@ namespace JsonDatabase
                             hasWork = !m_workList.empty();
                         }
                     }
-                    m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onEndAsyncWork, true);
+                    //m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onEndAsyncWork, true);
+                    emit m_manager.onEndAsyncWork();
                 }
             }
         }

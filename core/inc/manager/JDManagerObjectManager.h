@@ -26,8 +26,9 @@ namespace JsonDatabase
                 JDManager& manager, 
                 std::mutex &mtx);
             virtual ~JDManagerObjectManager();
-            void setParentLogger(Log::Logger::ContextLogger* parentLogger);
+            void setParentLogger(Log::LogObject* parentLogger);
             bool setup();
+            bool stop();
             
         public:
             
@@ -137,7 +138,7 @@ namespace JsonDatabase
             JDObjectContainer m_objs;
             Internal::JDObjectLocker m_objLocker;
 
-            Log::Logger::ContextLogger* m_logger = nullptr;
+            Log::LogObject* m_logger = nullptr;
         };
 
 

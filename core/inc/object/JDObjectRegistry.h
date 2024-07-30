@@ -23,7 +23,7 @@ namespace JsonDatabase
 
 
             static JDObjectRegistry& getInstance();
-            static Log::Logger::ContextLogger& getLogger();
+            static Log::LogObject& getLogger();
 
 
             static Error registerType(const JDObject& obj);
@@ -36,7 +36,7 @@ namespace JsonDatabase
 
         private:
             std::map<std::string, JDObject> m_registry;
-            Log::Logger::ContextLogger m_logger;
+            Log::LogObject m_logger;
         };
     }
 }

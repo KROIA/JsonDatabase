@@ -17,7 +17,7 @@ namespace JsonDatabase
 				JDManager& manager,
 				std::mutex& mtx,
 				const std::vector<JDObject>& objects,
-				Log::Logger::ContextLogger *parentLogger);
+				Log::LogObject *parentLogger);
 			~JDManagerAysncWorkSaveList();
 
 			bool hasSucceeded() const override;
@@ -27,7 +27,7 @@ namespace JsonDatabase
 
 
 		private:
-			Log::Logger::ContextLogger* m_logger = nullptr;
+			Log::LogObject* m_logger = nullptr;
 			std::vector<JDObject> m_objects;
 			bool m_success;
 		};
