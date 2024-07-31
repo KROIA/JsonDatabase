@@ -101,7 +101,7 @@ namespace JsonDatabase
             makeDatabaseDirs();
             makeDatabaseFiles();
             m_userRegistration.setDatabasePath(m_manager.getDatabasePath());
-            m_userRegistration.createFiles();
+           // m_userRegistration.createFiles();
             logOnDatabase();
             restartDatabaseFileWatcher();
         }

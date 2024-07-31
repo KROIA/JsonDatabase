@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include <qdebug.h>
 #include <QCloseEvent>
+#include <QFileDialog>
 
 #ifndef JD_PROFILING
 #define EASY_BLOCK(name, color)
@@ -27,8 +28,8 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 
 	m_manager = new JDManager("asyncDatabase", "Person", user);
 
-	//Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
-	Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
+	Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
+	//Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
 	console->show();
 
 	m_manager->setup();
@@ -122,6 +123,20 @@ void MainWindow::on_zipFormat_checkBox_stateChanged(int state)
 	m_manager->enableZipFormat(state);
 }
 
+void MainWindow::on_changeDatabasePath_pushButton_clicked()
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+	DEBUG << "\n";
+	QString path = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+				"",
+				QFileDialog::ShowDirsOnly
+			| QFileDialog::DontResolveSymlinks);
+	if (!path.isEmpty())
+	{
+		m_manager->setDatabasePath(path.toStdString());
+	}
+}
+
 void MainWindow::on_generatePersons_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
@@ -144,7 +159,7 @@ void MainWindow::on_saveDatabase_pushButton_clicked()
 		DEBUG << "Database is busy\n"; 
 		return;	
 	}
-	m_manager->saveObjectsAsync();
+	m_manager->saveLockedObjectsAsync();
 	//onTimerFinished();
 }
 void MainWindow::on_addObject_pushButton_clicked()

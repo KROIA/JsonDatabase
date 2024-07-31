@@ -65,6 +65,7 @@ namespace JsonDatabase
             size_t getObjectCount() const;
             
             bool exists(JDObject obj) const;
+            bool exists(const std::vector<JDObject> &objs) const;
             bool exists(const JDObjectIDptr& id) const;
 
             template<typename T>
@@ -89,6 +90,7 @@ namespace JsonDatabase
             bool isObjectLockedByMe(const JDObject& obj, JDObjectLocker::Error& err) const;
             bool isObjectLockedByOther(const JDObject& obj, JDObjectLocker::Error& err) const;
             bool getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, JDObjectLocker::Error& err) const;
+            bool getLockedObjectsByUser(const Utilities::JDUser &user, std::vector<JDObjectLocker::LockData>& lockedObjectsOut, JDObjectLocker::Error& err) const;
             int removeInactiveObjectLocks() const;
 
 
@@ -110,6 +112,7 @@ namespace JsonDatabase
             bool removeObject_internal(const JDObject& obj);
             bool removeObject_internal(const std::vector<JDObject>& objs);
             bool exists_internal(const JDObject& obj) const;
+            bool exists_internal(const std::vector<JDObject>& objs) const;
             bool exists_internal(const JDObjectIDptr& id) const;
 
             JDObject getObject_internal(const JDObjectIDptr& id);

@@ -157,10 +157,22 @@ void JDManager::loadObjectsAsync(int mode)
 bool JDManager::saveObject(const JDObject &obj)
 {
     JDM_UNIQUE_LOCK_P;
+    if (!JDManagerObjectManager::exists(obj))
+    {
+        if (m_logger)
+			m_logger->logError("Can't save object with ID: " + obj->getObjectID()->toString() + " which does not exist in the database.");
+		return false;
+    }
     return saveObject_internal(obj, s_fileLockTimeoutMs, nullptr);
 }
 void JDManager::saveObjectAsync(const JDObject &obj)
 {
+    if (!JDManagerObjectManager::exists(obj))
+    {
+        if (m_logger)
+            m_logger->logError("Can't save object with ID: " + obj->getObjectID()->toString() + " which does not exist in the database.");
+        return;
+    }
     JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveSingle>(*this, m_mutex, obj));
 }
 bool JDManager::saveObjects()
@@ -169,10 +181,85 @@ bool JDManager::saveObjects()
     std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
     return saveObjects_internal(objs, s_fileLockTimeoutMs, nullptr);
 }
+bool JDManager::saveObjects(const std::vector<JDObject>& objs)
+{
+    JDM_UNIQUE_LOCK_P;
+    if (!JDManagerObjectManager::exists(objs))
+    {
+        std::vector<JDObject> tmp;
+        for (size_t i = 0; i < objs.size(); ++i)
+        {
+			if (JDManagerObjectManager::exists(objs[i]))
+				tmp.push_back(objs[i]);
+            else
+            {
+				if (m_logger)
+					m_logger->logError("Can't save object with ID: " + objs[i]->getObjectID()->toString() + " which does not exist in the database.");
+			}
+		}
+        return saveObjects_internal(tmp, s_fileLockTimeoutMs, nullptr);
+    }
+    return saveObjects_internal(objs, s_fileLockTimeoutMs, nullptr);
+}
 void JDManager::saveObjectsAsync()
 {
     std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
-    JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs, m_logger));
+    JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs, m_logger));
+}
+void JDManager::saveObjectsAsync(const std::vector<JDObject>& objs)
+{
+    if (!JDManagerObjectManager::exists(objs))
+    {
+        std::vector<JDObject> tmp;
+        for (size_t i = 0; i < objs.size(); ++i)
+        {
+            if (JDManagerObjectManager::exists(objs[i]))
+                tmp.push_back(objs[i]);
+            else
+            {
+                if (m_logger)
+                    m_logger->logError("Can't save object with ID: " + objs[i]->getObjectID()->toString() + " which does not exist in the database.");
+            }
+        }
+        JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, tmp, m_logger));
+        return;
+    }
+    JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs, m_logger));
+}
+void JDManager::saveLockedObjects()
+{
+    std::vector<JDObjectLocker::LockData> lockedObjectsOut;
+    JDObjectLocker::Error err;
+    if (JDManagerObjectManager::getLockedObjectsByUser(m_user, lockedObjectsOut, err))
+    {
+        std::vector<JDObject> objs;
+        objs.reserve(lockedObjectsOut.size());
+        for (size_t i = 0; i < lockedObjectsOut.size(); ++i)
+        {
+			JDObject obj = JDManagerObjectManager::getObject(lockedObjectsOut[i].objectID);
+			if (obj)
+				objs.push_back(obj);
+		}
+        saveObjects(objs);
+    }
+}
+
+void JDManager::saveLockedObjectsAsync()
+{
+    std::vector<JDObjectLocker::LockData> lockedObjectsOut;
+    JDObjectLocker::Error err;
+    if (JDManagerObjectManager::getLockedObjectsByUser(m_user, lockedObjectsOut, err))
+    {
+        std::vector<JDObject> objs;
+        objs.reserve(lockedObjectsOut.size());
+        for (size_t i = 0; i < lockedObjectsOut.size(); ++i)
+        {
+            JDObject obj = JDManagerObjectManager::getObject(lockedObjectsOut[i].objectID);
+            if (obj)
+                objs.push_back(obj);
+        }
+        JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs, m_logger));
+    }
 }
 
 bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress* progress)

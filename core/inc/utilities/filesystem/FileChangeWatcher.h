@@ -14,6 +14,16 @@
 
 #include "Logger.h"
 
+#if !defined(JD_FILEWATCHER_USE_POLLING) and !defined(JD_FILEWATCHER_USE_WIN_API)
+    #error "Please define either JD_FILEWATCHER_USE_POLLING or JD_FILEWATCHER_USE_WIN_API in JsonDatabase_global.h"
+#else 
+#if defined(JD_FILEWATCHER_USE_POLLING) and defined(JD_FILEWATCHER_USE_WIN_API)
+	#error "Please define either JD_FILEWATCHER_USE_POLLING or JD_FILEWATCHER_USE_WIN_API in JsonDatabase_global.h"
+#endif
+#endif
+
+
+
 namespace JsonDatabase
 {
     namespace Internal
@@ -38,14 +48,25 @@ namespace JsonDatabase
 
         private:
             std::string getFullPath(const std::string& relativePath);
-            void monitorFileChanges();
+            
             bool fileChanged();
 
             Log::LogObject* m_logger = nullptr;
             std::string m_filePath;
+
+#ifdef JD_FILEWATCHER_USE_WIN_API
+            void monitorFileChanges();
+            std::thread* m_watchThread = nullptr;
             std::atomic<HANDLE> m_eventHandle;
+#endif
+#ifdef JD_FILEWATCHER_USE_POLLING
+            void checkFileChanges();
+            //std::string getMd5(const std::string& fullFilePath);
+            std::string m_md5Hash;
+#endif
             DWORD m_setupError;
-            std::thread *m_watchThread;
+
+            
             std::mutex m_mutex;
             std::condition_variable m_cv;
             std::filesystem::file_time_type m_lastModificationTime;

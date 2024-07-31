@@ -179,7 +179,7 @@ namespace JsonDatabase
 				err = Error::lockedByOther;
 				if(m_logger)m_logger->logWarning("Can't release lock for object: \"" 
 					+ key + "\" type: \"" + obj->className()
-					+ "\"\nLock is owned by another user");
+					+ "\" Lock is owned by another user");
 				return false;
 			}
 

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <filesystem>
 
+
 namespace JsonDatabase
 {
     namespace Internal
@@ -11,8 +12,9 @@ namespace JsonDatabase
             : m_stopFlag(false)
             , m_fileChanged(false)
             , m_paused(false)
-            , m_watchThread(nullptr)
+#ifdef JD_FILEWATCHER_USE_WIN_API
             , m_eventHandle(nullptr)
+#endif
             , m_setupError(0)
         {
             m_filePath = getFullPath(filePath);
@@ -44,6 +46,7 @@ namespace JsonDatabase
 
         bool FileChangeWatcher::startWatching()
         {
+#ifdef JD_FILEWATCHER_USE_WIN_API
             if (m_watchThread)
                 return true;
             if (!m_eventHandle.load())
@@ -51,19 +54,19 @@ namespace JsonDatabase
                     return false;
 
             m_watchThread = new std::thread(&FileChangeWatcher::monitorFileChanges, this);
+#endif
+#ifdef JD_FILEWATCHER_USE_POLLING
+            checkFileChanges();
+#endif
             return true;
         }
 
         void FileChangeWatcher::stopWatching()
         {
+#ifdef JD_FILEWATCHER_USE_WIN_API
             if (!m_watchThread)
                 return;
 
-            /*if (m_eventHandle.load() != INVALID_HANDLE_VALUE)
-            {
-                FindCloseChangeNotification(m_eventHandle.load());
-                m_eventHandle.store(nullptr);
-            }*/
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 m_stopFlag.store(true);
@@ -72,15 +75,24 @@ namespace JsonDatabase
             m_watchThread->join();
             delete m_watchThread;
             m_watchThread = nullptr;
+#endif
         }
         bool FileChangeWatcher::isWatching() const
         {
+#ifdef JD_FILEWATCHER_USE_WIN_API
             return m_watchThread;
+#endif
+#ifdef JD_FILEWATCHER_USE_POLLING
+      		return true;
+#endif
         }
 
         bool FileChangeWatcher::hasFileChanged()
         {
             std::unique_lock<std::mutex> lock(m_mutex);
+#ifdef JD_FILEWATCHER_USE_POLLING
+            checkFileChanges();
+#endif
             return m_fileChanged;
         }
 
@@ -88,7 +100,9 @@ namespace JsonDatabase
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_fileChanged.store(false);
+#ifdef JD_FILEWATCHER_USE_WIN_API
             m_cv.notify_all();
+#endif
         }
 
         void FileChangeWatcher::pause()
@@ -115,7 +129,7 @@ namespace JsonDatabase
             return fullPath;
         }
 
-
+#ifdef JD_FILEWATCHER_USE_WIN_API
         void FileChangeWatcher::monitorFileChanges()
         {
             JD_PROFILING_THREAD("FileChangeWatcher");
@@ -168,7 +182,7 @@ namespace JsonDatabase
                             if (m_logger)
                                 m_logger->logError("FindNextChangeNotification. GetLastError() =  " + std::to_string(error) + " : " + Utilities::getLastErrorString(error));
                         }
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
+#elif 
                         JD_UNUSED(res);
 #endif
                     }
@@ -202,6 +216,8 @@ namespace JsonDatabase
             FindCloseChangeNotification(m_eventHandle.load());
             m_eventHandle.store(nullptr);
         }
+#endif
+
         bool FileChangeWatcher::fileChanged()
         {
             std::filesystem::path file(m_filePath);
@@ -210,8 +226,6 @@ namespace JsonDatabase
                 if(m_logger)m_logger->logError("File: \"" + m_filePath + "\" does not exist!");
                 return false;
             }
-
-           
             // Wait for a short duration to ensure any ongoing file operation is completed
             // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -221,22 +235,6 @@ namespace JsonDatabase
 
             // Check if the file has been modified since lastWriteTime
             if (change > m_lastModificationTime) {
-                
-                // Check if the file is open by any process
-                /*std::ifstream fileStream(m_filePath, std::ios::in);
-                if (!fileStream.is_open()) {
-                    // File is not open by any application
-                    fileStream.close();
-                    
-                    return true;
-                }
-                else {
-                    // File is open by some application
-                    fileStream.close();
-                    return false;
-                }*/
-
-
                 HANDLE fileHandle = CreateFile(
                     m_filePath.c_str(),
                     GENERIC_READ,
@@ -256,16 +254,41 @@ namespace JsonDatabase
                 m_lastModificationTime = change;
                 // Close the file handle
                 CloseHandle(fileHandle);
-
-                
-
                 return true;
             }
 
             return false; // File has not changed
         }
+#ifdef JD_FILEWATCHER_USE_POLLING
+        void FileChangeWatcher::checkFileChanges()
+        {
+            bool success;
+            std::string md5 = Utilities::calculateMD5Hash(m_filePath, m_logger, success);
+            if (!success)
+            {
+				if (m_logger)m_logger->logError("Error calculating md5 hash of file: " + m_filePath);
+				return;
+			}
+            if (md5 != m_md5Hash && m_md5Hash!="")
+            {
+				m_fileChanged.store(true);
+                if(m_logger)m_logger->logInfo("File change detected");
+			}
+            m_md5Hash = md5;
+        }
 
 
+        /*std::string ManagedFileChangeWatcher::getMd5(const std::string& fullFilePath)
+        {
+            std::ifstream file(fullFilePath, std::ios::binary);
+			if (!file.is_open())
+				return "";
+
+			std::string md5 = Utilities::getMd5(file);
+			file.close();
+			return md5;
+        }*/
+#endif
 
 
         //

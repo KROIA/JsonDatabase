@@ -356,7 +356,8 @@ namespace JsonDatabase
            // if (!DeleteFile(m_lockFilePathName.c_str()))
             {
                 DWORD error3 = GetLastError();
-                if (error3 != 32) // File already used by another process (OK since after freeing the lock, a other process could have locked it)
+                if (error3 != 32 && // File already used by another process (OK since after freeing the lock, a other process could have locked it)
+                    error3 != 2)    // File not found (OK since the file could have been deleted by another process)
                 {
                     std::string errorStr = Utilities::getLastErrorString(error3);
                     if (!isLockInUse(m_directory, m_fileName) && fileExists(m_lockFilePathName))

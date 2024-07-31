@@ -107,15 +107,11 @@ class JSON_DATABASE_EXPORT JDManager:
 
         /*
             Saves the object to the database file.
-            If the object is not in the database file, it will be added.
         */
         bool saveObject(const JDObject &obj);
 
         /*
             Saves the object to the database file asynchronously.
-            If the object is not in the database file, it will be added.
-            A copy of the obj is made while calling this function.
-            only the copy gets saved.
 
             Emits signals:
                 onSaveObjectDone after the async work is done
@@ -134,6 +130,15 @@ class JSON_DATABASE_EXPORT JDManager:
         bool saveObjects();
 
         /*
+            Saves all objects from the list to the database file.
+
+            Emits signals:
+                databaseOutdated if the database has changed before the save could be completed
+                in this case the object is not saved. Try load the database first.
+        */
+        bool saveObjects(const std::vector<JDObject> &objs);
+
+        /*
             Saves all objects which are in this database instance to the database file asynchronously.
 
             Emits signals:
@@ -142,6 +147,35 @@ class JSON_DATABASE_EXPORT JDManager:
 				in this case the object is not saved. Try load the database first.
         */
         void saveObjectsAsync();
+
+        /*
+            Saves all objects from the list to the database file asynchronously.
+
+            Emits signals:
+                onSaveObjectsDone after the async work is done
+                databaseOutdated if the database has changed before the save could be completed
+                in this case the object is not saved. Try load the database first.
+        */
+        void saveObjectsAsync(const std::vector<JDObject>& objs);
+
+        /*
+        	Saves all objects, which are locked by this user
+
+            Emits signals:
+                databaseOutdated if the database has changed before the save could be completed
+                in this case the object is not saved. Try load the database first.
+        */
+        void saveLockedObjects();
+
+        /*
+            Saves all objects, which are locked by this user, asynchronously
+
+            Emits signals:
+				onSaveObjectsDone after the async work is done
+				databaseOutdated if the database has changed before the save could be completed
+				in this case the object is not saved. Try load the database first.
+        */
+        void saveLockedObjectsAsync();
         
         
 

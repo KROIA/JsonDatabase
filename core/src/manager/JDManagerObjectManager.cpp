@@ -117,6 +117,12 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return exists_internal(obj);
         }
+        bool JDManagerObjectManager::exists(const std::vector<JDObject>& objs) const
+        {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+            return exists_internal(objs);
+        }
         bool JDManagerObjectManager::exists(const JDObjectIDptr &id) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
@@ -186,6 +192,21 @@ namespace JsonDatabase
         {
             return m_objLocker.getLockedObjects(lockedObjectsOut, err);
         }
+        bool JDManagerObjectManager::getLockedObjectsByUser(
+            const Utilities::JDUser& user, 
+            std::vector<JDObjectLocker::LockData>& lockedObjectsOut, 
+            JDObjectLocker::Error& err) const
+        {
+            std::vector<JDObjectLocker::LockData> tmp;
+            if (!m_objLocker.getLockedObjects(tmp, err))
+				return false;
+            for (size_t i = 0; i < tmp.size(); ++i)
+			{
+				if (tmp[i].user.getSessionID() == user.getSessionID())
+					lockedObjectsOut.push_back(tmp[i]);
+			}
+			return true;
+        }
         int JDManagerObjectManager::removeInactiveObjectLocks() const
         {
             return m_objLocker.removeInactiveObjectLocks();
@@ -199,7 +220,7 @@ namespace JsonDatabase
         void JDManagerObjectManager::onDatabasePathChange(const std::string& oldPath, const std::string& newPath)
         {
             JD_UNUSED(oldPath);
-            m_objLocker.setDatabasePath(newPath);
+            m_objLocker.setDatabasePath(newPath+ "\\"+m_manager.getDatabaseName());
         }
 
         bool JDManagerObjectManager::objectIDIsValid(const JDObjectIDptr& id) const
@@ -452,6 +473,16 @@ namespace JsonDatabase
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             return m_objs.exists(obj);
+        }
+        bool JDManagerObjectManager::exists_internal(const std::vector<JDObject>& objs) const
+        {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+            for (size_t i = 0; i < objs.size(); ++i)
+            {
+                if (!m_objs.exists(objs[i]))
+                    return false;
+            }
+            return true;
         }
         bool JDManagerObjectManager::exists_internal(const JDObjectIDptr &id) const
         {
