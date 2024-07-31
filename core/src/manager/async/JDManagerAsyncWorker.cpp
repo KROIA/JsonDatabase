@@ -13,11 +13,21 @@ namespace JsonDatabase
             , m_mutex(mtx)
             , m_thread(nullptr)
         {
-
         }
         JDManagerAsyncWorker::~JDManagerAsyncWorker()
         {
             stop();
+           // delete m_logger;
+        }
+        void JDManagerAsyncWorker::setParentLogger(Log::LogObject* parentLogger)
+        {
+            m_logger = parentLogger;
+            /*if (parentLogger)
+            {
+                if (m_logger)
+                    delete m_logger;
+                m_logger = new Log::LogObject(*parentLogger,"JDManagerAsyncWorker");
+            }*/
         }
         void JDManagerAsyncWorker::setup()
         {
@@ -59,13 +69,16 @@ namespace JsonDatabase
                 if (m_workList.size() == 0)
                     return;
             }
-            m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onStartAsyncWork, true);
+            emit m_manager.onStartAsyncWork();
+            //m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onStartAsyncWork, true);
             m_cv.notify_all();
         }
         void JDManagerAsyncWorker::start()
         {
             if (m_thread)
                 return;
+            if (m_logger)
+                m_logger->logInfo("Starting JDManagerAsyncWorker");
             m_stopFlag.store(false);
             m_thread = new std::thread(&JDManagerAsyncWorker::threadLoop, this);
 
@@ -74,7 +87,7 @@ namespace JsonDatabase
             {
 #ifndef NDEBUG
                 DWORD dwErr = GetLastError();
-                JD_CONSOLE_FUNCTION("SetThreadAffinityMask failed, GLE=" << dwErr << '\n');
+                if(m_logger)m_logger->logError("SetThreadAffinityMask failed, GLE=" + std::to_string(dwErr));
 #endif
             }
         }
@@ -152,7 +165,8 @@ namespace JsonDatabase
                             hasWork = !m_workList.empty();
                         }
                     }
-                    m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onEndAsyncWork, true);
+                    //m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onEndAsyncWork, true);
+                    emit m_manager.onEndAsyncWork();
                 }
             }
         }

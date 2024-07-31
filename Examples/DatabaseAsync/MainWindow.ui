@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>617</width>
-    <height>507</height>
+    <height>562</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -143,9 +143,23 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="lockAllObjects_pushButton">
+           <property name="text">
+            <string>Lock all Objects</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="unlockObject_pushButton">
            <property name="text">
             <string>Unlock Object</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="unlockAllObjects_pushButton">
+           <property name="text">
+            <string>Unlock all Objects</string>
            </property>
           </widget>
          </item>

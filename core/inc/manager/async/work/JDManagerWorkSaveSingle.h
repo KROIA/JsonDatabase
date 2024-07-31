@@ -18,6 +18,7 @@ namespace JsonDatabase
 
 			bool hasSucceeded() const override;
 			void process() override;
+			const JDObject& getObject() const;
 			std::string getErrorMessage() const override;
 			WorkType getWorkType() const override;
 

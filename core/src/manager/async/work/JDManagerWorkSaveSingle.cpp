@@ -31,6 +31,10 @@ namespace JsonDatabase
 		{
 			return m_success; 
 		}
+		const JDObject& JDManagerAysncWorkSaveSingle::getObject() const
+		{
+			return m_object;
+		}
 		void JDManagerAysncWorkSaveSingle::process()
 		{
 			JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_4);

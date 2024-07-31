@@ -6,6 +6,8 @@
 #include "utilities/JDSerializable.h"
 #include "json/JsonValue.h"
 
+#include "Logger.h"
+
 namespace JsonDatabase
 {
 	namespace Utilities
@@ -16,6 +18,7 @@ namespace JsonDatabase
 			AbstractRegistry();
 			virtual ~AbstractRegistry();
 
+			void setParentLogger(Log::LogObject* parentLogger, const std::string &registryName);
 
 			void setDatabasePath(const std::string& path);
 			void setName(const std::string& name); // creates a subfolder in the database folder
@@ -110,7 +113,7 @@ namespace JsonDatabase
 			unsigned int getNotSelfLockCount() const;
 
 
-
+			Log::LogObject* m_logger = nullptr;
 
 		private:
 			bool createSelfOwnedLock(const std::string& key);
@@ -121,7 +124,7 @@ namespace JsonDatabase
 
 			
 
-
+			
 			std::string m_databasePath;
 			std::string m_registrationName;
 			std::string m_registrationFileEnding;

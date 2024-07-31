@@ -36,20 +36,28 @@ namespace JsonDatabase
             , m_mutex(mtx)
             , m_fileLock(nullptr)
             , m_slowUpdateCounter(-1) // -1 to trigger first update
+            , m_middleUpdateCounter(-1) // -1 to trigger first update
             , m_userRegistration()
            // , m_databaseLoginFileLock(nullptr)
 		{
-            
+
         }
         JDManagerFileSystem::~JDManagerFileSystem()
         {
-            m_fileWatcher.stop();
-            if(m_fileLock)
-                delete m_fileLock;
-
-            logOffDatabase();
+            stop();            
+            delete m_logger;
         }
 
+        void JDManagerFileSystem::setParentLogger(Log::LogObject* parentLogger)
+        {
+            if (parentLogger)
+            {
+                if (m_logger)
+                    delete m_logger;
+                m_logger = new Log::LogObject(*parentLogger,"Filesystem manager");
+                m_userRegistration.setParentLogger(m_logger, "User registration");
+            }
+        }
 
         bool JDManagerFileSystem::setup()
         {
@@ -63,6 +71,15 @@ namespace JsonDatabase
 
             logOnDatabase();
             return success;
+        }
+        bool JDManagerFileSystem::stop()
+        {
+            m_fileWatcher.stop();
+            if (m_fileLock)
+                delete m_fileLock;
+            m_fileLock = nullptr;
+            logOffDatabase();
+            return true;
         }
 
 
@@ -139,6 +156,7 @@ namespace JsonDatabase
             QDir dir(path.c_str());
             if (!dir.exists())
             {
+                if(m_logger) m_logger->logInfo("Creating database folder: " + path);
                 QDir d;
                 d.mkpath(path.c_str());
             }
@@ -147,7 +165,7 @@ namespace JsonDatabase
             bool exists = dir.exists();
             if (!exists)
             {
-                JD_CONSOLE("bool JDManagerFileSystem::makeDatabaseDirs() Can't create database folder: " << path.c_str() << "\n");
+                if (m_logger)m_logger->logError("bool JDManagerFileSystem::makeDatabaseDirs() Can't create database folder: " + path);
             }
             success &= exists;
 
@@ -159,14 +177,15 @@ namespace JsonDatabase
             QFile file(m_manager.getDatabaseFilePath().c_str());
             if (!file.exists())
             {
+                if(m_logger) m_logger->logInfo("Creating database file: " + m_manager.getDatabaseFilePath());
                 // Create empty data
-                LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding());
+                LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
                 fileAccessor.setProgress(nullptr);
                 LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::write);
 
                 if (fileError != LockedFileAccessor::Error::none)
                 {
-                    JD_CONSOLE("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
                     return false;
                 }
 
@@ -175,22 +194,11 @@ namespace JsonDatabase
                 fileError = fileAccessor.writeJsonFile(jsonData);
                 if (fileError != LockedFileAccessor::Error::none)
                 {
-                    JD_CONSOLE("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError) + "\n");
+                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
                     return false;
                 }
                 else
                     return true;
-                /*
-                if (file.open(QIODevice::WriteOnly))
-                {
-					file.close();
-					return true;
-				}
-                else
-                {
-					JD_CONSOLE("bool JDManagerFileSystem::makeDatabaseFiles() Can't create database file: " << m_manager.getDatabaseFilePath().c_str() << "\n");
-                    return false;
-                }*/
             }
             return true;
         }
@@ -203,7 +211,7 @@ namespace JsonDatabase
             QDir folder(dir.c_str());
             if (folder.exists())
             {
-                JD_CONSOLE("bool JDManagerFileSystem::deleteDir("<<dir<<") Folder could not be deleted : " + dir + "\n");
+                if(m_logger) m_logger->logError("bool JDManagerFileSystem::deleteDir("+dir+") Folder could not be deleted : " + dir);
                 return false;
             }
             return true;
@@ -219,44 +227,6 @@ namespace JsonDatabase
         int JDManagerFileSystem::tryToClearUnusedFileLocks() const
         {
             return m_userRegistration.unregisterInactiveUsers();
-           /* const std::string lockFileEnding = FileLock::s_lockFileEnding;
-
-            // Get all files in the database directory
-            QDir dir(m_manager.getDatabasePath().c_str());
-			dir.setFilter(QDir::Files | QDir::NoSymLinks);
-			dir.setSorting(QDir::Name);
-			QFileInfoList list = dir.entryInfoList();
-
-			// Iterate through all files
-			int count = 0;
-			for (int i = 0; i < list.size(); ++i) {
-				QFileInfo fileInfo = list.at(i);
-				QString fileName = fileInfo.fileName();
-				if (fileName.endsWith(lockFileEnding.c_str()))
-				{
-					// Check if the file is a lock file
-					std::string filePath = fileInfo.absoluteFilePath().toStdString();
-					if (!FileLock::isFileLocked(filePath))
-					{
-						// Delete the file
-						QFile file(filePath.c_str());
-						if (file.remove())
-						{
-                            QFile file2(filePath.c_str());
-                            if (file2.exists())
-							{
-                                JD_CONSOLE_FUNCTION("Can't delete file: " << filePath.c_str() << "\n");
-							}
-                            else
-                            {
-                                JD_CONSOLE_FUNCTION("Deleted unused lock: " << filePath.c_str() << "\n");
-                                ++count;
-                            }
-						}
-					}
-				}
-			}
-			return count;*/
         }
 
         ManagedFileChangeWatcher& JDManagerFileSystem::getDatabaseFileWatcher()
@@ -265,7 +235,7 @@ namespace JsonDatabase
         }
         void JDManagerFileSystem::restartDatabaseFileWatcher()
         {
-            m_fileWatcher.setup(getDatabaseFilePath());
+            m_fileWatcher.setup(getDatabaseFilePath(),m_logger);
         }
         
         void JDManagerFileSystem::update()
@@ -275,10 +245,21 @@ namespace JsonDatabase
 				m_slowUpdateCounter = 0;
 				tryToClearUnusedFileLocks();
 			}
+            if (m_middleUpdateCounter >= 10)
+            {
+				m_middleUpdateCounter = 0;
+                std::vector<Utilities::JDUser> loggedOnUsers;
+                std::vector<Utilities::JDUser> loggedOffUsers;
+                m_userRegistration.checkForUserChange(loggedOnUsers, loggedOffUsers);
+            }
+
             ++m_slowUpdateCounter;
+            ++m_middleUpdateCounter;
+
             if (m_fileWatcher.hasFileChanged())
             {
-                m_manager.getSignals().databaseFileChanged.emitSignal();
+                //m_manager.getSignals().databaseFileChanged.emitSignal();
+                emit m_manager.onDatabaseFileChanged();
                 m_fileWatcher.clearHasFileChanged();
             }
         }

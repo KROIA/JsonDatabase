@@ -23,7 +23,7 @@ namespace JsonDatabase
             stopWatching();
         }
 
-        bool FileChangeWatcher::setup()
+        bool FileChangeWatcher::setup(Log::LogObject* parentLogger)
         {
             std::string directory = m_filePath.substr(0, m_filePath.find_last_of("\\") + 1);
             /*m_eventHandle = FindFirstChangeNotificationA(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
@@ -33,6 +33,7 @@ namespace JsonDatabase
                 JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << m_setupError << " : " << Utilities::getLastErrorString(m_setupError) << "\n");
                 return false;
             }*/
+            m_logger = parentLogger;
             m_setupError = 0;
             return true;
         }
@@ -45,8 +46,8 @@ namespace JsonDatabase
         {
             if (m_watchThread)
                 return true;
-            if (!m_eventHandle)
-                if (!setup())
+            if (!m_eventHandle.load())
+                if (!setup(m_logger))
                     return false;
 
             m_watchThread = new std::thread(&FileChangeWatcher::monitorFileChanges, this);
@@ -58,11 +59,11 @@ namespace JsonDatabase
             if (!m_watchThread)
                 return;
 
-            if (m_eventHandle != INVALID_HANDLE_VALUE) 
+            /*if (m_eventHandle.load() != INVALID_HANDLE_VALUE)
             {
-                FindCloseChangeNotification(m_eventHandle);
-                m_eventHandle = nullptr;
-            }
+                FindCloseChangeNotification(m_eventHandle.load());
+                m_eventHandle.store(nullptr);
+            }*/
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 m_stopFlag.store(true);
@@ -126,10 +127,10 @@ namespace JsonDatabase
             BYTE buffer[4096];
 
             std::string directory = m_filePath.substr(0, m_filePath.find_last_of("\\") + 1);
-            m_eventHandle = FindFirstChangeNotification(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
+            m_eventHandle.store(FindFirstChangeNotification(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE));
 
-            if (m_eventHandle == INVALID_HANDLE_VALUE) {
-                JD_CONSOLE_FUNCTION("Error starting directory watch: " << Utilities::getLastErrorString(GetLastError()) << "\n");
+            if (m_eventHandle.load() == INVALID_HANDLE_VALUE) {
+                if (m_logger)m_logger->logError("starting directory watch: " + Utilities::getLastErrorString(GetLastError()) + "\n");
                 return;
             }
 
@@ -141,7 +142,7 @@ namespace JsonDatabase
                     JD_GENERAL_PROFILING_BLOCK("waitForChange", JD_COLOR_STAGE_9);
                     while (waitResult != WAIT_OBJECT_0)
                     {
-                        waitResult = WaitForSingleObject(m_eventHandle, 1000);
+                        waitResult = WaitForSingleObject(m_eventHandle.load(), 1000);
                         if (m_stopFlag.load())
                         {
                             waitResult = WAIT_FAILED;
@@ -151,18 +152,26 @@ namespace JsonDatabase
                 }
                 if (waitResult == WAIT_OBJECT_0) {
                     JD_GENERAL_PROFILING_BLOCK("readFileChange", JD_COLOR_STAGE_9);
-
-                    bool res = FindNextChangeNotification(m_eventHandle);
-#ifdef JD_DEBUG
-                    if (!res)
+                    
+                    HANDLE cHandle = m_eventHandle.load();
+                    if(cHandle)
                     {
-                        DWORD error = GetLastError();
-                        JD_CONSOLE_FUNCTION("Error FindNextChangeNotification. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
-                    }
+                        if (m_stopFlag.load())
+                        {
+							goto exitThread;
+						}
+                        bool res = FindNextChangeNotification(cHandle);
+#ifdef JD_DEBUG
+                        if (!res)
+                        {
+                            DWORD error = GetLastError();
+                            if (m_logger)
+                                m_logger->logError("FindNextChangeNotification. GetLastError() =  " + std::to_string(error) + " : " + Utilities::getLastErrorString(error));
+                        }
 #elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-                    JD_UNUSED(res);
+                        JD_UNUSED(res);
 #endif
-                   
+                    }
 
                     if (fileChanged() && !m_paused.load())
                     {
@@ -170,6 +179,8 @@ namespace JsonDatabase
                         std::unique_lock<std::mutex> lock(m_mutex);
 
                         m_fileChanged.store(true);
+                        if(m_logger)
+                            m_logger->logInfo("File change detected");
                         while (m_fileChanged && !m_stopFlag.load()) {
                             m_cv.wait(lock);
                         }
@@ -182,18 +193,21 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
                 else {
                     DWORD error = GetLastError();
-                    JD_CONSOLE_FUNCTION("Error waiting for file changes. GetLastError() =  " << error << " : " << Utilities::getLastErrorString(error) << "\n");
+                    if(m_logger)m_logger->logError("Waiting for file changes. GetLastError() =  " + std::to_string(error) + " : " + Utilities::getLastErrorString(error));
                 }
 #endif
             }
         exitThread:;
+
+            FindCloseChangeNotification(m_eventHandle.load());
+            m_eventHandle.store(nullptr);
         }
         bool FileChangeWatcher::fileChanged()
         {
             std::filesystem::path file(m_filePath);
 
             if (!std::filesystem::exists(file)) {
-                JD_CONSOLE_FUNCTION("File: \"" << m_filePath.c_str() << "\" does not exist!\n");
+                if(m_logger)m_logger->logError("File: \"" + m_filePath + "\" does not exist!");
                 return false;
             }
 
@@ -272,8 +286,15 @@ namespace JsonDatabase
                 delete m_databaseFileWatcher;
             }
         }
-        bool ManagedFileChangeWatcher::setup(const std::string& targetFile)
+        bool ManagedFileChangeWatcher::setup(const std::string& targetFile, Log::LogObject* parentLogger)
         {
+            delete m_logger;
+            if (parentLogger)
+            {
+                m_logger = new Log::LogObject(*parentLogger, "Filewatcher: "+targetFile);
+                m_logger->logInfo("Setting up file change watcher");
+            }
+
             return restart(targetFile);
         }
         bool ManagedFileChangeWatcher::restart(const std::string& targetFile)
@@ -285,12 +306,12 @@ namespace JsonDatabase
                 m_databaseFileWatcher = nullptr;
             }
             m_databaseFileWatcher = new FileChangeWatcher(targetFile);
-            bool success = m_databaseFileWatcher->setup();
+            bool success = m_databaseFileWatcher->setup(m_logger);
             DWORD lastError = m_databaseFileWatcher->getSetupError();
             JD_UNUSED(lastError);
             if (!success)
             {
-				JD_CONSOLE_FUNCTION("Error initializing file change monitoring. GetLastError() =  " << lastError << " : " << Utilities::getLastErrorString(lastError) << "\n");
+                if(m_logger)m_logger->logError("Initializing file change monitoring. GetLastError() =  " + std::to_string(lastError) + " : " + Utilities::getLastErrorString(lastError));
 				return false;
 			}
             m_databaseFileWatcher->startWatching();

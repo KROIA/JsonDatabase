@@ -6,12 +6,17 @@ namespace JsonDatabase
     namespace Internal
     {
         JDObjectRegistry::JDObjectRegistry()
+            : m_logger("JDObjectRegistry")
         {
 
         }
         JDObjectRegistry& JDObjectRegistry::getInstance() {
             static JDObjectRegistry instance;
             return instance;
+        }
+        Log::LogObject& JDObjectRegistry::getLogger()
+        {
+			return JDObjectRegistry::getInstance().m_logger;
         }
 
         JDObjectRegistry::Error JDObjectRegistry::registerType(const JDObject& obj) {
@@ -24,16 +29,16 @@ namespace JsonDatabase
                 if (className.size() == 0)
                 {
                     error = Error::emptyClassName;
-                    JD_CONSOLE_FUNCTION("\nError: A object of type \"JDObjectInterface\" returns an empty string in the function \"className()\"\n"
+                    instance.m_logger.logError("A object of type \"JDObjectInterface\" returns an empty string in the function \"className()\"\n"
                         "Did you forget to use the macro \"JD_OBJECT(derivedType)\" in the derived JDObjectInterface type header and\n"
                         "the macro \"JD_OBJECT_IMPL(derivedType)\" in the derived JDObjectInterface type cpp file?\n"
-                        "See JDObjectInterface.h for a example, how to create a JDObjectInterface derived object.\n");
+                        "See JDObjectInterface.h for a example, how to create a JDObjectInterface derived object.");
                     return error;
                 }
                 if (instance.m_registry.find(className) != instance.m_registry.end())
                 {
                     error = Error::typeAlreadyRegistered;
-                    JD_CONSOLE_FUNCTION("Error::typeAlreadyRegistered");
+                    instance.m_logger.logError("Error::typeAlreadyRegistered");
                     return error;
                 }
 

@@ -8,7 +8,7 @@
 #include <windows.h>
 #include <mutex>
 
-
+#include "Logger.h"
 
 namespace fs = std::filesystem;
 
@@ -32,7 +32,7 @@ namespace JsonDatabase
 
                 lockTimeout = 20,
             };
-            FileLock(const std::string& filePath, const std::string& fileName);
+            FileLock(const std::string& filePath, const std::string& fileName, Log::LogObject* logger);
             ~FileLock();
 
             const std::string& getFilePath() const;
@@ -50,7 +50,10 @@ namespace JsonDatabase
             static bool isLockInUse(const std::string& filePath, const std::string& fileName);
             
             static bool fileExists(const std::string& filePath, const std::string& fileName);
+            static bool fileExists(const std::string& fullFilePath);
             static bool deleteFile(const std::string& filePath, const std::string& fileName);
+            static bool isFileLocked(const std::string& fullFilePath);
+            static bool deleteFile(const std::string& fullFilePath);
             static std::vector<std::string> getLockFileNamesInDirectory(const std::string& directory);
             static std::string getFullFilePath(const std::string& filePath, const std::string& fileName);
 
@@ -59,14 +62,13 @@ namespace JsonDatabase
 
             static const std::string s_lockFileEnding;
         private:
-            static bool isFileLocked(const std::string& fullFilePath);
-            static bool deleteFile(const std::string& fullFilePath);
+            
             Error lock_internal();
             Error lockFile();
             Error unlockFile();
 
 
-
+            Log::LogObject* m_logger = nullptr;
 
             //std::string m_filePath;
             std::string m_directory;

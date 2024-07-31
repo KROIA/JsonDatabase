@@ -7,6 +7,8 @@
 
 #include "Json/JsonValue.h"
 
+#include "Logger.h"
+
 
 
 namespace JsonDatabase
@@ -17,7 +19,7 @@ namespace JsonDatabase
 		{
 			friend JDManagerObjectManager;
 
-			JDObjectManager(const JDObject& obj, const JDObjectIDptr& id);
+			JDObjectManager(const JDObject& obj, const JDObjectIDptr& id, Log::LogObject* parentLogger);
 			~JDObjectManager();
 		public:
 			
@@ -96,30 +98,33 @@ namespace JsonDatabase
 				JDObjectManager* manager, 
 				ManagedLoadContainers& containers,
 				const ManagedLoadMode& loadMode,
-				const ManagedLoadMisc& misc);
+				const ManagedLoadMisc& misc,
+				Log::LogObject* logger);
 
 			bool loadAndOverrideData(const JsonObject& json);
 			bool loadAndOverrideDataIfChanged(const JsonObject& json, bool& hasChangesOut);
 
-			static JDObjectManager* instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id);
-			static JDObjectManager* cloneAndLoadObject(const JDObject &original, const JsonObject& json, const JDObjectIDptr& id);
+			static JDObjectManager* instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::LogObject * parentLogger);
+			static JDObjectManager* cloneAndLoadObject(const JDObject &original, const JsonObject& json, const JDObjectIDptr& id, Log::LogObject* parentLogger);
 
 			static ManagedLoadStatus managedLoadExisting_internal(
 				const JsonObject& json,
 				JDObjectManager* manager,
 				ManagedLoadContainers& containers,
-				const ManagedLoadMode& loadMode/*,
-				const ManagedLoadMisc& misc*/);
+				const ManagedLoadMode& loadMode,
+				Log::LogObject *logger);
 
 			static ManagedLoadStatus managedLoadNew_internal(
 				const JsonObject& json,
 				ManagedLoadContainers& containers/*,
 				const ManagedLoadMode& loadMode*/,
-				const ManagedLoadMisc& misc);
+				const ManagedLoadMisc& misc,
+				Log::LogObject* logger);
 
-			static bool deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut);
-			static bool deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj);
+			bool deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut);
+			bool deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj);
 
+			Log::LogObject* m_logger = nullptr;
 			JDObject m_obj;
 			JDObjectIDptr m_id;
 			Lockstate m_lockstate;

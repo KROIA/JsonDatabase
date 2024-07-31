@@ -8,8 +8,9 @@ namespace JsonDatabase
     {
         namespace SystemCommand
         {
-            int execute(const std::string& command)
+            int execute(const std::string& command, Log::LogObject* logger)
             {
+                JD_UNUSED(logger);
                 JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
                 // Convert the command to wide string
                 std::wstring wideCommand(command.begin(), command.end());
@@ -47,7 +48,7 @@ namespace JsonDatabase
 
                 return -1; // Return -1 if the command execution fails
             }
-            std::string executePiped(const std::string& command)
+            std::string executePiped(const std::string& command, Log::LogObject* logger)
             {
                 JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 
@@ -63,16 +64,14 @@ namespace JsonDatabase
 
                 if (!CreatePipe(&pipeRead, &pipeWrite, &pipeAttributes, 0))
                 {
-                    //std::cerr << "Failed to create pipe." << std::endl;
-                    JD_CONSOLE_FUNCTION("Failed to create pipe\n");
+                    if(logger)logger->logError("Failed to create pipe");
                     return "";
                 }
 
                 // Set the read end of the pipe as the standard output and error
                 if (!SetHandleInformation(pipeRead, HANDLE_FLAG_INHERIT, 0))
                 {
-                    //std::cerr << "Failed to set pipe handle information." << std::endl;
-                    JD_CONSOLE_FUNCTION("Failed to set pipe handle information\n");
+                    if (logger)logger->logError("Failed to set pipe handle information");
                     CloseHandle(pipeRead);
                     CloseHandle(pipeWrite);
                     return "";
@@ -115,7 +114,7 @@ namespace JsonDatabase
                                 break;
                             else
                             {
-                                JD_CONSOLE_FUNCTION("Failed to read from the pipe\n");
+                                if (logger)logger->logError("Failed to read from the pipe");
                                 //std::cerr << "Failed to read from the pipe." << std::endl;
                                 CloseHandle(pipeRead);
                                 CloseHandle(processInfo.hProcess);
@@ -148,8 +147,7 @@ namespace JsonDatabase
                 }
                 else
                 {
-                    //std::cerr << "Failed to execute command." << std::endl;
-                    JD_CONSOLE_FUNCTION("Failed to execute command\n");
+                    if (logger)logger->logError("Failed to execute command");
                     CloseHandle(pipeRead);
                     CloseHandle(pipeWrite);
                     return "";

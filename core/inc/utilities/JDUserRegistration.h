@@ -34,6 +34,8 @@ namespace JsonDatabase
 			std::vector<JDUser> getRegisteredUsers() const;
 			int unregisterInactiveUsers() const;
 
+			bool checkForUserChange(std::vector<JDUser>& loggedOnUsers, std::vector<JDUser>& loggedOffUsers) const;
+
 		private:
 			class JSON_DATABASE_EXPORT LockEntryObjectImpl : public LockEntryObject
 			{
@@ -69,6 +71,9 @@ namespace JsonDatabase
 			std::string m_registeredSessionID;
 			bool m_isRegistered;
 			unsigned int m_registryOpenTimeoutMs;
+
+			// for checkForUserChange()
+			mutable std::vector<JDUser> m_lastActiveUsers;
 		};
 	}
 }

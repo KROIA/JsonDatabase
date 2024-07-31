@@ -83,6 +83,8 @@ namespace JsonDatabase
 		// static JDObjectID nullID();
 		// static JDObjectID generateID();
 
+		static std::string idToStr(const JDObjectID::IDType& id);
+
 		friend std::ostream& operator<<(std::ostream& os, const JDObjectID& id);
 		friend QDebug operator<<(QDebug debug, const JDObjectID& id);
 	private:

@@ -4,7 +4,6 @@
 #include "JsonDatabase_Declaration.h"
 #include "utilities/JDSerializable.h"
 #include "JDObjectID.h"
-#include "utilities/Signal.h"
 #include <memory>
 
 #include "Json/JsonValue.h"
@@ -44,9 +43,9 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         std::shared_ptr<T> shallowClone() const;
         
 
-        // Creates a copy of the original object as a new instance
-        static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID);
-
+        
+        static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectID::IDType& objID);
+        static JDObjectID::IDType getIDFromJson(const JsonObject& obj);
 
         bool loadFrom(const JDObject& source);
         bool loadFrom(const JDObjectInterface* source);

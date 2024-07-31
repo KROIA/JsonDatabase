@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include "JsonDatabase.h"
 #include <QDebug>
+#include <QObject>
 #include "a.h"
 #include "b.h"
 #include "c.h"
@@ -14,6 +15,8 @@ void onSaveCallback(bool success)
 	qDebug() << "Save finished: " << success;
     saveDone = true;
 }
+
+Log::LogObject logger("Main");
 
 int main(int argc, char *argv[])
 {
@@ -35,7 +38,7 @@ int main(int argc, char *argv[])
     JDObject c1(new C());
     JDObject c2(new C());
 
-    manager.getSignals().connect_onSaveObjectsDone_slot(&onSaveCallback);
+    QObject::connect(&manager, &JDManager::onSaveObjectsDone, [](bool s) {onSaveCallback(s); });
 
 
     manager.addObject(a1);

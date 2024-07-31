@@ -1,6 +1,7 @@
 #pragma once
 
 #include "JsonDatabase_base.h"
+#include "Logger.h"
 
 namespace JsonDatabase
 {
@@ -8,8 +9,8 @@ namespace JsonDatabase
     {
         namespace SystemCommand
         {
-            extern int execute(const std::string& command);
-            extern std::string executePiped(const std::string& command);
+            extern int execute(const std::string& command, Log::LogObject* logger = nullptr);
+            extern std::string executePiped(const std::string& command, Log::LogObject *logger = nullptr);
         }
     }
 }

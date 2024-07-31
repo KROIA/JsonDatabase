@@ -13,6 +13,8 @@
 #include "Json/JsonValue.h"
 #include <mutex>
 
+#include "Logger.h"
+
 namespace JsonDatabase
 {
 	namespace Internal
@@ -40,9 +42,12 @@ namespace JsonDatabase
 		public:
 			JDObjectLocker(JDManager& manager, std::mutex& mtx);
 			~JDObjectLocker();
+			//void setParentLogger(Log::LogObject* parentLogger);
 
 			bool lockObject(const JDObject & obj, Error& err);
 			bool unlockObject(const JDObject & obj, Error& err);
+			bool unlockObject(const JDObjectID::IDType &id, Error& err);
+			bool lockAllObjs(Error& err);
 			bool unlockAllObjs(Error& err);
 			bool isObjectLocked(const JDObject & obj, Error& err) const;
 			bool isObjectLockedByMe(const JDObject & obj, Error& err) const;
@@ -62,7 +67,7 @@ namespace JsonDatabase
 			int removeInactiveObjectLocks() const;
 
 
-			const std::string& getErrorStr(Error err) const;
+			static const std::string& getErrorStr(Error err);
 
 			struct JsonKeys
 			{
@@ -107,6 +112,8 @@ namespace JsonDatabase
 			void onDatabasePathChangeStart(const std::string& newPath) override;
 			void onDatabasePathChangeEnd() override;
 			void onNameChange(const std::string& newName) override;
+
+			//Log::LogObject* m_logger = nullptr;
 
 			JDManager& m_manager;
 			std::mutex& m_mutex;

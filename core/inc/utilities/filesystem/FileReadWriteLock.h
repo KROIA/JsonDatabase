@@ -9,6 +9,8 @@
 #include <windows.h>
 #include <mutex>
 
+#include "Logger.h"
+
 
 
 namespace JsonDatabase
@@ -26,7 +28,7 @@ namespace JsonDatabase
 				readWrite = 3,
 			};
 
-			FileReadWriteLock(const std::string& filePath, const std::string& fileName);
+			FileReadWriteLock(const std::string& filePath, const std::string& fileName, Log::LogObject *logger);
 			~FileReadWriteLock();
 
 			const std::string& getFilePath() const;
@@ -52,6 +54,8 @@ namespace JsonDatabase
 			FileLock::Error lock_internal(Access direction, bool& wasLockedByOtherUserOut);
 			FileLock::Error lockFile(Access direction, bool& wasLockedByOtherUserOut);
 
+
+			Log::LogObject *m_logger = nullptr;
 			//std::string m_filePath;
 			std::string m_directory;
 			std::string m_fileName;

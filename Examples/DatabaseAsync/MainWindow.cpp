@@ -13,6 +13,8 @@
 #define DEBUG DEBUG_SIMPLE << m_manager->getUser().getName().c_str() << "::" << __FUNCTION__ << ": "
 
 
+Log::LogObject logger("main");
+
 MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	: QWidget(parent)
 	, m_manager(nullptr)
@@ -24,6 +26,11 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	//	delete m_manager;
 
 	m_manager = new JDManager("asyncDatabase", "Person", user);
+
+	//Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
+	Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
+	console->show();
+
 	m_manager->setup();
 
 	m_uiPersonEditor = new UIPerson(ui.editor_frame);
@@ -34,21 +41,40 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	//m_manager->addObject(createPersons());
 	//m_manager->saveObjects();
 
-    m_manager->getSignals().connect_databaseFileChanged_slot(this, &MainWindow::onDatabaseFileChanged);
-    m_manager->getSignals().connect_lockedObjectsChanged_slot(this, &MainWindow::onLockedObjectsChanged);
-    m_manager->getSignals().connect_objectRemovedFromDatabase_slot(this, &MainWindow::onObjectRemovedFromDatabase);
-    m_manager->getSignals().connect_objectAddedToDatabase_slot(this, &MainWindow::onObjectAddedToDatabase);
-    m_manager->getSignals().connect_objectChangedFromDatabase_slot(this, &MainWindow::onObjectChangedFromDatabase);
-    m_manager->getSignals().connect_objectOverrideChangeFromDatabase_slot(this, &MainWindow::onObjectOverrideChangeFromDatabase);
-    m_manager->getSignals().connect_databaseOutdated_slot(this, &MainWindow::onDatabaseOutdated);
+	
+
+    //m_manager->getSignals().connect_databaseFileChanged_slot(this, &MainWindow::onDatabaseFileChanged);
+    //m_manager->getSignals().connect_lockedObjectsChanged_slot(this, &MainWindow::onLockedObjectsChanged);
+    //m_manager->getSignals().connect_objectRemovedFromDatabase_slot(this, &MainWindow::onObjectRemovedFromDatabase);
+    //m_manager->getSignals().connect_objectAddedToDatabase_slot(this, &MainWindow::onObjectAddedToDatabase);
+    //m_manager->getSignals().connect_objectChangedFromDatabase_slot(this, &MainWindow::onObjectChangedFromDatabase);
+    //m_manager->getSignals().connect_objectOverrideChangeFromDatabase_slot(this, &MainWindow::onObjectOverrideChangeFromDatabase);
+    //m_manager->getSignals().connect_databaseOutdated_slot(this, &MainWindow::onDatabaseOutdated);
+	//
+	//
+    //m_manager->getSignals().connect_onStartAsyncWork_slot(this, &MainWindow::onAsyncWorkStarted);
+    //m_manager->getSignals().connect_onEndAsyncWork_slot(this, &MainWindow::onAsyncWorkFinished);
+    //m_manager->getSignals().connect_onLoadObjectsDone_slot(this, &MainWindow::onLoadAllDone);
+	//m_manager->getSignals().connect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
+    //m_manager->getSignals().connect_onSaveObjectsDone_slot(this, &MainWindow::onSaveAllDone);
+    //m_manager->getSignals().connect_onSaveObjectDone_slot(this, &MainWindow::onSaveIndividualDone);
 
 
-    m_manager->getSignals().connect_onStartAsyncWork_slot(this, &MainWindow::onAsyncWorkStarted);
-    m_manager->getSignals().connect_onEndAsyncWork_slot(this, &MainWindow::onAsyncWorkFinished);
-    m_manager->getSignals().connect_onLoadObjectsDone_slot(this, &MainWindow::onLoadAllDone);
-	m_manager->getSignals().connect_onLoadObjectDone_slot(this, &MainWindow::onLoadIndividualDone);
-    m_manager->getSignals().connect_onSaveObjectsDone_slot(this, &MainWindow::onSaveAllDone);
-    m_manager->getSignals().connect_onSaveObjectDone_slot(this, &MainWindow::onSaveIndividualDone);
+
+	connect(m_manager, &JDManager::onDatabaseFileChanged, this, &MainWindow::onDatabaseFileChanged);
+	connect(m_manager, &JDManager::onLockedObjectsChanged, this, &MainWindow::onLockedObjectsChanged);
+	connect(m_manager, &JDManager::onObjectRemovedFromDatabase, this, &MainWindow::onObjectRemovedFromDatabase);
+	connect(m_manager, &JDManager::onObjectAddedToDatabase, this, &MainWindow::onObjectAddedToDatabase);
+	connect(m_manager, &JDManager::onObjectChangedFromDatabase, this, &MainWindow::onObjectChangedFromDatabase);
+	connect(m_manager, &JDManager::onObjectOverrideChangeFromDatabase, this, &MainWindow::onObjectOverrideChangeFromDatabase);
+	connect(m_manager, &JDManager::onDatabaseOutdated, this, &MainWindow::onDatabaseOutdated);
+
+	connect(m_manager, &JDManager::onStartAsyncWork, this, &MainWindow::onAsyncWorkStarted);
+	connect(m_manager, &JDManager::onEndAsyncWork, this, &MainWindow::onAsyncWorkFinished);
+	connect(m_manager, &JDManager::onLoadObjectDone, this, &MainWindow::onLoadIndividualDone);
+	connect(m_manager, &JDManager::onLoadObjectsDone, this, &MainWindow::onLoadAllDone);
+	connect(m_manager, &JDManager::onSaveObjectDone, this, &MainWindow::onSaveIndividualDone);
+	connect(m_manager, &JDManager::onSaveObjectsDone, this, &MainWindow::onSaveAllDone);
 
 
 
@@ -140,10 +166,10 @@ void MainWindow::on_deleteObject_pushButton_clicked()
 	if (p)
 	{
 		DEBUG << p->getObjectID()->toString().c_str() << "\n";
-		//m_manager->removeObject(p);
+		m_manager->removeObject(p);
 		JDObjectInterface* obj = p.get();
 		p.reset();
-		delete obj;
+		//delete obj;
 	}
 	else
 	{
@@ -201,12 +227,35 @@ void MainWindow::on_lockObject_pushButton_clicked()
 			DEBUG << "Can't lock object, nullptr\n";
 	}
 }
+void MainWindow::on_lockAllObjects_pushButton_clicked()
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+
+	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	if (m_manager->lockAllObjs(lastError))
+	{
+		DEBUG << "locked: all objects\n";
+	}
+	else
+	{
+		DEBUG << "Can't lock all objects\n";
+	}
+}
 void MainWindow::on_unlockObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
 	JDObject obj = getSelectedObject();
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	if (!obj)
+	{
+		JDObjectID::IDType id = atoi(ui.id_lineEdit->text().toStdString().c_str());
+		if (m_manager->unlockObject(id, lastError))
+		{
+			DEBUG << "unlocked: " << std::to_string(id) << "\n";
+		}
+		return;
+	}
 	if (m_manager->unlockObject(obj, lastError))
 	{
 		DEBUG << "unlocked: " << obj->getObjectID()->toString().c_str() << "\n";
@@ -217,6 +266,20 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 			DEBUG << "Can't unlock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't unlock object, nullptr\n";
+	}
+}
+void MainWindow::on_unlockAllObjects_pushButton_clicked()
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+
+	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	if (m_manager->unlockAllObjs(lastError))
+	{
+		DEBUG << "unlocked: all objects\n";
+	}
+	else
+	{
+		DEBUG << "Can't unlock all objects\n";
 	}
 }
 void MainWindow::on_test_pushButton_clicked()

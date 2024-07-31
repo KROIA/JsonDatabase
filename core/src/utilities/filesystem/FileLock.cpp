@@ -16,8 +16,9 @@ namespace JsonDatabase
         const std::string FileLock::s_lockFileEnding = ".lck";
         std::mutex FileLock::m_mutex;
 
-        FileLock::FileLock(const std::string& filePath, const std::string& fileName)
-            : m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
+        FileLock::FileLock(const std::string& filePath, const std::string& fileName, Log::LogObject *logger)
+            : m_logger(logger)
+            , m_directory(Utilities::replaceForwardSlashesWithBackslashes(filePath))
             , m_fileName(fileName)
             , m_locked(false)
             , m_fileHandle(nullptr)
@@ -80,7 +81,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
             if (err != Error::none)
             {
-                JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+                if(m_logger)m_logger->logError(getErrorStr(err));
             }
 #endif
             return m_locked;
@@ -105,7 +106,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
             if (err != Error::none)
             {
-                JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+                if(m_logger)m_logger->logError(getErrorStr(err));
             }
 #endif
             return m_locked;
@@ -186,7 +187,11 @@ namespace JsonDatabase
 
         bool FileLock::fileExists(const std::string& filePath, const std::string& fileName)
         {
-            DWORD fileAttributes = GetFileAttributes(getFullFilePath(filePath, fileName).c_str());
+            return fileExists(getFullFilePath(filePath, fileName));
+        }
+        bool FileLock::fileExists(const std::string& fullFilePath)
+        {
+            DWORD fileAttributes = GetFileAttributes(fullFilePath.c_str());
             if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
                 if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) {
                     return false; // File doesn't exist
@@ -336,13 +341,13 @@ namespace JsonDatabase
             if (!UnlockFile(m_fileHandle, 0, 0, MAXDWORD, MAXDWORD))
             {
                 error1 = GetLastError();
-                JD_CONSOLE_FUNCTION("Error UnlockFile. GetLastError() =  " << error1 << " : " << Utilities::getLastErrorString(error1) << "\n");
+                if(m_logger)m_logger->logError("UnlockFile. GetLastError() =  " + std::to_string(error1) + " : " + Utilities::getLastErrorString(error1));
             }
 
             if (!CloseHandle(m_fileHandle))
             {
                 error2 = GetLastError();
-                JD_CONSOLE_FUNCTION("Error CloseHandle. GetLastError() =  " << error2 << " : " << Utilities::getLastErrorString(error2) << "\n");
+                if(m_logger)m_logger->logError("CloseHandle. GetLastError() =  " + std::to_string(error2) + " : " + Utilities::getLastErrorString(error2));
             }
 
 
@@ -350,11 +355,16 @@ namespace JsonDatabase
             if(!deleteFile(m_lockFilePathName.c_str()))
            // if (!DeleteFile(m_lockFilePathName.c_str()))
             {
-                if (!isLockInUse(m_directory, m_fileName))
+                DWORD error3 = GetLastError();
+                if (error3 != 32) // File already used by another process (OK since after freeing the lock, a other process could have locked it)
                 {
-                    // Handle error deleting file
-                    err = Error::unableToDeleteLockFile;
-                    JD_CONSOLE_FUNCTION(getErrorStr(err) + "\n");
+                    std::string errorStr = Utilities::getLastErrorString(error3);
+                    if (!isLockInUse(m_directory, m_fileName) && fileExists(m_lockFilePathName))
+                    {
+                        // Handle error deleting file
+                        err = Error::unableToDeleteLockFile;
+                        if (m_logger)m_logger->logError("Deleting lock file: " + m_lockFilePathName + " " + getErrorStr(err));
+                    }
                 }
             }
 

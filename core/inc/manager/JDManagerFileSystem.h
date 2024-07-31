@@ -7,7 +7,7 @@
 #include "utilities/filesystem/LockedFileAccessor.h"
 #include "utilities/JDUserRegistration.h"
 
-
+#include "Logger.h"
 
 #include "Json/JsonValue.h"
 #include <mutex>
@@ -25,7 +25,9 @@ namespace JsonDatabase
                 JDManager& manager,
                 std::mutex &mtx);
             ~JDManagerFileSystem();
+            void setParentLogger(Log::LogObject* parentLogger);
             bool setup();
+            bool stop();
         public:
 
             void setDatabasePath(const std::string& path);
@@ -77,6 +79,7 @@ namespace JsonDatabase
             std::string m_databaseFileName;
 
             size_t m_slowUpdateCounter;
+            size_t m_middleUpdateCounter;
 
             JDManager& m_manager;
             std::mutex& m_mutex;
@@ -89,6 +92,8 @@ namespace JsonDatabase
             // This lock file is used to ckeck if an user is still online or not.
             // If it can be deleted, the user is offline and did not clean up after himself.
             //FileLock *m_databaseLoginFileLock;
+
+            Log::LogObject* m_logger = nullptr;
 
             static const std::string s_jsonFileEnding;
 

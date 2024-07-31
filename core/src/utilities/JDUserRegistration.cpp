@@ -11,7 +11,8 @@ namespace JsonDatabase
 		const std::string JDUserRegistration::LockEntryObjectImpl::JsonKeys::user = "user";
 
 		JDUserRegistration::JDUserRegistration()
-			: m_isRegistered(false)
+			: AbstractRegistry()
+			, m_isRegistered(false)
 			, m_registryOpenTimeoutMs(100)
 			, m_registeredUser(nullptr)
 		{
@@ -20,6 +21,7 @@ namespace JsonDatabase
 		JDUserRegistration::~JDUserRegistration()
 		{
 			unregisterUser();
+			delete m_logger;
 		}
 
 
@@ -31,47 +33,58 @@ namespace JsonDatabase
 				return false;
 
 			if(!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
-				return false;
-			AbstractRegistry::AutoClose autoClose(this);
+				goto failed;
 
-			AbstractRegistry::removeInactiveObjects();
-
-			std::string newSessionID = user.getSessionID();
-			if (newSessionID.size() == 0)
-				newSessionID = JDUser::generateSessionID();
-
-			size_t tryCount = 0;
-			while(AbstractRegistry::lockExists(newSessionID))
 			{
-				newSessionID = JDUser::generateSessionID();
-				++tryCount;
-			}
-				
-			JDUser newUser = user;
-			newUser.setSessionID(newSessionID);
-			auto newEntry = std::make_shared<LockEntryObjectImpl>(newUser.getSessionID(), newUser);
-			m_registeredUser = newEntry;
-			int ret = 0;
-			while((ret = AbstractRegistry::addObjects({ newEntry })) != 1)
-			{
-				newSessionID = JDUser::generateSessionID();
+				AbstractRegistry::AutoClose autoClose(this);
+
+				AbstractRegistry::removeInactiveObjects();
+
+				std::string newSessionID = user.getSessionID();
+				if (newSessionID.size() == 0)
+					newSessionID = JDUser::generateSessionID();
+
+				size_t tryCount = 0;
 				while (AbstractRegistry::lockExists(newSessionID))
 				{
 					newSessionID = JDUser::generateSessionID();
 					++tryCount;
 				}
-				++tryCount;
-				if (tryCount > 100)
-					return false;
+
+				JDUser newUser = user;
 				newUser.setSessionID(newSessionID);
-				newEntry = std::make_shared<LockEntryObjectImpl>(newUser.getSessionID(), newUser);
+				auto newEntry = std::make_shared<LockEntryObjectImpl>(newUser.getSessionID(), newUser);
 				m_registeredUser = newEntry;
+				int ret = 0;
+				while ((ret = AbstractRegistry::addObjects({ newEntry })) != 1)
+				{
+					newSessionID = JDUser::generateSessionID();
+					while (AbstractRegistry::lockExists(newSessionID))
+					{
+						newSessionID = JDUser::generateSessionID();
+						++tryCount;
+					}
+					++tryCount;
+					if (tryCount > 100)
+						goto failed;
+					newUser.setSessionID(newSessionID);
+					newEntry = std::make_shared<LockEntryObjectImpl>(newUser.getSessionID(), newUser);
+					m_registeredUser = newEntry;
+				}
+
+				generatedSessionIDOut = newSessionID;
+				m_registeredSessionID = newSessionID;
+				m_isRegistered = true;
+
+				if (m_logger)
+					m_logger->logInfo("Registered user: " + user.toString());
+				return true;
 			}
 
-			generatedSessionIDOut  = newSessionID;
-			m_registeredSessionID = newSessionID;
-			m_isRegistered = true;
-			return true;
+		failed:
+			if(m_logger)
+				m_logger->logError("Failed to register user: "+ user.toString());
+			return false;
 		}
 		bool JDUserRegistration::unregisterUser()
 		{
@@ -80,15 +93,22 @@ namespace JsonDatabase
 				return false;
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
-				return false;
-			AbstractRegistry::AutoClose autoClose(this);
-
-			if(AbstractRegistry::removeObjects({ m_registeredSessionID }) == 1)
+				goto failed;
 			{
-				m_isRegistered = false;
-				m_registeredUser.reset();
-				return true;
+				AbstractRegistry::AutoClose autoClose(this);
+
+				if (AbstractRegistry::removeObjects({ m_registeredSessionID }) == 1)
+				{
+					m_isRegistered = false;
+					if (m_logger)
+						m_logger->logInfo("Unregistered user: " + m_registeredUser->getUser().toString());
+					m_registeredUser.reset();
+					return true;
+				}
 			}
+		failed:
+			if (m_logger)
+				m_logger->logError("Failed to unregister user: " + m_registeredUser->getUser().toString());
 			return false;
 		}
 
@@ -131,6 +151,53 @@ namespace JsonDatabase
 				return 0;
 			AbstractRegistry::AutoClose autoClose(this);
 			return AbstractRegistry::removeInactiveObjects();
+		}
+
+		bool JDUserRegistration::checkForUserChange(std::vector<JDUser>& loggedOnUsers, std::vector<JDUser>& loggedOffUsers) const
+		{
+			std::vector<JDUser> currentUsers = getRegisteredUsers();
+
+			loggedOnUsers.clear();
+			loggedOffUsers.clear();
+
+			for (auto& user : currentUsers)
+			{
+				bool found = false;
+				for (auto& lastUser : m_lastActiveUsers)
+				{
+					if (user.getSessionID() == lastUser.getSessionID())
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+				{
+					loggedOnUsers.push_back(user);
+					if (m_logger)
+						m_logger->logInfo("User logged on: " + user.toString());
+				}
+			}
+			for (auto& lastUser : m_lastActiveUsers)
+			{
+				bool found = false;
+				for (auto& user : currentUsers)
+				{
+					if (user.getSessionID() == lastUser.getSessionID())
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+				{
+					loggedOffUsers.push_back(lastUser);
+					if (m_logger)
+						m_logger->logInfo("User logged off: " + lastUser.toString());
+				}
+			}
+			m_lastActiveUsers = currentUsers;
+			return loggedOffUsers.size() > 0 || loggedOnUsers.size() > 0;
 		}
 
 

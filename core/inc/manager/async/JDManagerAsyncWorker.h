@@ -9,6 +9,9 @@
 #include <atomic>
 #include <memory>
 
+#include "Logger.h"
+
+
 namespace JsonDatabase
 {
     namespace Internal
@@ -20,6 +23,7 @@ namespace JsonDatabase
                 JDManager& manager,
                 std::mutex& mtx);
             ~JDManagerAsyncWorker();
+            void setParentLogger(Log::LogObject* parentLogger);
             void setup();
             void addWork(std::shared_ptr<JDManagerAysncWork> work);
             bool isWorkDone(std::shared_ptr<JDManagerAysncWork> work);
@@ -52,6 +56,8 @@ namespace JsonDatabase
             std::atomic<bool> m_busy;
 
             std::atomic<std::shared_ptr<JDManagerAysncWork>> m_currentWork;
+
+            Log::LogObject* m_logger = nullptr;
             
         };
     }

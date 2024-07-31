@@ -7,6 +7,8 @@
 
 #include "Json/JsonValue.h"
 
+#include "Logger.h"
+
 
 namespace JsonDatabase
 {
@@ -54,7 +56,8 @@ namespace JsonDatabase
 
 			LockedFileAccessor(const std::string& directory,
 							   const std::string& name,
-							   const std::string& endig);
+							   const std::string& endig, 
+				Log::LogObject *parentLogger);
 			~LockedFileAccessor();
 
 			Error lock(AccessMode mode);
@@ -88,6 +91,8 @@ namespace JsonDatabase
 		private:
 			Error readFile_internal(QByteArray& fileDataOut) const;
 			Error writeFile_internal(const QByteArray& fileData) const;
+
+			Log::LogObject* m_logger = nullptr;
 
 			mutable FileReadWriteLock* m_fileLock;
 			FileReadWriteLock::Access m_accessMode;

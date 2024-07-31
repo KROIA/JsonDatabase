@@ -54,7 +54,7 @@ JDObject JDObjectInterface::shallowClone() const
 
 
 
-size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectIDptr& objID)
+size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjectID::IDType& objID)
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
@@ -86,10 +86,35 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
 #else 
     #error "Invalid JD_ID_TYPE_SWITCH value"
 #endif 
-        if (id == objID->get())
+        if (id == objID)
             return i;
     }
     return std::string::npos;
+}
+JDObjectID::IDType JDObjectInterface::getIDFromJson(const JsonObject& obj)
+{
+	const auto& it = obj.find(s_tag_objID);
+	if(it == obj.end())
+		return JDObjectID::invalidID;
+	const JsonDatabase::JsonValue& value = it->second;
+    #if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+    const std::string* idPtr = value.get_if<std::string>();
+		if (!idPtr)
+			return JDObjectID::invalidID;
+		return *idPtr;
+        #elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+    const long* idPtr = value.get_if<long>();
+    if (!idPtr)
+    {
+		const double* idPtrD = value.get_if<double>();
+		if (!idPtrD)
+			return JDObjectID::invalidID;
+		return static_cast<long>(*idPtrD);
+	}
+    return *idPtr;
+		#else 
+	#error "Invalid JD_ID_TYPE_SWITCH value"
+	#endif
 }
 
 
@@ -211,7 +236,10 @@ void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
             id = manager->getID();
         }
     if (id.get())
-        m_shallowID = id->get();
+    {
+        if (id.get()->get() != JDObjectID::invalidID)
+            m_shallowID = id->get();
+    }
 	m_manager = manager;
 }
 Internal::JDObjectManager* JDObjectInterface::getManager() const
