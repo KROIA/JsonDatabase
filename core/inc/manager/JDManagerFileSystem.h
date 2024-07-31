@@ -79,6 +79,7 @@ namespace JsonDatabase
             std::string m_databaseFileName;
 
             size_t m_slowUpdateCounter;
+            size_t m_middleUpdateCounter;
 
             JDManager& m_manager;
             std::mutex& m_mutex;

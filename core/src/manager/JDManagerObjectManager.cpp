@@ -158,6 +158,14 @@ namespace JsonDatabase
         {
             return m_objLocker.unlockObject(obj, err);
         }
+        bool JDManagerObjectManager::unlockObject(const JDObjectID::IDType& id, JDObjectLocker::Error& err)
+        {
+            return m_objLocker.unlockObject(id, err);
+		}
+        bool JDManagerObjectManager::lockAllObjs(JDObjectLocker::Error& err)
+        {
+            return m_objLocker.lockAllObjs(err);
+		}
         bool JDManagerObjectManager::unlockAllObjs(JDObjectLocker::Error& err)
         {
             return m_objLocker.unlockAllObjs(err);
@@ -231,8 +239,24 @@ namespace JsonDatabase
                 return false; // Object already managed
 			
             JDObjectIDptr id = m_idDomain.getNewID();
+            for(size_t i=0; i< m_removedObjectIDs.size(); ++i)
+            {
+                if (m_removedObjectIDs[i] == id->get())
+                {
+					m_removedObjectIDs.erase(m_removedObjectIDs.begin() + i);
+					break;
+				}
+			}
             JDObjectManager *manager = new JDObjectManager(obj, id, m_logger);
-            return m_objs.addObject(manager);
+            if(m_objs.addObject(manager))
+            {
+                if(m_logger)
+					m_logger->logInfo("Added object with ID: " + obj->getObjectID().get()->toString());
+				return true;
+			}
+            if(m_logger)
+                m_logger->logWarning("Failed to add object with ID: " + obj->getObjectID().get()->toString());
+            return false;
 			//return addObject_internal(manager);
         }
         bool JDManagerObjectManager::packAndAddObject_internal(const JDObject& obj, const JDObjectID::IDType& presetID)
@@ -258,6 +282,14 @@ namespace JsonDatabase
 #endif
                 return false; 
             }
+            for (size_t i = 0; i < m_removedObjectIDs.size(); ++i)
+            {
+                if (m_removedObjectIDs[i] == id->get())
+                {
+                    m_removedObjectIDs.erase(m_removedObjectIDs.begin() + i);
+                    break;
+                }
+            }
             JDObjectManager* manager = new JDObjectManager(obj, id, m_logger);
             return m_objs.addObject(manager);
         }
@@ -281,8 +313,28 @@ namespace JsonDatabase
             m_objs.reserve(m_objs.size() + objs.size());
             for (size_t i = 0; i < objs.size(); ++i)
             {
+                for (size_t j = 0; j < m_removedObjectIDs.size(); ++j)
+                {
+                    if (m_removedObjectIDs[j] == generatedIDs[i]->get())
+                    {
+                        m_removedObjectIDs.erase(m_removedObjectIDs.begin() + j);
+                        break;
+                    }
+                }
                 JDObjectManager* manager = new JDObjectManager(objs[i], generatedIDs[i], m_logger);
-                success &= m_objs.addObject(manager);
+                bool success2 = m_objs.addObject(manager);
+                success &= success2;
+                if (m_logger)
+                {
+                    if(success2)
+                    {
+                        m_logger->logInfo("Added object with ID: " + objs[i]->getObjectID().get()->toString());
+					}
+                    else
+                    {
+                        m_logger->logWarning("Failed to add object with ID: " + objs[i]->getObjectID().get()->toString());
+                    }
+                }
             }
             
            // for (size_t i = 0; i < objs.size(); ++i)
@@ -294,12 +346,17 @@ namespace JsonDatabase
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 
-            JDObjectID::IDType id = obj->getShallowObjectID();
-            //JDObjectIDptr id = obj->getObjectID();
-            //if (!JDObjectID::isValid(id))
-            //    return nullptr; // No valid ID
+            
+            /*// Check if Object is locked by this user
+            JDObjectLocker::Error err;
+            if (!m_objLocker.isObjectLockedByMe(obj, err))
+            {
+                if (m_logger)
+                    m_logger->logWarning("Can't replace object with ID: " + obj->getObjectID().get()->toString() + ". Object is not locked by this user.");
+                return;
+            }*/
 
-            //m_idDomain.
+            JDObjectID::IDType id = obj->getShallowObjectID();
             JDObjectManager* replacedManager = m_objs.getObjectByID(id);
             if(!replacedManager)
                 return nullptr; // Object not found
@@ -316,6 +373,8 @@ namespace JsonDatabase
             
             JDObjectManager* newManager = new JDObjectManager(obj, idPtr, m_logger);
             m_objs.addObject(newManager);
+            if(m_logger)
+                m_logger->logInfo("Replaced object with ID: " + obj->getObjectID().get()->toString());
             return replacedObj;
         }
         void JDManagerObjectManager::replaceObject_internal(const std::vector<JDObject>& objs)
@@ -329,15 +388,65 @@ namespace JsonDatabase
         bool JDManagerObjectManager::removeObject_internal(const JDObject & obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+            if (!obj.get())
+            {
+                if(m_logger)
+                    m_logger->logError("Can't remove object. Object is nullptr");
+                return false;
+            }
+
+            // Check if Object is locked by this user
+            JDObjectLocker::Error err;
+            if(!m_objLocker.isObjectLockedByMe(obj, err))
+			{
+				if(m_logger)
+                    m_logger->logWarning("Can't remove object with ID: " + obj->getObjectID().get()->toString() + ". Object is not locked by this user.");
+                return false;
+			}
+
             JDObjectManager* removedManager = m_objs.getAndRemoveObject(obj->getObjectID());
             bool removed = removedManager != nullptr;
-            delete removedManager;
+            if (removed)
+            {
+                m_removedObjectIDs.push_back(obj->getObjectID().get()->get());
+                m_idDomain.unregisterID(obj->getObjectID());
+				delete removedManager;
+			}
+            if(m_logger)
+                m_logger->logInfo("Removed object with ID: " + JDObjectID::idToStr(obj->getShallowObjectID()));
             return removed;
         }
         bool JDManagerObjectManager::removeObject_internal(const std::vector<JDObject>& objs)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
-            return m_objs.removeObject(objs);
+            if(m_objs.removeObject(objs))
+            {
+                bool noLock = false;
+                for (size_t i = 0; i < objs.size(); ++i)
+                {
+                    // Check if Object is locked by this user
+                    JDObjectLocker::Error err;
+                    if (!m_objLocker.isObjectLockedByMe(objs[i], err))
+                    {
+                        if (m_logger)
+                            m_logger->logWarning("Can't remove object with ID: " + objs[i]->getObjectID().get()->toString() + ". Object is not locked by this user.");
+                        noLock = true;
+                    }
+                }
+                if (noLock)
+                    return false;
+                for(size_t i=0; i<objs.size(); ++i)
+				{
+                    m_removedObjectIDs.push_back(objs[i]->getObjectID().get()->get());
+                    m_idDomain.unregisterID(objs[i]->getObjectID());
+					JDObjectManager* manager = m_objs.getObjectByID(objs[i]->getObjectID());
+					delete manager;
+                    if (m_logger)
+                        m_logger->logInfo("Removed object with ID: " + JDObjectID::idToStr(objs[i]->getShallowObjectID()));
+				}
+                return true;
+			}  
+            return false;
         }
         bool JDManagerObjectManager::exists_internal(const JDObject & obj) const
         {

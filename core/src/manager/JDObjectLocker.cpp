@@ -144,89 +144,10 @@ namespace JsonDatabase
 				return false;
 			}
 			err = Error::none;
+			if(m_logger)m_logger->logInfo("Lock for object: \"" 
+							+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+							+ "\" aquired");
 			return true;
-
-			/*err = Error::none;
-			FILE_LOCK(false); // Try's to lok the file, if it fails it returns
-
-			std::vector<ObjectLockData> locks;
-			if (!readLockTable(locks, err))
-				return false;
-
-			// Check if Lock is already aquired 
-			ObjectLockData targetLock;
-			size_t targetIndex;
-			Utilities::JDUser user = m_manager.getUser();
-			if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock, targetIndex))
-			{
-				
-				if (targetLock.data.user.getSessionID() == user.getSessionID())
-				{
-					// Already locked by this session
-					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" 
-						<< obj->getObjectID()->toString() << "\") Lock for object: \"" 
-						+ obj->getObjectID()->toString() + "\" type: \"" + obj->className() 
-						+ "\" is already aquired in this session\n");
-					err = Error::none;
-					return true;
-				}
-				else
-				{
-					err = Error::lockedByOther;
-					JD_CONSOLE("bool JDObjectLocker::lockObject(obj:\"" 
-						<< obj->getObjectID()->toString() << "\") Can't aquire lock for object: \"" 
-						+ obj->getObjectID()->toString() + "\" type: \"" + obj->className() +
-						"\"\nLock Data: \n" + targetLock.toString() + "\n"
-						"Lock is already aquired from user: \"" + targetLock.data.user.toString() + "\"\n");
-					return false;
-				}
-			}
-
-			targetLock.setObject(obj, m_manager);
-			
-
-			locks.push_back(targetLock);
-			if (!writeLockTable(locks, err))
-				return false;
-
-
-			// Verify lock success
-			{
-				JD_REGISTRY_PROFILING_BLOCK("Verify object lock", JD_COLOR_STAGE_11);
-				std::vector<ObjectLockData> verifyLocks;
-				if (!readLockTable(verifyLocks, err))
-					return false;
-
-				// Check if Lock is already aquired 
-				ObjectLockData targetLock2;
-				size_t targetIndex2;
-				if (getObjectLockDataFromID(locks, obj->getObjectID(), targetLock2, targetIndex2))
-				{
-					if (targetLock2.data.user.getSessionID() == user.getSessionID())
-					{
-						// Already locked by this session
-						err = Error::none;
-						return true;
-					}
-					else
-					{
-						err = Error::lockedByOther;
-						JD_CONSOLE("Can't verify the locked object: " 
-							<< obj->getObjectID() 
-							<<" Object is locked by: \""<< targetLock2.data.user.toString() <<"\"");
-						return false;
-					}
-				}
-				else
-				{
-					err = Error::unableToLock;
-					JD_CONSOLE("Can't verify the locked object: "<< obj->getObjectID());
-					return false;
-				}
-			}
-
-			err = Error::none;
-			return true;*/
 		}
 		bool JDObjectLocker::unlockObject(const JDObject & obj, Error& err)
 		{
@@ -248,7 +169,7 @@ namespace JsonDatabase
 			{
 				err = Error::none;
 				if(m_logger)m_logger->logWarning("Lock for object: \"" 
-					+ obj->getObjectID()->toString() + "\" type: \"" 
+					+ key + "\" type: \""
 					+ obj->className() + "\" did not exist");
 				return false;
 			}
@@ -257,8 +178,8 @@ namespace JsonDatabase
 			{
 				err = Error::lockedByOther;
 				if(m_logger)m_logger->logWarning("Can't release lock for object: \"" 
-					+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
-					+ "\"\nLock is owned by another session");
+					+ key + "\" type: \"" + obj->className()
+					+ "\"\nLock is owned by another user");
 				return false;
 			}
 
@@ -266,10 +187,115 @@ namespace JsonDatabase
 			if ((removed = AbstractRegistry::removeObjects({ key })) != 1)
 			{
 				if(m_logger)m_logger->logWarning("Can't release lock for object: \"" 
-					+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+					+ key + "\" type: \"" + obj->className()
 					+ "\"");
 				return false;
 			}
+			err = Error::none;
+			if(m_logger)m_logger->logInfo("Lock for object: \"" 
+							+ key + "\" type: \"" + obj->className()
+							+ "\" released");
+			return true;
+		}
+		bool JDObjectLocker::unlockObject(const JDObjectID::IDType& id, Error& err)
+		{
+			JDM_UNIQUE_LOCK_P;
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
+				return false;
+			AbstractRegistry::AutoClose autoClose(this);
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+			std::string key = id;
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+			std::string key = std::to_string(id);
+#endif
+			
+
+			if (!AbstractRegistry::lockExists(key))
+			{
+				err = Error::none;
+				if (m_logger)m_logger->logWarning("Lock for object: \""
+					+ key + "\" did not exist");
+				return false;
+			}
+
+			if (!AbstractRegistry::isSelfOwned(key))
+			{
+				err = Error::lockedByOther;
+				if (m_logger)m_logger->logWarning("Can't release lock for object: \""
+					+ key + "\"\nLock is owned by another user");
+				return false;
+			}
+
+			int removed = 0;
+			if ((removed = AbstractRegistry::removeObjects({ key })) != 1)
+			{
+				if (m_logger)m_logger->logWarning("Can't release lock for object: \""
+					+ key + "\"");
+				return false;
+			}
+			err = Error::none;
+			if (m_logger)m_logger->logInfo("Lock for object: \""
+				+ key + "\" released");
+			return true;
+		}
+		bool JDObjectLocker::lockAllObjs(Error& err)
+		{
+			JDM_UNIQUE_LOCK_P;
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			err = Error::none;
+			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
+				return false;
+			AbstractRegistry::AutoClose autoClose(this);
+			AbstractRegistry::removeInactiveObjects();
+
+			std::vector<std::shared_ptr<LockEntryObjectImpl>> loadedObjects;
+			if (!AbstractRegistry::readObjects<LockEntryObjectImpl>(loadedObjects))
+			{
+				err = Error::corruptTableData;
+				return false;
+			}
+
+			// Check if Lock is already aquired
+			Utilities::JDUser user = m_manager.getUser();
+			std::unordered_map<JDObjectID::IDType, bool> alreadyLocked;
+			for (size_t i = 0; i < loadedObjects.size(); ++i)
+			{
+				if (loadedObjects[i]->data.user.getSessionID() == user.getSessionID())
+				{
+					alreadyLocked[loadedObjects[i]->data.objectID] = true;
+					continue;
+				}
+				else
+				{
+					err = Error::lockedByOther;
+					if (m_logger)m_logger->logWarning("Can't aquire lock for object: \""
+						+ std::to_string(loadedObjects[i]->data.objectID) + "\""
+						+ "\"\nLock Data: \n" + loadedObjects[i]->toString() + "\n"
+						"Lock is already aquired from user: \"" + loadedObjects[i]->data.user.toString() + "\"");
+					return false;
+				}
+			}
+
+			std::vector<std::shared_ptr<LockEntryObject>> newEntries;
+			std::vector<JDObject> objects = m_manager.getObjects();
+			for (auto obj : objects)
+			{
+				if (alreadyLocked.find(obj->getObjectID()->get()) != alreadyLocked.end())
+					continue;
+				auto newEntry = std::make_shared<LockEntryObjectImpl>(obj->getObjectID()->toString(), obj, m_manager);
+				newEntries.push_back(newEntry);
+			}
+
+			int ret = 0;
+			if ((ret = AbstractRegistry::addObjects(newEntries)) != newEntries.size())
+			{
+				err = Error::unableToLock;
+				if (m_logger)m_logger->logWarning("Can't lock all objects");
+				return false;
+			}
+			err = Error::none;
+			if(m_logger)m_logger->logInfo("Aquired "+std::to_string(newEntries.size()) + " objects locks");
 			return true;
 		}
 		bool JDObjectLocker::unlockAllObjs(Error& err)
@@ -285,6 +311,7 @@ namespace JsonDatabase
 				if(m_logger)m_logger->logWarning("Can't release all locked objects");
 				return false;
 			}
+			if(m_logger)m_logger->logInfo("All objects unlocked");
 			return true;
 		}
 		bool JDObjectLocker::isObjectLocked(const JDObject & obj, Error& err) const
@@ -388,7 +415,7 @@ namespace JsonDatabase
 		}
 
 
-		const std::string& JDObjectLocker::getErrorStr(Error err) const
+		const std::string& JDObjectLocker::getErrorStr(Error err)
 		{
 			switch (err)
 			{

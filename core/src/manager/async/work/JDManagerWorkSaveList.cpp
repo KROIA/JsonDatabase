@@ -15,8 +15,9 @@ namespace JsonDatabase
 			: JDManagerAysncWork(manager, mtx)
 			, m_success(false)
 		{
-			if (parentLogger)
-				m_logger = new Log::LogObject(*parentLogger,"JDManagerAysncWorkSaveList");
+			m_logger = parentLogger;
+			//if (parentLogger)
+			//	m_logger = new Log::LogObject(*parentLogger,"JDManagerAysncWorkSaveList");
 			m_objects = objects;
 			m_progress.setTaskName("Speichere " + std::to_string(m_objects.size()) + " Objekte");
 			m_objects.resize(objects.size());
@@ -34,7 +35,7 @@ namespace JsonDatabase
 			// Delete all objects asynchroneously
 			AsyncContextDrivenDeleter asyncDeleter(m_objects);
 			m_objects.clear();
-			delete m_logger;
+			//delete m_logger;
 		}
 		bool JDManagerAysncWorkSaveList::hasSucceeded() const
 		{

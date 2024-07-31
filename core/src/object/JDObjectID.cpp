@@ -181,6 +181,14 @@ namespace JsonDatabase
         return JDObjectID(1);
     }*/
 
+    std::string JDObjectID::idToStr(const JDObjectID::IDType& id)
+    {
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+        return id;
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+        return std::to_string(id);
+#endif
+    }
 
     // Overloading << operator for std::cout
     std::ostream& operator<<(std::ostream& os, const JDObjectID& id) 

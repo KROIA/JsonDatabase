@@ -36,6 +36,7 @@ namespace JsonDatabase
             , m_mutex(mtx)
             , m_fileLock(nullptr)
             , m_slowUpdateCounter(-1) // -1 to trigger first update
+            , m_middleUpdateCounter(-1) // -1 to trigger first update
             , m_userRegistration()
            // , m_databaseLoginFileLock(nullptr)
 		{
@@ -226,44 +227,6 @@ namespace JsonDatabase
         int JDManagerFileSystem::tryToClearUnusedFileLocks() const
         {
             return m_userRegistration.unregisterInactiveUsers();
-           /* const std::string lockFileEnding = FileLock::s_lockFileEnding;
-
-            // Get all files in the database directory
-            QDir dir(m_manager.getDatabasePath().c_str());
-			dir.setFilter(QDir::Files | QDir::NoSymLinks);
-			dir.setSorting(QDir::Name);
-			QFileInfoList list = dir.entryInfoList();
-
-			// Iterate through all files
-			int count = 0;
-			for (int i = 0; i < list.size(); ++i) {
-				QFileInfo fileInfo = list.at(i);
-				QString fileName = fileInfo.fileName();
-				if (fileName.endsWith(lockFileEnding.c_str()))
-				{
-					// Check if the file is a lock file
-					std::string filePath = fileInfo.absoluteFilePath().toStdString();
-					if (!FileLock::isFileLocked(filePath))
-					{
-						// Delete the file
-						QFile file(filePath.c_str());
-						if (file.remove())
-						{
-                            QFile file2(filePath.c_str());
-                            if (file2.exists())
-							{
-                                JD_CONSOLE_FUNCTION("Can't delete file: " << filePath.c_str() << "\n");
-							}
-                            else
-                            {
-                                JD_CONSOLE_FUNCTION("Deleted unused lock: " << filePath.c_str() << "\n");
-                                ++count;
-                            }
-						}
-					}
-				}
-			}
-			return count;*/
         }
 
         ManagedFileChangeWatcher& JDManagerFileSystem::getDatabaseFileWatcher()
@@ -282,7 +245,17 @@ namespace JsonDatabase
 				m_slowUpdateCounter = 0;
 				tryToClearUnusedFileLocks();
 			}
+            if (m_middleUpdateCounter >= 10)
+            {
+				m_middleUpdateCounter = 0;
+                std::vector<Utilities::JDUser> loggedOnUsers;
+                std::vector<Utilities::JDUser> loggedOffUsers;
+                m_userRegistration.checkForUserChange(loggedOnUsers, loggedOffUsers);
+            }
+
             ++m_slowUpdateCounter;
+            ++m_middleUpdateCounter;
+
             if (m_fileWatcher.hasFileChanged())
             {
                 //m_manager.getSignals().databaseFileChanged.emitSignal();

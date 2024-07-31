@@ -187,7 +187,11 @@ namespace JsonDatabase
 
         bool FileLock::fileExists(const std::string& filePath, const std::string& fileName)
         {
-            DWORD fileAttributes = GetFileAttributes(getFullFilePath(filePath, fileName).c_str());
+            return fileExists(getFullFilePath(filePath, fileName));
+        }
+        bool FileLock::fileExists(const std::string& fullFilePath)
+        {
+            DWORD fileAttributes = GetFileAttributes(fullFilePath.c_str());
             if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
                 if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) {
                     return false; // File doesn't exist
@@ -351,11 +355,16 @@ namespace JsonDatabase
             if(!deleteFile(m_lockFilePathName.c_str()))
            // if (!DeleteFile(m_lockFilePathName.c_str()))
             {
-                if (!isLockInUse(m_directory, m_fileName))
+                DWORD error3 = GetLastError();
+                if (error3 != 32) // File already used by another process (OK since after freeing the lock, a other process could have locked it)
                 {
-                    // Handle error deleting file
-                    err = Error::unableToDeleteLockFile;
-                    if(m_logger)m_logger->logError("Deleting lock file: " + m_lockFilePathName +" "+ getErrorStr(err));
+                    std::string errorStr = Utilities::getLastErrorString(error3);
+                    if (!isLockInUse(m_directory, m_fileName) && fileExists(m_lockFilePathName))
+                    {
+                        // Handle error deleting file
+                        err = Error::unableToDeleteLockFile;
+                        if (m_logger)m_logger->logError("Deleting lock file: " + m_lockFilePathName + " " + getErrorStr(err));
+                    }
                 }
             }
 

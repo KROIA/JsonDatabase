@@ -179,6 +179,8 @@ namespace JsonDatabase
                         std::unique_lock<std::mutex> lock(m_mutex);
 
                         m_fileChanged.store(true);
+                        if(m_logger)
+                            m_logger->logInfo("File change detected");
                         while (m_fileChanged && !m_stopFlag.load()) {
                             m_cv.wait(lock);
                         }
@@ -289,7 +291,7 @@ namespace JsonDatabase
             delete m_logger;
             if (parentLogger)
             {
-                m_logger = new Log::LogObject(*parentLogger, targetFile);
+                m_logger = new Log::LogObject(*parentLogger, "Filewatcher: "+targetFile);
                 m_logger->logInfo("Setting up file change watcher");
             }
 

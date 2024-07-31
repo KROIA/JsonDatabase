@@ -153,6 +153,53 @@ namespace JsonDatabase
 			return AbstractRegistry::removeInactiveObjects();
 		}
 
+		bool JDUserRegistration::checkForUserChange(std::vector<JDUser>& loggedOnUsers, std::vector<JDUser>& loggedOffUsers) const
+		{
+			std::vector<JDUser> currentUsers = getRegisteredUsers();
+
+			loggedOnUsers.clear();
+			loggedOffUsers.clear();
+
+			for (auto& user : currentUsers)
+			{
+				bool found = false;
+				for (auto& lastUser : m_lastActiveUsers)
+				{
+					if (user.getSessionID() == lastUser.getSessionID())
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+				{
+					loggedOnUsers.push_back(user);
+					if (m_logger)
+						m_logger->logInfo("User logged on: " + user.toString());
+				}
+			}
+			for (auto& lastUser : m_lastActiveUsers)
+			{
+				bool found = false;
+				for (auto& user : currentUsers)
+				{
+					if (user.getSessionID() == lastUser.getSessionID())
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+				{
+					loggedOffUsers.push_back(lastUser);
+					if (m_logger)
+						m_logger->logInfo("User logged off: " + lastUser.toString());
+				}
+			}
+			m_lastActiveUsers = currentUsers;
+			return loggedOffUsers.size() > 0 || loggedOnUsers.size() > 0;
+		}
+
 
 		
 

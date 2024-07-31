@@ -46,6 +46,8 @@ namespace JsonDatabase
 
 			bool lockObject(const JDObject & obj, Error& err);
 			bool unlockObject(const JDObject & obj, Error& err);
+			bool unlockObject(const JDObjectID::IDType &id, Error& err);
+			bool lockAllObjs(Error& err);
 			bool unlockAllObjs(Error& err);
 			bool isObjectLocked(const JDObject & obj, Error& err) const;
 			bool isObjectLockedByMe(const JDObject & obj, Error& err) const;
@@ -65,7 +67,7 @@ namespace JsonDatabase
 			int removeInactiveObjectLocks() const;
 
 
-			const std::string& getErrorStr(Error err) const;
+			static const std::string& getErrorStr(Error err);
 
 			struct JsonKeys
 			{

@@ -82,6 +82,8 @@ namespace JsonDatabase
             // Object locker interface
             bool lockObject(const JDObject& obj, JDObjectLocker::Error& err);
             bool unlockObject(const JDObject& obj, JDObjectLocker::Error& err);
+            bool unlockObject(const JDObjectID::IDType& id, JDObjectLocker::Error& err);
+            bool lockAllObjs(JDObjectLocker::Error& err);
             bool unlockAllObjs(JDObjectLocker::Error& err);
             bool isObjectLocked(const JDObject& obj, JDObjectLocker::Error& err) const;
             bool isObjectLockedByMe(const JDObject& obj, JDObjectLocker::Error& err) const;
@@ -128,7 +130,7 @@ namespace JsonDatabase
 
             void update();
 
-            
+            std::vector<JDObjectID::IDType> m_removedObjectIDs;
         private:
             JDManager& m_manager;
             JDObjectIDDomain m_idDomain;
@@ -136,6 +138,7 @@ namespace JsonDatabase
 
             mutable std::mutex m_objsMutex;
             JDObjectContainer m_objs;
+            
             Internal::JDObjectLocker m_objLocker;
 
             Log::LogObject* m_logger = nullptr;

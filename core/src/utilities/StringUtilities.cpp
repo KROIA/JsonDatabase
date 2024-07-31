@@ -45,7 +45,7 @@ namespace JsonDatabase
 		}
 		std::string qTimeToString(const QTime& time)
 		{
-			return time.toString("hh:mm:ss").toStdString();
+			return time.toString("hh:mm:ss:zzz").toStdString();
 		}
 
 		QDate stringToQDate(const std::string& date)
@@ -54,7 +54,7 @@ namespace JsonDatabase
 		}
 		QTime stringToQTime(const std::string& time)
 		{
-			return QTime::fromString(QString::fromStdString(time), "hh:mm:ss");
+			return QTime::fromString(QString::fromStdString(time), "hh:mm:ss:zzz");
 		}
     }
 }

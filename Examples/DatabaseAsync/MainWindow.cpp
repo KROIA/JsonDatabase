@@ -166,10 +166,10 @@ void MainWindow::on_deleteObject_pushButton_clicked()
 	if (p)
 	{
 		DEBUG << p->getObjectID()->toString().c_str() << "\n";
-		//m_manager->removeObject(p);
+		m_manager->removeObject(p);
 		JDObjectInterface* obj = p.get();
 		p.reset();
-		delete obj;
+		//delete obj;
 	}
 	else
 	{
@@ -227,12 +227,35 @@ void MainWindow::on_lockObject_pushButton_clicked()
 			DEBUG << "Can't lock object, nullptr\n";
 	}
 }
+void MainWindow::on_lockAllObjects_pushButton_clicked()
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+
+	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	if (m_manager->lockAllObjs(lastError))
+	{
+		DEBUG << "locked: all objects\n";
+	}
+	else
+	{
+		DEBUG << "Can't lock all objects\n";
+	}
+}
 void MainWindow::on_unlockObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
 	JDObject obj = getSelectedObject();
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	if (!obj)
+	{
+		JDObjectID::IDType id = atoi(ui.id_lineEdit->text().toStdString().c_str());
+		if (m_manager->unlockObject(id, lastError))
+		{
+			DEBUG << "unlocked: " << std::to_string(id) << "\n";
+		}
+		return;
+	}
 	if (m_manager->unlockObject(obj, lastError))
 	{
 		DEBUG << "unlocked: " << obj->getObjectID()->toString().c_str() << "\n";
@@ -243,6 +266,20 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 			DEBUG << "Can't unlock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't unlock object, nullptr\n";
+	}
+}
+void MainWindow::on_unlockAllObjects_pushButton_clicked()
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+
+	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	if (m_manager->unlockAllObjs(lastError))
+	{
+		DEBUG << "unlocked: all objects\n";
+	}
+	else
+	{
+		DEBUG << "Can't unlock all objects\n";
 	}
 }
 void MainWindow::on_test_pushButton_clicked()

@@ -31,7 +31,9 @@ private slots:
 	void on_editObject_pushButton_clicked();
 
 	void on_lockObject_pushButton_clicked();
+	void on_lockAllObjects_pushButton_clicked();
 	void on_unlockObject_pushButton_clicked();
+	void on_unlockAllObjects_pushButton_clicked();
 	void on_test_pushButton_clicked();
 
 	void onPersonSave(JDderivedObject<Person> person);

@@ -216,7 +216,7 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
 	}
 
 
-    size_t index = JDObjectInterface::getJsonIndexByID(jsons, id);
+    size_t index = JDObjectInterface::getJsonIndexByID(jsons, id->get());
     if (index == std::string::npos)
     {
         if (m_logger)m_logger->logError("bool JDManager::loadObject_internal(JDObject) Object with ID: \"" + id->toString() + "\" not found");
@@ -387,6 +387,14 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
     if (!obj)
         return false;
+    JDObjectLocker::Error lockerError;
+    if (!JDManagerObjectManager::isObjectLockedByMe(obj, lockerError))
+    {
+        if (m_logger)
+            m_logger->logWarning("Can't save object with ID: " + obj->getObjectID()->toString() + 
+                " because it's not locked by this manager instance. Lock Error: "+ JDObjectLocker::getErrorStr(lockerError));
+        return false;
+    }
     if(m_logger)
         m_logger->log("Saving object with ID: " + obj->getObjectID()->toString(), Log::Level::info);
     double progressScalar = 0;
@@ -435,7 +443,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
         if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis,): Error: " + LockedFileAccessor::getErrorStr(fileError));
         return false;
     }
-    size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID);
+    size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID->get());
 
     if (index == std::string::npos)
     {
@@ -470,7 +478,7 @@ bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkP
     std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
     return saveObjects_internal(objs, timeoutMillis, progress);
 }
-bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
+bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if(objList.size() == 0)
@@ -480,6 +488,50 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     double progressScalar = 0;
     if(progress)
         progressScalar = progress->getScalar();
+
+    std::vector<JDObjectLocker::LockData> lockedObjects;
+    JDObjectLocker::Error lockerError;
+    if (!JDManagerObjectManager::getLockedObjects(lockedObjects, lockerError))
+    {
+        if (m_logger)
+			m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + JDObjectLocker::getErrorStr(lockerError));
+		return false;
+    }
+
+    bool notAllSaved = false;
+    int removedFromListCount = 0;
+    for (size_t i = 0; i < objList.size(); ++i)
+    {
+		bool found = false;
+        for (size_t j = 0; j < lockedObjects.size(); ++j)
+        {
+            if (objList[i]->getShallowObjectID() == lockedObjects[j].objectID)
+            {
+				found = true;
+                if (lockedObjects[j].user.getSessionID() != m_user.getSessionID())
+                {
+                    if(m_logger)
+						m_logger->logWarning("Object with ID: " + std::to_string(objList[i]->getShallowObjectID()) + " is locked by another user. It will not be saved");
+                    objList.erase(objList.begin() + i);
+                    notAllSaved = true;
+                    ++removedFromListCount;
+                    --i;
+                }
+				break;
+			}
+		}
+        if (!found)
+        {
+			if (m_logger)
+				m_logger->logWarning("Object with ID: " + std::to_string(objList[i]->getShallowObjectID()) + " is not locked by this user. It will not be saved");
+			objList.erase(objList.begin() + i);
+            ++removedFromListCount;
+            notAllSaved = true;
+			--i;
+		}
+	}
+   
+
 
     LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
     fileAccessor.setProgress(progress);
@@ -495,13 +547,21 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
         return false;
     }
     FileWatcherAutoPause paused(JDManagerFileSystem::getDatabaseFileWatcher());
-    bool success = true;
 
     if (progress) progress->setComment("Serializing objects");
     JsonArray *jsonData = new JsonArray;
+    JsonArray origJsonData;
     AsyncContextDrivenDeleter asyncDeleter(jsonData);
    
+    fileError = fileAccessor.readJsonFile(origJsonData);
+
+    if (fileError != LockedFileAccessor::Error::none)
+    {
+        if (m_logger)m_logger->logError("bool JDManager::saveObjects_internal(const JDObject &obj, unsigned int timeoutMillis,): Error: " + LockedFileAccessor::getErrorStr(fileError));
+        return false;
+    }
     
+    bool success = true;
     if (progress)
     {
         progress->startNewSubProgress(progressScalar * 0.6);
@@ -511,10 +571,44 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
 	{
 		success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData);
 	}
+
+    // Replace the objects in the original json data
+    int replacedCount = 0;
+    if (m_removedObjectIDs.size() > 0)
+    {
+        for (size_t i = 0; i < origJsonData.size(); ++i)
+        {
+            JDObjectID::IDType id = JDObjectInterface::getIDFromJson(origJsonData[i].get<JsonObject>());
+            if (std::find(m_removedObjectIDs.begin(), m_removedObjectIDs.end(), id) != m_removedObjectIDs.end())
+            {
+				origJsonData.erase(origJsonData.begin() + i);
+				--i;
+			}
+		}
+    }
+    m_removedObjectIDs.clear();
+
+    for (size_t i = 0; i < origJsonData.size(); ++i)
+    {
+        const JsonObject &objData = origJsonData[i].get<JsonObject>();
+        size_t index = JDObjectInterface::getJsonIndexByID(*jsonData, JDObjectInterface::getIDFromJson(objData));
+        if (index == std::string::npos)
+			continue;
+        origJsonData[i] = (*jsonData)[index];
+        jsonData->erase(jsonData->begin() + index);
+        ++replacedCount;
+    }
+    if (jsonData->size())
+    {
+        for (size_t i = 0; i < jsonData->size(); ++i)
+        {
+			origJsonData.push_back((*jsonData)[i]);
+		}
+	}
     
     // Save the serialized objects
     if(progress) progress->startNewSubProgress(progressScalar * 0.4);
-    fileError = fileAccessor.writeJsonFile(*jsonData);
+    fileError = fileAccessor.writeJsonFile(origJsonData);
     if (fileError != LockedFileAccessor::Error::none)
     {
         if (m_logger)m_logger->logError("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
@@ -522,10 +616,15 @@ bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsig
     }
     if (m_logger)
         if (success)
-            m_logger->log(std::to_string(objList.size()) + " objects saved successfully", Log::Level::info, Log::Colors::green);
+        {
+            if(objList.size() > 0)
+                m_logger->log(std::to_string(objList.size()) + " objects saved successfully", Log::Level::info, Log::Colors::green);
+            if(removedFromListCount > 0)
+                m_logger->logWarning(std::to_string(removedFromListCount) + " objects can't be saved because they are not locked by this user.");
+        }
         else
-            m_logger->logError(std::to_string(objList.size()) + " objects can't be saved");
-    return success;
+            m_logger->logError(std::to_string(objList.size() + removedFromListCount) + " objects can't be saved");
+    return success && !notAllSaved;
 }
 
 void JDManager::onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> work)
