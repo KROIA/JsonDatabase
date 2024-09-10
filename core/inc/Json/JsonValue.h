@@ -155,6 +155,24 @@ namespace JsonDatabase
 			return holds<JsonObject>();
 		}
 
+		JsonArray& getArray()
+		{
+			return get<JsonArray>();
+		}
+		const JsonArray& getArray() const
+		{
+			return get<JsonArray>();
+		}
+
+		JsonObject& getObject()
+		{
+			return get<JsonObject>();
+		}
+		const JsonObject& getObject() const
+		{
+			return get<JsonObject>();
+		}
+
 
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, T*>::type get_if() noexcept
