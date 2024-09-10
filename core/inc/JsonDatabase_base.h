@@ -6,6 +6,7 @@
 
 #include "JsonDatabase_global.h"
 #include "JsonDatabase_debug.h"
+#include "JsonDatabase_info.h"
 
 /// USER_SECTION_START 2
 

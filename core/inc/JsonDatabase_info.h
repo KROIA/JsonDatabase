@@ -4,7 +4,9 @@
 
 /// USER_SECTION_END
 
-#include "JsonDatabase_base.h"
+#include "JsonDatabase_global.h"
+#include "JsonDatabase_debug.h"
+
 #include <sstream>
 
 #define STRINGIFY(x) #x
