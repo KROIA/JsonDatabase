@@ -427,6 +427,7 @@ namespace JsonDatabase
 			case Error::unableToLock: { static const std::string msg = "JDObjectLocker::Error::unableToLock"; return msg; };
 			case Error::lockedByOther: { static const std::string msg = "JDObjectLocker::Error::lockedByOther"; return msg; };
 			case Error::programmingError: { static const std::string msg = "JDObjectLocker::Error::programmingError"; return msg; };
+			case Error::notLocked: { static const std::string msg = "JDObjectLocker::Error::notLocked"; return msg; };
 			}
 			static std::string unknown;
 			unknown = "Unknown JDObjectLocker Error: " + std::to_string(err);

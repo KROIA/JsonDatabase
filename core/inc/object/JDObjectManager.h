@@ -3,6 +3,7 @@
 #include "JsonDatabase_base.h"
 #include "JsonDatabase_Declaration.h"
 #include "JDObjectID.h"
+#include "utilities/JDUser.h"
 
 
 #include "Json/JsonValue.h"
@@ -19,7 +20,7 @@ namespace JsonDatabase
 		{
 			friend JDManagerObjectManager;
 
-			JDObjectManager(const JDObject& obj, const JDObjectIDptr& id, Log::LogObject* parentLogger);
+			JDObjectManager(JDManager *manager, const JDObject& obj, const JDObjectIDptr& id, Log::LogObject* parentLogger);
 			~JDObjectManager();
 		public:
 			
@@ -33,6 +34,19 @@ namespace JsonDatabase
 			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
 			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
 				WorkProgress* progress);
+
+
+			// Interface for the Database Object
+			bool isLocked() const;
+			bool lock();
+			bool unlock();
+			Utilities::JDUser getLockOwner(bool& isLocked) const;
+
+			bool saveToDatabase();
+			void saveToDatabaseAsync();
+
+			bool loadFromDatabase();
+			void loadFromDatabaseAsync();
 			
 		private:
 			enum ManagedLoadStatus
@@ -104,8 +118,8 @@ namespace JsonDatabase
 			bool loadAndOverrideData(const JsonObject& json);
 			bool loadAndOverrideDataIfChanged(const JsonObject& json, bool& hasChangesOut);
 
-			static JDObjectManager* instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::LogObject * parentLogger);
-			static JDObjectManager* cloneAndLoadObject(const JDObject &original, const JsonObject& json, const JDObjectIDptr& id, Log::LogObject* parentLogger);
+			//static JDObjectManager* instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::LogObject * parentLogger);
+			//static JDObjectManager* cloneAndLoadObject(const JDObject &original, const JsonObject& json, const JDObjectIDptr& id, Log::LogObject* parentLogger);
 
 			static ManagedLoadStatus managedLoadExisting_internal(
 				const JsonObject& json,
@@ -129,6 +143,7 @@ namespace JsonDatabase
 			JDObjectIDptr m_id;
 			Lockstate m_lockstate;
 			ChangeState m_changestate;
+			JDManager *m_databaseManager;
 		};
 	}
 }

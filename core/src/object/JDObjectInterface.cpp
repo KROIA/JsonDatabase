@@ -153,6 +153,57 @@ const JDObjectID::IDType& JDObjectInterface::getShallowObjectID() const
     return m_shallowID;
 }
 
+bool JDObjectInterface::isLocked() const
+{
+    if(m_manager)
+        return m_manager->isLocked();
+    return false;
+}
+bool JDObjectInterface::lock()
+{
+    if (m_manager)
+        return m_manager->lock();
+    return false;
+}
+bool JDObjectInterface::unlock()
+{
+    if (m_manager)
+        return m_manager->unlock();
+    return false;
+}
+
+Utilities::JDUser JDObjectInterface::getLockOwner(bool& isLocked) const
+{
+    if(m_manager)
+		return m_manager->getLockOwner(isLocked);
+    isLocked = false;
+    return Utilities::JDUser();
+}
+
+bool JDObjectInterface::saveToDatabase()
+{
+    if (m_manager)
+        return m_manager->saveToDatabase();
+    return false;
+}
+void JDObjectInterface::saveToDatabaseAsync() 
+{
+    if (m_manager)
+        m_manager->saveToDatabaseAsync();
+}
+
+bool JDObjectInterface::loadFromDatabase() 
+{
+    if (m_manager)
+        return m_manager->loadFromDatabase();
+    return false;
+}
+void JDObjectInterface::loadFromDatabaseAsync()
+{
+    if (m_manager)
+		m_manager->loadFromDatabaseAsync();
+}
+
 bool JDObjectInterface::equalData(const JsonObject& obj) const
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);

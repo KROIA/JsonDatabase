@@ -3,6 +3,7 @@
 #include "JsonDatabase_base.h"
 #include "JsonDatabase_Declaration.h"
 #include "utilities/JDSerializable.h"
+#include "utilities/JDUser.h"
 #include "JDObjectID.h"
 #include <memory>
 
@@ -66,6 +67,39 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
             const JDObjectID::IDType& getShallowObjectID() const;
         */
         const JDObjectID::IDType& getShallowObjectID() const;
+
+
+        // Interface to the database
+        /// @brief Returns the lock state of the object.
+        /// @return true if the object is locked, false otherwise.
+        bool isLocked() const;
+
+        /// @brief Locks the object.
+        /// @return true if the object was successfully locked, false otherwise.
+        bool lock();
+
+        /// @brief Unlocks the object.
+        /// @return true if the object was successfully unlocked, false otherwise.
+        bool unlock();
+
+        /// @brief Returns the owner of the lock.
+        /// @return The owner of the lock.
+        Utilities::JDUser getLockOwner(bool &isLocked) const;
+
+        /// @brief Saves the object to the database.
+        /// @return true if the object was successfully saved, false otherwise.
+        bool saveToDatabase();
+
+        /// @brief Saves the object to the database asynchronously.
+        void saveToDatabaseAsync();
+
+        /// @brief Loads the object from the database.
+        /// @return true if the object was successfully loaded, false otherwise.
+        bool loadFromDatabase();
+
+        /// @brief Loads the object from the database asynchronously.
+        void loadFromDatabaseAsync();
+
     protected:
         bool equalData(const JsonObject& obj) const;
         bool loadInternal(const JsonObject& obj);

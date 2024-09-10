@@ -207,6 +207,30 @@ namespace JsonDatabase
 			}
 			return true;
         }
+        bool JDManagerObjectManager::getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, JDObjectLocker::Error& err) const
+        {
+            if (!obj)
+            {
+                err = JDObjectLocker::objIsNullptr;
+                return false;
+            }
+            std::vector<JDObjectLocker::LockData> lockedObjects;
+            if (!m_objLocker.getLockedObjects(lockedObjects, err))
+                return false;
+            for (size_t i = 0; i < lockedObjects.size(); ++i)
+            {
+                JDObjectID::IDType id = obj->getShallowObjectID();
+                if(obj->getObjectID())
+					id = obj->getObjectID()->get();
+				if (lockedObjects[i].objectID == id)
+				{
+					userOut = lockedObjects[i].user;
+					return true;
+				}
+			}
+            err = JDObjectLocker::notLocked;
+            return false;
+        }
         int JDManagerObjectManager::removeInactiveObjectLocks() const
         {
             return m_objLocker.removeInactiveObjectLocks();
@@ -268,7 +292,7 @@ namespace JsonDatabase
 					break;
 				}
 			}
-            JDObjectManager *manager = new JDObjectManager(obj, id, m_logger);
+            JDObjectManager *manager = new JDObjectManager(&m_manager, obj, id, m_logger);
             if(m_objs.addObject(manager))
             {
                 if(m_logger)
@@ -311,7 +335,7 @@ namespace JsonDatabase
                     break;
                 }
             }
-            JDObjectManager* manager = new JDObjectManager(obj, id, m_logger);
+            JDObjectManager* manager = new JDObjectManager(&m_manager, obj, id, m_logger);
             return m_objs.addObject(manager);
         }
         bool JDManagerObjectManager::packAndAddObject_internal(const std::vector<JDObject>& objs)
@@ -342,7 +366,7 @@ namespace JsonDatabase
                         break;
                     }
                 }
-                JDObjectManager* manager = new JDObjectManager(objs[i], generatedIDs[i], m_logger);
+                JDObjectManager* manager = new JDObjectManager(&m_manager, objs[i], generatedIDs[i], m_logger);
                 bool success2 = m_objs.addObject(manager);
                 success &= success2;
                 if (m_logger)
@@ -392,7 +416,7 @@ namespace JsonDatabase
             delete replacedManager;
             replacedManager = nullptr;
             
-            JDObjectManager* newManager = new JDObjectManager(obj, idPtr, m_logger);
+            JDObjectManager* newManager = new JDObjectManager(&m_manager, obj, idPtr, m_logger);
             m_objs.addObject(newManager);
             if(m_logger)
                 m_logger->logInfo("Replaced object with ID: " + obj->getObjectID().get()->toString());

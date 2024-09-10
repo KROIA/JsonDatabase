@@ -33,6 +33,7 @@ namespace JsonDatabase
 				unableToLock,
 				lockedByOther,
 				programmingError,
+				notLocked,
 			};
 
 		protected:

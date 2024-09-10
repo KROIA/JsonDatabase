@@ -4,6 +4,8 @@
 #include "object/JDObjectRegistry.h"
 #include "manager/async/WorkProgress.h"
 
+#include "manager/JDManager.h"
+
 #ifdef JD_ENABLE_MULTITHREADING
 #include <thread>
 #endif
@@ -12,8 +14,9 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		JDObjectManager::JDObjectManager(const JDObject& obj, const JDObjectIDptr& id, Log::LogObject* parentLogger)
-			: m_obj(obj)
+		JDObjectManager::JDObjectManager(JDManager* manager, const JDObject& obj, const JDObjectIDptr& id, Log::LogObject* parentLogger)
+			: m_databaseManager(manager)
+			, m_obj(obj)
 			, m_id(id)
 			, m_lockstate(Lockstate::unlocked)
 			, m_changestate(ChangeState::unchanged)
@@ -167,6 +170,76 @@ namespace JsonDatabase
 			return success;
 		}
 
+		bool JDObjectManager::isLocked() const
+		{
+			if (m_databaseManager)
+			{
+				JDObjectLocker::Error err;
+				return m_databaseManager->isObjectLocked(getObject(), err);
+			}
+			return false;
+		}
+		bool JDObjectManager::lock()
+		{
+			if (m_databaseManager)
+			{
+				JDObjectLocker::Error err;
+				return m_databaseManager->lockObject(getObject(), err);
+			}
+			return false;
+		}
+		bool JDObjectManager::unlock()
+		{
+			if (m_databaseManager)
+			{
+				JDObjectLocker::Error err;
+				return m_databaseManager->unlockObject(getObject(), err);
+			}
+			return false;
+		}
+		Utilities::JDUser JDObjectManager::getLockOwner(bool& isLocked) const
+		{
+			if (m_databaseManager)
+			{
+				Utilities::JDUser userOut; 
+				JDObjectLocker::Error err;
+				isLocked = m_databaseManager->getLockOwner(getObject(), userOut, err);
+				return userOut;
+			}
+			isLocked = false;
+			return Utilities::JDUser();
+		}
+		bool JDObjectManager::saveToDatabase()
+		{
+			if (m_databaseManager)
+			{
+				return m_databaseManager->saveObject(getObject());
+			}
+			return false;
+		}
+		void JDObjectManager::saveToDatabaseAsync()
+		{
+			if (m_databaseManager)
+			{
+				m_databaseManager->saveObjectAsync(getObject());
+			}
+		}
+		bool JDObjectManager::loadFromDatabase()
+		{
+			if(m_databaseManager)
+			{
+				return m_databaseManager->loadObject(getObject());
+			}
+			return false;
+		}
+		void JDObjectManager::loadFromDatabaseAsync()
+		{
+			if (m_databaseManager)
+			{
+				m_databaseManager->loadObjectAsync(getObject());
+			}
+		}
+
 		const std::string& JDObjectManager::managedLoadStatusToString(ManagedLoadStatus status)
 		{
 			
@@ -287,7 +360,7 @@ namespace JsonDatabase
 			return deserializeOverrideFromJsonIfChanged_internal(json, m_obj, hasChangesOut);
 		}
 
-		JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::LogObject* parentLogger)
+		/*JDObjectManager* JDObjectManager::instantiateAndLoadObject(const JsonObject& json, const JDObjectIDptr& id, Log::LogObject* parentLogger)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
 			JDObject templateObj = JDObjectRegistry::getObjectDefinition(json);
@@ -314,7 +387,7 @@ namespace JsonDatabase
 			}
 			return manager;
 		}
-
+		*/
 		bool JDObjectManager::deserializeOverrideFromJsonIfChanged_internal(const JsonObject& json, JDObject obj, bool& hasChangedOut)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);

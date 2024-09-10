@@ -210,6 +210,17 @@ void MainWindow::on_editObject_pushButton_clicked()
 	{
 		editMode = false;
 	}
+	if (p)
+	{
+		if (p->isLocked())
+		{
+			DEBUG << "Object is locked\n";
+		}
+		else
+		{
+			DEBUG << "Object is not locked\n";
+		}
+	}
 	/*if (m_manager->isObjectLockedByOther(p, lastError))
 	{
 		editMode = false;
@@ -229,8 +240,11 @@ void MainWindow::on_lockObject_pushButton_clicked()
 	EASY_FUNCTION(profiler::colors::Amber);
 
 	JDObject obj = getSelectedObject();
+	if (!obj)
+		return;
 	JsonDatabase::Internal::JDObjectLocker::Error lastError;
-	if (m_manager->lockObject(obj, lastError))
+	obj->lock();
+	/*if (m_manager->lockObject(obj, lastError))
 	{
 		DEBUG << "locked: " << obj->getObjectID()->toString().c_str() << "\n";
 	}
@@ -240,6 +254,18 @@ void MainWindow::on_lockObject_pushButton_clicked()
 			DEBUG << "Can't lock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't lock object, nullptr\n";
+	}*/
+	
+	if (obj->isLocked())
+	{
+		DEBUG << "Object is locked\n";
+		bool isLocked;
+		auto user = obj->getLockOwner(isLocked);
+		DEBUG << user.toString();
+	}
+	else
+	{
+		DEBUG << "Object is not locked\n";
 	}
 }
 void MainWindow::on_lockAllObjects_pushButton_clicked()
@@ -281,6 +307,16 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 			DEBUG << "Can't unlock: " << obj->getObjectID()->toString().c_str() << "\n";
 		else
 			DEBUG << "Can't unlock object, nullptr\n";
+	}
+	if (!obj)
+		return;
+	if (obj->isLocked())
+	{
+		DEBUG << "Object is locked\n";
+	}
+	else
+	{
+		DEBUG << "Object is not locked\n";
 	}
 }
 void MainWindow::on_unlockAllObjects_pushButton_clicked()
