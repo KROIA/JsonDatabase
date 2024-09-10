@@ -146,7 +146,14 @@ namespace JsonDatabase
 		}
 
 
-
+		bool isArray() const noexcept
+		{
+			return holds<JsonArray>();
+		}
+		bool isObject() const noexcept
+		{
+			return holds<JsonObject>();
+		}
 
 
 		template <class T>
