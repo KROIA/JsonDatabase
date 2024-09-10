@@ -13,7 +13,7 @@
 	#include <iostream>
 
 	#define JD_DEBUG
-	//#define JD_CONSOLE_STREAM std::cout
+	#define JD_CONSOLE_STREAM std::cout
 
 	#define JD_CONSOLE(msg) JD_CONSOLE_STREAM << msg;
 	#define JD_CONSOLE_FUNCTION(msg) JD_CONSOLE_STREAM << __PRETTY_FUNCTION__ << " " << msg;
