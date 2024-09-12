@@ -243,7 +243,7 @@ namespace JsonDatabase
             list.reserve(m_objs.size());
             for (auto& p : m_objs)
             {
-                std::shared_ptr<T> obj = std::dynamic_pointer_cast<T>(p);
+                std::shared_ptr<T> obj = std::dynamic_pointer_cast<T>(p->getObject());
                 if (obj)
                     list.push_back(obj);
             }
