@@ -1,5 +1,6 @@
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/JDUtilities.h"
+#include "utilities/StringUtilities.h"
 #include <fstream>
 #include <filesystem>
 
@@ -8,16 +9,17 @@ namespace JsonDatabase
 {
     namespace Internal
     {
+        FileChangeWatcher::Mode FileChangeWatcher::s_defaultWatchMode = FileChangeWatcher::Mode::polling;
+
         FileChangeWatcher::FileChangeWatcher(const std::string& filePath)
             : m_stopFlag(false)
             , m_fileChanged(false)
             , m_paused(false)
-#ifdef JD_FILEWATCHER_USE_WIN_API
             , m_eventHandle(nullptr)
-#endif
             , m_setupError(0)
         {
             m_filePath = getFullPath(filePath);
+            m_watchMode = s_defaultWatchMode;
         }
 
         FileChangeWatcher::~FileChangeWatcher()
@@ -44,55 +46,87 @@ namespace JsonDatabase
 			return m_setupError;
 		}
 
-        bool FileChangeWatcher::startWatching()
+        bool FileChangeWatcher::startWatching(Mode watchMode)
         {
-#ifdef JD_FILEWATCHER_USE_WIN_API
-            if (m_watchThread)
-                return true;
-            if (!m_eventHandle.load())
-                if (!setup(m_logger))
-                    return false;
+            m_watchMode = watchMode;
+            switch(m_watchMode)
+			{
+                case Mode::polling:
+                {
+                    checkFileChanges();
+                    break;
+                }
+                case Mode::winApi:
+                {
+                    if (m_watchThread)
+                        return true;
+                    if (!m_eventHandle.load())
+                        if (!setup(m_logger))
+                            return false;
 
-            m_watchThread = new std::thread(&FileChangeWatcher::monitorFileChanges, this);
-#endif
-#ifdef JD_FILEWATCHER_USE_POLLING
-            checkFileChanges();
-#endif
+                    m_watchThread = new std::thread(&FileChangeWatcher::monitorFileChanges, this);
+                }
+                default:
+                {
+                    return false;
+                }
+            }
             return true;
         }
+        bool FileChangeWatcher::startWatching()
+        {
+            return startWatching(m_watchMode);
+		}
 
         void FileChangeWatcher::stopWatching()
         {
-#ifdef JD_FILEWATCHER_USE_WIN_API
-            if (!m_watchThread)
-                return;
-
+            switch (m_watchMode)
             {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                m_stopFlag.store(true);
-                m_cv.notify_all();
+                case Mode::polling:
+                {
+                    
+                    break;
+                }
+                case Mode::winApi:
+                {
+                    if (!m_watchThread)
+                        return;
+
+                    {
+                        std::unique_lock<std::mutex> lock(m_mutex);
+                        m_stopFlag.store(true);
+                        m_cv.notify_all();
+                    }
+                    m_watchThread->join();
+                    delete m_watchThread;
+                    m_watchThread = nullptr;
+                }
             }
-            m_watchThread->join();
-            delete m_watchThread;
-            m_watchThread = nullptr;
-#endif
         }
         bool FileChangeWatcher::isWatching() const
         {
-#ifdef JD_FILEWATCHER_USE_WIN_API
-            return m_watchThread;
-#endif
-#ifdef JD_FILEWATCHER_USE_POLLING
-      		return true;
-#endif
+            switch (m_watchMode)
+            {
+                case Mode::polling:
+                {
+                    return true;
+                    break;
+                }
+                case Mode::winApi:
+                {
+                    return m_watchThread != nullptr;
+                }
+            }
+            return false;
         }
 
         bool FileChangeWatcher::hasFileChanged()
         {
             std::unique_lock<std::mutex> lock(m_mutex);
-#ifdef JD_FILEWATCHER_USE_POLLING
-            checkFileChanges();
-#endif
+
+            if(m_watchMode == Mode::polling)
+				checkFileChanges();
+
             return m_fileChanged;
         }
 
@@ -100,9 +134,8 @@ namespace JsonDatabase
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_fileChanged.store(false);
-#ifdef JD_FILEWATCHER_USE_WIN_API
-            m_cv.notify_all();
-#endif
+            if(m_watchMode == Mode::winApi)
+                m_cv.notify_all();
         }
 
         void FileChangeWatcher::pause()
@@ -118,6 +151,16 @@ namespace JsonDatabase
             return m_paused.load();
         }
 
+
+        void FileChangeWatcher::setDefaultWatchMode(Mode mode)
+        {
+            s_defaultWatchMode = mode;
+        }
+        FileChangeWatcher::Mode FileChangeWatcher::getDefaultWatchMode()
+        {
+            return s_defaultWatchMode;
+        }
+
         std::string FileChangeWatcher::getFullPath(const std::string& relativePath) {
             char fullPath[MAX_PATH];
             DWORD result = GetFullPathNameA(relativePath.c_str(), MAX_PATH, fullPath, nullptr);
@@ -129,7 +172,7 @@ namespace JsonDatabase
             return fullPath;
         }
 
-#ifdef JD_FILEWATCHER_USE_WIN_API
+
         void FileChangeWatcher::monitorFileChanges()
         {
             JD_PROFILING_THREAD("FileChangeWatcher");
@@ -141,7 +184,11 @@ namespace JsonDatabase
             BYTE buffer[4096];
 
             std::string directory = m_filePath.substr(0, m_filePath.find_last_of("\\") + 1);
+#ifdef UNICODE
+            m_eventHandle.store(FindFirstChangeNotification(Utilities::strToWstr(directory).c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE));
+#else
             m_eventHandle.store(FindFirstChangeNotification(directory.c_str(), FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE));
+#endif
 
             if (m_eventHandle.load() == INVALID_HANDLE_VALUE) {
                 if (m_logger)m_logger->logError("starting directory watch: " + Utilities::getLastErrorString(GetLastError()) + "\n");
@@ -216,7 +263,7 @@ namespace JsonDatabase
             FindCloseChangeNotification(m_eventHandle.load());
             m_eventHandle.store(nullptr);
         }
-#endif
+
 
         bool FileChangeWatcher::fileChanged()
         {
@@ -236,7 +283,11 @@ namespace JsonDatabase
             // Check if the file has been modified since lastWriteTime
             if (change > m_lastModificationTime) {
                 HANDLE fileHandle = CreateFile(
+#ifdef UNICODE
+                    Utilities::strToWstr(m_filePath).c_str(),
+#else
                     m_filePath.c_str(),
+#endif                     
                     GENERIC_READ,
                     FILE_SHARE_READ,
                     nullptr,
@@ -259,7 +310,6 @@ namespace JsonDatabase
 
             return false; // File has not changed
         }
-#ifdef JD_FILEWATCHER_USE_POLLING
         void FileChangeWatcher::checkFileChanges()
         {
             bool success;
@@ -277,18 +327,6 @@ namespace JsonDatabase
             m_md5Hash = md5;
         }
 
-
-        /*std::string ManagedFileChangeWatcher::getMd5(const std::string& fullFilePath)
-        {
-            std::ifstream file(fullFilePath, std::ios::binary);
-			if (!file.is_open())
-				return "";
-
-			std::string md5 = Utilities::getMd5(file);
-			file.close();
-			return md5;
-        }*/
-#endif
 
 
         //

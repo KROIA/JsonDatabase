@@ -176,6 +176,11 @@ class JSON_DATABASE_EXPORT JDManager:
 				in this case the object is not saved. Try load the database first.
         */
         void saveLockedObjectsAsync();
+
+
+
+        static void setDefaultFileWatchMode(Internal::FileChangeWatcher::Mode mode);
+        static Internal::FileChangeWatcher::Mode getDefaultFileWatchMode();
         
         
 

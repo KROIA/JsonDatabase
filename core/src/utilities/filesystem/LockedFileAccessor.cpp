@@ -1,6 +1,7 @@
 #include "utilities/filesystem/LockedFileAccessor.h"
 #include "manager/async/WorkProgress.h"
 #include "utilities/filesystem/StringZipper.h"
+#include "utilities/StringUtilities.h"
 
 
 #include "Json/JsonValue.h"
@@ -484,7 +485,11 @@ namespace JsonDatabase
             JDFILE_IO_PROFILING_NONSCOPED_BLOCK("open file", JD_COLOR_STAGE_7);
             std::string filePath = getFullFilePath();
             HANDLE fileHandle = CreateFile(
+#ifdef UNICODE
+                Utilities::strToWstr(filePath).c_str(),
+#else
                 filePath.c_str(),
+#endif 
                 GENERIC_READ,
                 FILE_SHARE_READ,
                 nullptr,
@@ -575,7 +580,11 @@ namespace JsonDatabase
             JDFILE_IO_PROFILING_BLOCK("open file", JD_COLOR_STAGE_7);
             std::string filePath = getFullFilePath();
             HANDLE fileHandle = CreateFile(
+#ifdef UNICODE
+                Utilities::strToWstr(filePath).c_str(),
+#else
                 filePath.c_str(),
+#endif 
                 GENERIC_WRITE,
                 0,
                 nullptr,

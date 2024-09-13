@@ -56,5 +56,16 @@ namespace JsonDatabase
 		{
 			return QTime::fromString(QString::fromStdString(time), "hh:mm:ss:zzz");
 		}
+
+		std::string wstrToStr(const std::wstring& wstr)
+		{
+			std::string result(wstr.begin(), wstr.end());
+			return result;			
+		}
+		std::wstring strToWstr(const std::string& str)
+		{
+			std::wstring result(str.begin(), str.end());
+			return result;
+		}
     }
 }

@@ -261,6 +261,14 @@ void JDManager::saveLockedObjectsAsync()
         JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs, m_logger));
     }
 }
+void JDManager::setDefaultFileWatchMode(Internal::FileChangeWatcher::Mode mode)
+{
+    Internal::FileChangeWatcher::setDefaultWatchMode(mode);
+}
+Internal::FileChangeWatcher::Mode JDManager::getDefaultFileWatchMode()
+{
+    return Internal::FileChangeWatcher::getDefaultWatchMode();
+}
 
 bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress* progress)
 {

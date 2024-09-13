@@ -14,13 +14,6 @@
 
 #include "Logger.h"
 
-#if !defined(JD_FILEWATCHER_USE_POLLING) and !defined(JD_FILEWATCHER_USE_WIN_API)
-    #error "Please define either JD_FILEWATCHER_USE_POLLING or JD_FILEWATCHER_USE_WIN_API in JsonDatabase_global.h"
-#else 
-#if defined(JD_FILEWATCHER_USE_POLLING) and defined(JD_FILEWATCHER_USE_WIN_API)
-	#error "Please define either JD_FILEWATCHER_USE_POLLING or JD_FILEWATCHER_USE_WIN_API in JsonDatabase_global.h"
-#endif
-#endif
 
 
 
@@ -31,11 +24,17 @@ namespace JsonDatabase
         class JSON_DATABASE_EXPORT FileChangeWatcher
         {
         public:
+            enum Mode
+            {
+                polling,  // checks for a file change when asked
+                winApi    // Uses the "FindFirstChangeNotification" function to monitor file changes (does not work on network drives)
+            };
             FileChangeWatcher(const std::string& filePath);
             ~FileChangeWatcher();
             bool setup(Log::LogObject* parentLogger);
             DWORD getSetupError() const;
 
+            bool startWatching(Mode watchMode);
             bool startWatching();
             void stopWatching();
             bool isWatching() const;
@@ -46,6 +45,9 @@ namespace JsonDatabase
             void unpause();
             bool isPaused() const;
 
+            static void setDefaultWatchMode(Mode mode);
+            static Mode getDefaultWatchMode();
+
         private:
             std::string getFullPath(const std::string& relativePath);
             
@@ -54,16 +56,16 @@ namespace JsonDatabase
             Log::LogObject* m_logger = nullptr;
             std::string m_filePath;
 
-#ifdef JD_FILEWATCHER_USE_WIN_API
+            // Mode::winApi
             void monitorFileChanges();
             std::thread* m_watchThread = nullptr;
             std::atomic<HANDLE> m_eventHandle;
-#endif
-#ifdef JD_FILEWATCHER_USE_POLLING
+
+            // Mode::polling
             void checkFileChanges();
-            //std::string getMd5(const std::string& fullFilePath);
             std::string m_md5Hash;
-#endif
+
+            Mode m_watchMode;
             DWORD m_setupError;
 
             
@@ -74,6 +76,8 @@ namespace JsonDatabase
             std::atomic<bool> m_stopFlag;
             std::atomic<bool> m_fileChanged;
             std::atomic<bool> m_paused;
+
+            static Mode s_defaultWatchMode;
         };
 
 

@@ -16,5 +16,8 @@ namespace JsonDatabase
 
         QDate JSON_DATABASE_EXPORT stringToQDate(const std::string& date);
         QTime JSON_DATABASE_EXPORT stringToQTime(const std::string& time);
+
+        std::string JSON_DATABASE_EXPORT wstrToStr(const std::wstring& wstr);
+        std::wstring JSON_DATABASE_EXPORT strToWstr(const std::string& str);
     }
 }

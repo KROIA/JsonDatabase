@@ -44,7 +44,11 @@ namespace JsonDatabase
         bool FileLock::tryGetLock(Error& err)
         {
             HANDLE fileHandle = CreateFile(
+#ifdef UNICODE
+                Utilities::strToWstr(m_lockFilePathName).c_str(),
+#else
                 m_lockFilePathName.c_str(),
+#endif
                 GENERIC_WRITE,
                 0,
                 nullptr,
@@ -153,7 +157,11 @@ namespace JsonDatabase
         {
             
             HANDLE fileHandle = CreateFile(
+#ifdef UNICODE
+                Utilities::strToWstr(fullFilePath).c_str(),
+#else
                 fullFilePath.c_str(),
+#endif
                 GENERIC_WRITE,
                 0,
                 nullptr,
@@ -182,7 +190,11 @@ namespace JsonDatabase
         }
         bool FileLock::deleteFile(const std::string& fullFilePath)
         {
+#ifdef UNICODE
+            return DeleteFile(Utilities::strToWstr(fullFilePath).c_str());
+#else
             return DeleteFile(fullFilePath.c_str());
+#endif
         }
 
         bool FileLock::fileExists(const std::string& filePath, const std::string& fileName)
@@ -191,7 +203,11 @@ namespace JsonDatabase
         }
         bool FileLock::fileExists(const std::string& fullFilePath)
         {
+#ifdef UNICODE
+            DWORD fileAttributes = GetFileAttributes(Utilities::strToWstr(fullFilePath).c_str());
+#else
             DWORD fileAttributes = GetFileAttributes(fullFilePath.c_str());
+#endif            
             if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
                 if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) {
                     return false; // File doesn't exist
@@ -216,7 +232,15 @@ namespace JsonDatabase
             std::vector<std::string> fileNames;
 
             WIN32_FIND_DATA findFileData;
-            HANDLE hFind = FindFirstFile((directory + "\\*").c_str(), &findFileData);
+            
+#ifdef UNICODE
+            std::wstring wDirectory = Utilities::strToWstr(directory);
+            wDirectory += L"\\*";
+            HANDLE hFind = FindFirstFile(wDirectory.c_str(), &findFileData);
+#else
+            HANDLE hFind = FindFirstFile((directory+"\\*").c_str(), &findFileData);
+#endif 
+            
 
             if (hFind == INVALID_HANDLE_VALUE)
             {
@@ -230,7 +254,12 @@ namespace JsonDatabase
                     // This is a directory, skip it
                     continue;
                 }
+#ifdef UNICODE
+                fileNames.push_back(Utilities::wstrToStr(findFileData.cFileName));
+#else
                 fileNames.push_back(findFileData.cFileName);
+#endif 
+                
             } while (FindNextFile(hFind, &findFileData) != 0);
 
             FindClose(hFind);
@@ -242,7 +271,12 @@ namespace JsonDatabase
             std::vector<std::string> fileNames;
 
             WIN32_FIND_DATA findFileData;
+#ifdef UNICODE
+            HANDLE hFind = FindFirstFile(Utilities::strToWstr(directory + "\\*" + fileEndig).c_str(), &findFileData);
+#else
             HANDLE hFind = FindFirstFile((directory + "\\*" + fileEndig).c_str(), &findFileData);
+#endif 
+            
 
             if (hFind == INVALID_HANDLE_VALUE)
             {
@@ -256,7 +290,12 @@ namespace JsonDatabase
                     // This is a directory, skip it
                     continue;
                 }
+#ifdef UNICODE
+                std::string fileFullName = Utilities::wstrToStr(findFileData.cFileName);
+#else
                 std::string fileFullName = findFileData.cFileName;
+#endif 
+                
                 std::string fileName = fileFullName.substr(0, fileFullName.size() - fileEndig.size());
                 fileNames.push_back(fileName);
             } while (FindNextFile(hFind, &findFileData) != 0);
@@ -295,12 +334,12 @@ namespace JsonDatabase
             if (m_locked)
                 return Error::alreadyLocked;
 
-            //  JDM_UNIQUE_LOCK_P;
-
-
-
             m_fileHandle = CreateFile(
+#ifdef UNICODE
+                Utilities::strToWstr(m_lockFilePathName).c_str(),
+#else
                 m_lockFilePathName.c_str(),
+#endif 
                 GENERIC_WRITE,
                 0,
                 nullptr,
