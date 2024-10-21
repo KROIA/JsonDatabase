@@ -229,7 +229,7 @@ namespace JsonDatabase
                             if (m_logger)
                                 m_logger->logError("FindNextChangeNotification. GetLastError() =  " + std::to_string(error) + " : " + Utilities::getLastErrorString(error));
                         }
-#elif 
+#else 
                         JD_UNUSED(res);
 #endif
                     }
