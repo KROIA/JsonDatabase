@@ -4,7 +4,7 @@ include(FetchContent)
 function(dep LIBRARY_MACRO_NAME SHARED_LIB STATIC_LIB STATIC_PROFILE_LIB)
     # Define the git repository and tag to download from
     set(LIB_NAME JsonDatabase)
-    set(LIB_MACRO_NAME JSON_DATABASE)
+    set(LIB_MACRO_NAME JSON_DATABASE_LIBRARY_AVAILABLE)
     set(GIT_REPO https://github.com/KROIA/JsonDatabase.git)
     set(GIT_TAG main)
 
