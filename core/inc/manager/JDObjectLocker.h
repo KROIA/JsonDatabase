@@ -54,6 +54,15 @@ namespace JsonDatabase
 			bool isObjectLockedByMe(const JDObject & obj, Error& err) const;
 			bool isObjectLockedByOther(const JDObject & obj, Error& err) const;
 
+			bool lockObject_noLock(const JDObject& obj, Error& err);
+			bool unlockObject_noLock(const JDObject& obj, Error& err);
+			bool unlockObject_noLock(const JDObjectID::IDType& id, Error& err);
+			bool lockAllObjs_noLock(Error& err);
+			bool unlockAllObjs_noLock(Error& err);
+			bool isObjectLocked_noLock(const JDObject& obj, Error& err) const;
+			bool isObjectLockedByMe_noLock(const JDObject& obj, Error& err) const;
+			bool isObjectLockedByOther_noLock(const JDObject& obj, Error& err) const;
+
 			
 			struct LockData
 			{
@@ -108,7 +117,7 @@ namespace JsonDatabase
 			private:
 			};
 
-
+			
 			void onCreateFiles() override;
 			void onDatabasePathChangeStart(const std::string& newPath) override;
 			void onDatabasePathChangeEnd() override;

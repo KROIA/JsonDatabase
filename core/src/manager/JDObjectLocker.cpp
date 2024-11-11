@@ -85,13 +85,56 @@ namespace JsonDatabase
 
 		bool JDObjectLocker::lockObject(const JDObject & obj, Error& err)
 		{
+			JDM_UNIQUE_LOCK_P;
+			return lockObject_noLock(obj, err);
+		}
+		bool JDObjectLocker::unlockObject(const JDObject & obj, Error& err)
+		{
+			JDM_UNIQUE_LOCK_P;
+			return unlockObject_noLock(obj, err);
+		}
+		bool JDObjectLocker::unlockObject(const JDObjectID::IDType& id, Error& err)
+		{
+			JDM_UNIQUE_LOCK_P;
+			return unlockObject_noLock(id, err);
+		}
+		bool JDObjectLocker::lockAllObjs(Error& err)
+		{
+			JDM_UNIQUE_LOCK_P;
+			return lockAllObjs_noLock(err);
+		}
+		
+		bool JDObjectLocker::unlockAllObjs(Error& err)
+		{
+			JDM_UNIQUE_LOCK_P;
+			return unlockAllObjs_noLock(err);
+		}
+		bool JDObjectLocker::isObjectLocked(const JDObject& obj, Error& err) const
+		{
+			JDM_UNIQUE_LOCK_P;
+			return isObjectLocked_noLock(obj, err);
+		}
+		bool JDObjectLocker::isObjectLockedByMe(const JDObject & obj, Error& err) const
+		{
+			JDM_UNIQUE_LOCK_P;
+			return isObjectLockedByMe_noLock(obj, err);
+		}
+		bool JDObjectLocker::isObjectLockedByOther(const JDObject & obj, Error& err) const
+		{
+			JDM_UNIQUE_LOCK_P;
+			return isObjectLockedByOther_noLock(obj, err);
+		}
+		
+
+		bool JDObjectLocker::lockObject_noLock(const JDObject& obj, Error& err)
+		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
 			}
-			JDM_UNIQUE_LOCK_P;
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -114,19 +157,19 @@ namespace JsonDatabase
 					if (loadedObjects[i]->data.user.getSessionID() == user.getSessionID())
 					{
 						// Already locked by this session
-						if(m_logger)m_logger->logWarning("Lock for object: \""
-							+ obj->getObjectID()->toString() + "\" type: \""
-							+ obj->className() + "\" is already aquired in this session\n");
+						if (m_logger)m_logger->logWarning("Lock for object: \""
+														  + obj->getObjectID()->toString() + "\" type: \""
+														  + obj->className() + "\" is already aquired in this session\n");
 						err = Error::none;
 						return true;
 					}
 					else
 					{
 						err = Error::lockedByOther;
-						if(m_logger)m_logger->logWarning("Can't aquire lock for object: \""
-							+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
-							+ "\"\nLock Data: \n" + loadedObjects[i]->toString() + "\n"
-							"Lock is already aquired from user: \"" + loadedObjects[i]->data.user.toString() + "\"");
+						if (m_logger)m_logger->logWarning("Can't aquire lock for object: \""
+														  + obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+														  + "\"\nLock Data: \n" + loadedObjects[i]->toString() + "\n"
+														  "Lock is already aquired from user: \"" + loadedObjects[i]->data.user.toString() + "\"");
 						return false;
 					}
 				}
@@ -134,30 +177,30 @@ namespace JsonDatabase
 
 			auto newEntry = std::make_shared<LockEntryObjectImpl>(obj->getObjectID()->toString(), obj, m_manager);
 			int ret = 0;
-			
+
 			if ((ret = AbstractRegistry::addObjects({ newEntry })) != 1)
 			{
 				err = Error::unableToLock;
-				if(m_logger)m_logger->logWarning("Can't lock object: \""
-					+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
-					+ "\"");
+				if (m_logger)m_logger->logWarning("Can't lock object: \""
+												  + obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+												  + "\"");
 				return false;
 			}
 			err = Error::none;
-			if(m_logger)m_logger->logInfo("Lock for object: \"" 
-							+ obj->getObjectID()->toString() + "\" type: \"" + obj->className()
-							+ "\" aquired");
+			if (m_logger)m_logger->logInfo("Lock for object: \""
+										   + obj->getObjectID()->toString() + "\" type: \"" + obj->className()
+										   + "\" aquired");
 			return true;
 		}
-		bool JDObjectLocker::unlockObject(const JDObject & obj, Error& err)
+		bool JDObjectLocker::unlockObject_noLock(const JDObject& obj, Error& err)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
 			}
-			JDM_UNIQUE_LOCK_P;
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
+			
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -165,41 +208,40 @@ namespace JsonDatabase
 
 			std::string key = obj->getObjectID()->toString();
 
-			if(!AbstractRegistry::lockExists(key))
+			if (!AbstractRegistry::lockExists(key))
 			{
 				err = Error::none;
-				if(m_logger)m_logger->logWarning("Lock for object: \"" 
-					+ key + "\" type: \""
-					+ obj->className() + "\" did not exist");
+				if (m_logger)m_logger->logWarning("Lock for object: \""
+												  + key + "\" type: \""
+												  + obj->className() + "\" did not exist");
 				return false;
 			}
 
 			if (!AbstractRegistry::isSelfOwned(key))
 			{
 				err = Error::lockedByOther;
-				if(m_logger)m_logger->logWarning("Can't release lock for object: \"" 
-					+ key + "\" type: \"" + obj->className()
-					+ "\" Lock is owned by another user");
+				if (m_logger)m_logger->logWarning("Can't release lock for object: \""
+												  + key + "\" type: \"" + obj->className()
+												  + "\" Lock is owned by another user");
 				return false;
 			}
 
 			int removed = 0;
 			if ((removed = AbstractRegistry::removeObjects({ key })) != 1)
 			{
-				if(m_logger)m_logger->logWarning("Can't release lock for object: \"" 
-					+ key + "\" type: \"" + obj->className()
-					+ "\"");
+				if (m_logger)m_logger->logWarning("Can't release lock for object: \""
+												  + key + "\" type: \"" + obj->className()
+												  + "\"");
 				return false;
 			}
 			err = Error::none;
-			if(m_logger)m_logger->logInfo("Lock for object: \"" 
-							+ key + "\" type: \"" + obj->className()
-							+ "\" released");
+			if (m_logger)m_logger->logInfo("Lock for object: \""
+										   + key + "\" type: \"" + obj->className()
+										   + "\" released");
 			return true;
 		}
-		bool JDObjectLocker::unlockObject(const JDObjectID::IDType& id, Error& err)
+		bool JDObjectLocker::unlockObject_noLock(const JDObjectID::IDType& id, Error& err)
 		{
-			JDM_UNIQUE_LOCK_P;
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
@@ -209,13 +251,13 @@ namespace JsonDatabase
 #elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
 			std::string key = std::to_string(id);
 #endif
-			
+
 
 			if (!AbstractRegistry::lockExists(key))
 			{
 				err = Error::none;
 				if (m_logger)m_logger->logWarning("Lock for object: \""
-					+ key + "\" did not exist");
+												  + key + "\" did not exist");
 				return false;
 			}
 
@@ -223,7 +265,7 @@ namespace JsonDatabase
 			{
 				err = Error::lockedByOther;
 				if (m_logger)m_logger->logWarning("Can't release lock for object: \""
-					+ key + "\"\nLock is owned by another user");
+												  + key + "\"\nLock is owned by another user");
 				return false;
 			}
 
@@ -231,17 +273,16 @@ namespace JsonDatabase
 			if ((removed = AbstractRegistry::removeObjects({ key })) != 1)
 			{
 				if (m_logger)m_logger->logWarning("Can't release lock for object: \""
-					+ key + "\"");
+												  + key + "\"");
 				return false;
 			}
 			err = Error::none;
 			if (m_logger)m_logger->logInfo("Lock for object: \""
-				+ key + "\" released");
+										   + key + "\" released");
 			return true;
 		}
-		bool JDObjectLocker::lockAllObjs(Error& err)
+		bool JDObjectLocker::lockAllObjs_noLock(Error& err)
 		{
-			JDM_UNIQUE_LOCK_P;
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 			err = Error::none;
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
@@ -270,9 +311,9 @@ namespace JsonDatabase
 				{
 					err = Error::lockedByOther;
 					if (m_logger)m_logger->logWarning("Can't aquire lock for object: \""
-						+ std::to_string(loadedObjects[i]->data.objectID) + "\""
-						+ "\"\nLock Data: \n" + loadedObjects[i]->toString() + "\n"
-						"Lock is already aquired from user: \"" + loadedObjects[i]->data.user.toString() + "\"");
+													  + std::to_string(loadedObjects[i]->data.objectID) + "\""
+													  + "\"\nLock Data: \n" + loadedObjects[i]->toString() + "\n"
+													  "Lock is already aquired from user: \"" + loadedObjects[i]->data.user.toString() + "\"");
 					return false;
 				}
 			}
@@ -295,12 +336,12 @@ namespace JsonDatabase
 				return false;
 			}
 			err = Error::none;
-			if(m_logger)m_logger->logInfo("Aquired "+std::to_string(newEntries.size()) + " objects locks");
+			if (m_logger)m_logger->logInfo("Aquired " + std::to_string(newEntries.size()) + " objects locks");
 			return true;
 		}
-		bool JDObjectLocker::unlockAllObjs(Error& err)
+
+		bool JDObjectLocker::unlockAllObjs_noLock(Error& err)
 		{
-			JDM_UNIQUE_LOCK_P;
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_10);
 			err = Error::none;
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
@@ -308,20 +349,20 @@ namespace JsonDatabase
 			AbstractRegistry::AutoClose autoClose(this);
 			if (!AbstractRegistry::removeAllSelfOwnedObjects())
 			{
-				if(m_logger)m_logger->logWarning("Can't release all locked objects");
+				if (m_logger)m_logger->logWarning("Can't release all locked objects");
 				return false;
 			}
-			if(m_logger)m_logger->logInfo("All objects unlocked");
+			if (m_logger)m_logger->logInfo("All objects unlocked");
 			return true;
 		}
-		bool JDObjectLocker::isObjectLocked(const JDObject & obj, Error& err) const
+		bool JDObjectLocker::isObjectLocked_noLock(const JDObject& obj, Error& err) const
 		{
 			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
 			}
-			JDM_UNIQUE_LOCK_P;
+			//JDM_UNIQUE_LOCK_P;
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
 
@@ -330,26 +371,26 @@ namespace JsonDatabase
 			AbstractRegistry::AutoClose autoClose(this);
 			return AbstractRegistry::isObjectActive(obj->getObjectID()->toString());
 		}
-		bool JDObjectLocker::isObjectLockedByMe(const JDObject & obj, Error& err) const
+		bool JDObjectLocker::isObjectLockedByMe_noLock(const JDObject& obj, Error& err) const
 		{
 			if (!obj.get())
 			{
 				err = Error::objIsNullptr;
 				return false;
 			}
-			JDM_UNIQUE_LOCK_P;
+			//JDM_UNIQUE_LOCK_P;
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 				return false;
 			AbstractRegistry::AutoClose autoClose(this);
 
-			if(AbstractRegistry::isSelfOwned(obj->getObjectID()->toString()))
+			if (AbstractRegistry::isSelfOwned(obj->getObjectID()->toString()))
 				return true;
 
 			return false;
 		}
-		bool JDObjectLocker::isObjectLockedByOther(const JDObject & obj, Error& err) const
+		bool JDObjectLocker::isObjectLockedByOther_noLock(const JDObject& obj, Error& err) const
 		{
 			err = Error::none;
 			if (!obj.get())
@@ -357,7 +398,7 @@ namespace JsonDatabase
 				err = Error::objIsNullptr;
 				return false;
 			}
-			JDM_UNIQUE_LOCK_P;
+			//JDM_UNIQUE_LOCK_P;
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
@@ -366,7 +407,7 @@ namespace JsonDatabase
 
 			std::string key = obj->getObjectID()->toString();
 
-			if(AbstractRegistry::lockExists(key))
+			if (AbstractRegistry::lockExists(key))
 			{
 				if (!AbstractRegistry::isSelfOwned(key))
 					return true;

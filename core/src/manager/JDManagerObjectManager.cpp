@@ -442,7 +442,7 @@ namespace JsonDatabase
 
             // Check if Object is locked by this user
             JDObjectLocker::Error err;
-            if(!m_objLocker.isObjectLockedByMe(obj, err))
+            if(!m_objLocker.isObjectLockedByMe_noLock(obj, err))
 			{
 				if(m_logger)
                     m_logger->logWarning("Can't remove object with ID: " + obj->getObjectID().get()->toString() + ". Object is not locked by this user.");
@@ -471,7 +471,7 @@ namespace JsonDatabase
                 {
                     // Check if Object is locked by this user
                     JDObjectLocker::Error err;
-                    if (!m_objLocker.isObjectLockedByMe(objs[i], err))
+                    if (!m_objLocker.isObjectLockedByMe_noLock(objs[i], err))
                     {
                         if (m_logger)
                             m_logger->logWarning("Can't remove object with ID: " + objs[i]->getObjectID().get()->toString() + ". Object is not locked by this user.");
