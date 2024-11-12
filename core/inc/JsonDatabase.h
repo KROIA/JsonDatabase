@@ -10,6 +10,7 @@
 #include "utilities/JDSerializable.h"
 #include "object/JDObjectInterface.h"
 #include "manager/JDManager.h"
+#include "utilities/ErrorCodes.h"
 
 
 #include "utilities/filesystem/FileChangeWatcher.h"

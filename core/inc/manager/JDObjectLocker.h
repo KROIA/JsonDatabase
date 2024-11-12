@@ -6,7 +6,7 @@
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/JDUser.h"
 #include "utilities/filesystem/AbstractRegistry.h"
-
+#include "utilities/ErrorCodes.h"
 
 #include <string>
 #include <vector>
@@ -23,7 +23,7 @@ namespace JsonDatabase
 		{
 			//friend JDManagerObjectManager;
 		public:
-			enum Error
+			/*enum Error
 			{
 				none,
 				objIsNullptr,
@@ -31,37 +31,41 @@ namespace JsonDatabase
 				tableFileNotExist,
 				corruptTableData,
 				unableToLock,
+				unableToUnLock,
 				lockedByOther,
 				programmingError,
 				notLocked,
-			};
+			};*/
 
 		protected:
 		
 			
 			//bool setup(Error &err);
 		public:
-			JDObjectLocker(JDManager& manager, std::mutex& mtx);
+			JDObjectLocker(JDManager& manager);
 			~JDObjectLocker();
 			//void setParentLogger(Log::LogObject* parentLogger);
 
-			bool lockObject(const JDObject & obj, Error& err);
+			/*bool lockObject(const JDObject& obj, Error& err);
 			bool unlockObject(const JDObject & obj, Error& err);
 			bool unlockObject(const JDObjectID::IDType &id, Error& err);
 			bool lockAllObjs(Error& err);
 			bool unlockAllObjs(Error& err);
 			bool isObjectLocked(const JDObject & obj, Error& err) const;
 			bool isObjectLockedByMe(const JDObject & obj, Error& err) const;
-			bool isObjectLockedByOther(const JDObject & obj, Error& err) const;
+			bool isObjectLockedByOther(const JDObject & obj, Error& err) const;*/
 
-			bool lockObject_noLock(const JDObject& obj, Error& err);
-			bool unlockObject_noLock(const JDObject& obj, Error& err);
-			bool unlockObject_noLock(const JDObjectID::IDType& id, Error& err);
-			bool lockAllObjs_noLock(Error& err);
-			bool unlockAllObjs_noLock(Error& err);
-			bool isObjectLocked_noLock(const JDObject& obj, Error& err) const;
-			bool isObjectLockedByMe_noLock(const JDObject& obj, Error& err) const;
-			bool isObjectLockedByOther_noLock(const JDObject& obj, Error& err) const;
+			bool lockObject(const JDObject& obj, Error& err);
+			bool lockObjects(const std::vector<JDObject>& objs, std::vector<Error> &errors);
+			bool unlockObject(const JDObject& obj, Error& err);
+			bool unlockObject(const JDObjectID::IDType& id, Error& err);
+			bool unlockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors);
+			bool unlockObjects(const std::vector<JDObjectID::IDType>& objs, std::vector<Error>& errors);
+			bool lockAllObjs(Error& err);
+			bool unlockAllObjs(Error& err);
+			bool isObjectLocked(const JDObject& obj, Error& err) const;
+			bool isObjectLockedByMe(const JDObject& obj, Error& err) const;
+			bool isObjectLockedByOther(const JDObject& obj, Error& err) const;
 
 			
 			struct LockData
@@ -75,9 +79,6 @@ namespace JsonDatabase
 			};
 			bool getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const;
 			int removeInactiveObjectLocks() const;
-
-
-			static const std::string& getErrorStr(Error err);
 
 			struct JsonKeys
 			{
@@ -117,6 +118,9 @@ namespace JsonDatabase
 			private:
 			};
 
+			bool lockObjects_internal(const std::vector<JDObject>& objs, std::vector<Error>& errors);
+			bool unlockObjects_internal(const std::vector<JDObject>& objs, std::vector<Error>& errors);
+
 			
 			void onCreateFiles() override;
 			void onDatabasePathChangeStart(const std::string& newPath) override;
@@ -126,7 +130,6 @@ namespace JsonDatabase
 			//Log::LogObject* m_logger = nullptr;
 
 			JDManager& m_manager;
-			std::mutex& m_mutex;
 			std::string m_lockTableFile;
 			unsigned int m_registryOpenTimeoutMs;
 			mutable bool m_useSpecificDatabasePath;

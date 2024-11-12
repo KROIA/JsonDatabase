@@ -181,20 +181,20 @@ namespace JsonDatabase
                 // Create empty data
                 LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
                 fileAccessor.setProgress(nullptr);
-                LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::write);
+                Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::write);
 
-                if (fileError != LockedFileAccessor::Error::none)
+                if (fileError != Error::none)
                 {
-                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
+                    if(m_logger) m_logger->logError(std::string("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(fileError));
                     return false;
                 }
 
 
                 JsonArray jsonData{};
                 fileError = fileAccessor.writeJsonFile(jsonData);
-                if (fileError != LockedFileAccessor::Error::none)
+                if (fileError != Error::none)
                 {
-                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
+                    if(m_logger) m_logger->logError(std::string("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(fileError));
                     return false;
                 }
                 else

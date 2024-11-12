@@ -9,7 +9,7 @@ namespace JsonDatabase
 
     const std::string JDObjectInterface::s_tag_objID = "objID";
     const std::string JDObjectInterface::s_tag_className = "class";
-    const std::string JDObjectInterface::s_tag_data = "Data";
+    const std::string JDObjectInterface::s_tag_data = "data";
 
 JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObject obj)
 {

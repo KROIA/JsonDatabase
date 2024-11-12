@@ -214,7 +214,7 @@ bool lockRandomPerson(JDManager* manager, JDObject& obj)
         //int randomIndex = rand() % globalTable.size();
         int randomIndex = 100;
         JDObject target = globalTable[randomIndex];
-        JsonDatabase::Internal::JDObjectLocker::Error lastError;
+        JsonDatabase::Error lastError;
         if (manager->lockObject(target, lastError))
         {
             obj = target;
@@ -230,7 +230,7 @@ bool unlockPerson(JDManager* manager, JDObject& obj)
     mutex.lock();
     if (obj != nullptr)
     {
-        JsonDatabase::Internal::JDObjectLocker::Error lastError;
+        JsonDatabase::Error lastError;
         if (manager->unlockObject(obj, lastError))
         {
             obj = nullptr;

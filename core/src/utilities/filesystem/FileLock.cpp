@@ -60,7 +60,7 @@ namespace JsonDatabase
             if (fileHandle == INVALID_HANDLE_VALUE) {
                 // Failed to open the file, indicating it might be locked
                 m_locked = false;
-                err = Error::alreadyLocked;
+                err = Error::fileAlreadyLocked;
                 return false; // File is possibly locked
             }
 
@@ -69,7 +69,7 @@ namespace JsonDatabase
                 m_locked = false;
                 CloseHandle(fileHandle);
                
-                err = Error::unableToLock;
+                err = Error::unableToLockFile;
             }
             m_fileHandle = fileHandle;
             m_locked = true;
@@ -78,21 +78,21 @@ namespace JsonDatabase
         }
         bool FileLock::lock(Error& err)
         {
-            err = Error::alreadyLocked;
+            err = Error::fileAlreadyLocked;
             if (m_locked)
                 return true;
             err = lock_internal();
 #ifdef JD_DEBUG
             if (err != Error::none)
             {
-                if(m_logger)m_logger->logError(getErrorStr(err));
+                if(m_logger)m_logger->logError(errorToString(err));
             }
 #endif
             return m_locked;
         }
         bool FileLock::lock(unsigned int timeoutMs, Error& err)
         {
-            err = Error::alreadyLocked;
+            err = Error::fileAlreadyLocked;
             if (m_locked)
                 return true;
             // Get the current time
@@ -110,7 +110,7 @@ namespace JsonDatabase
 #ifdef JD_DEBUG
             if (err != Error::none)
             {
-                if(m_logger)m_logger->logError(getErrorStr(err));
+                if(m_logger)m_logger->logError(errorToString(err));
             }
 #endif
             return m_locked;
@@ -125,25 +125,6 @@ namespace JsonDatabase
         bool FileLock::isLocked() const
         {
             return m_locked;
-        }
-        const std::string& FileLock::getErrorStr(Error err)
-        {
-            switch (err)
-            {
-            case Error::none: { static const std::string msg = "FileLock::Error::none"; return msg; };
-            case Error::unableToCreateOrOpenLockFile: { static const std::string msg = "FileLock::Error::unableToCreateOrOpenLockFile"; return msg; };
-            case Error::unableToDeleteLockFile: { static const std::string msg = "FileLock::Error::unableToDeleteLockFile"; return msg; };
-            case Error::unableToLock: { static const std::string msg = "FileLock::Error::unableToLock"; return msg; };
-            case Error::alreadyLocked: { static const std::string msg = "FileLock::Error::alreadyLocked"; return msg; };
-            case Error::alreadyLockedForReading: { static const std::string msg = "FileLock::Error::alreadyLockedForReading"; return msg; };
-            case Error::alreadyLockedForWritingByOther: { static const std::string msg = "FileLock::Error::alreadyLockedForWritingByOther"; return msg; };
-            case Error::alreadyUnlocked: { static const std::string msg = "FileLock::Error::alreadyUnlocked"; return msg; };
-
-            case Error::lockTimeout: { static const std::string msg = "FileLock::Error::lockTimeout"; return msg; };
-            }
-            static std::string unknown;
-            unknown = "Unknown FileLock Error: " + std::to_string((int)err);
-            return unknown;
         }
 
         bool FileLock::isLockInUse(const std::string& filePath, const std::string& fileName)
@@ -311,7 +292,7 @@ namespace JsonDatabase
 
 
 
-        FileLock::Error FileLock::lock_internal()
+        Error FileLock::lock_internal()
         {
             //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
             Error err = lockFile();
@@ -328,11 +309,11 @@ namespace JsonDatabase
 #endif
             return err;
         }
-        FileLock::Error FileLock::lockFile()
+        Error FileLock::lockFile()
         {
             JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
             if (m_locked)
-                return Error::alreadyLocked;
+                return Error::fileAlreadyLocked;
 
             m_fileHandle = CreateFile(
 #ifdef UNICODE
@@ -360,17 +341,17 @@ namespace JsonDatabase
                 m_locked = false;
                 CloseHandle(m_fileHandle);
                 m_fileHandle = nullptr;
-                return Error::unableToLock;
+                return Error::unableToLockFile;
             }
             m_locked = true;
             return Error::none;
         }
 
-        FileLock::Error FileLock::unlockFile()
+        Error FileLock::unlockFile()
         {
             JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_8);
             if (!m_locked)
-                return Error::alreadyUnlocked;
+                return Error::fileAlreadyUnlocked;
 
             Error err = Error::none;
 
@@ -403,7 +384,7 @@ namespace JsonDatabase
                     {
                         // Handle error deleting file
                         err = Error::unableToDeleteLockFile;
-                        if (m_logger)m_logger->logError("Deleting lock file: " + m_lockFilePathName + " " + getErrorStr(err));
+                        if (m_logger)m_logger->logError("Deleting lock file: " + m_lockFilePathName + " " + errorToString(err));
                     }
                 }
             }
