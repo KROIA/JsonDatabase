@@ -17,8 +17,8 @@ public:
 	TST_readWrite()
 		: Test("TST_readWrite")
 	{
-		ADD_TEST(TST_simple::initialize);
-		ADD_TEST(TST_simple::test2);
+		ADD_TEST(TST_readWrite::initialize);
+		ADD_TEST(TST_readWrite::test2);
 
 	}
 
