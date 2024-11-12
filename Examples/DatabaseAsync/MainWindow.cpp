@@ -26,13 +26,13 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	//if(m_manager)
 	//	delete m_manager;
 
-	m_manager = new JDManager("asyncDatabase", "Person", user);
+	m_manager = new JDManager;
 
 	Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
 	//Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
 	console->show();
 
-	m_manager->setup();
+	m_manager->setup("asyncDatabase", "Person", user);
 
 	m_uiPersonEditor = new UIPerson(ui.editor_frame);
 	connect(m_uiPersonEditor, &UIPerson::savePerson, this, &MainWindow::onPersonSave);

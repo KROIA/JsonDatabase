@@ -77,13 +77,13 @@ namespace JsonDatabase
 				m_isRegistered = true;
 
 				if (m_logger)
-					m_logger->logInfo("Registered user: " + user.toString());
+					m_logger->logInfo("Registered user:\n" + user.toString());
 				return true;
 			}
 
 		failed:
 			if(m_logger)
-				m_logger->logError("Failed to register user: "+ user.toString());
+				m_logger->logError("Failed to register user:\n"+ user.toString());
 			return false;
 		}
 		bool JDUserRegistration::unregisterUser()
@@ -101,14 +101,14 @@ namespace JsonDatabase
 				{
 					m_isRegistered = false;
 					if (m_logger)
-						m_logger->logInfo("Unregistered user: " + m_registeredUser->getUser().toString());
+						m_logger->logInfo("Unregistered user:\n" + m_registeredUser->getUser().toString());
 					m_registeredUser.reset();
 					return true;
 				}
 			}
 		failed:
 			if (m_logger)
-				m_logger->logError("Failed to unregister user: " + m_registeredUser->getUser().toString());
+				m_logger->logError("Failed to unregister user:\n" + m_registeredUser->getUser().toString());
 			return false;
 		}
 
@@ -175,7 +175,7 @@ namespace JsonDatabase
 				{
 					loggedOnUsers.push_back(user);
 					if (m_logger)
-						m_logger->logInfo("User logged on: " + user.toString());
+						m_logger->logInfo("User logged on:\n" + user.toString());
 				}
 			}
 			for (auto& lastUser : m_lastActiveUsers)
@@ -193,7 +193,7 @@ namespace JsonDatabase
 				{
 					loggedOffUsers.push_back(lastUser);
 					if (m_logger)
-						m_logger->logInfo("User logged off: " + lastUser.toString());
+						m_logger->logInfo("User logged off:\n" + lastUser.toString());
 				}
 			}
 			m_lastActiveUsers = currentUsers;

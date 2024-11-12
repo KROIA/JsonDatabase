@@ -68,21 +68,21 @@ int main(int argc, char* argv[])
 #ifdef CONCURENT_TEST
     JsonDatabase::Profiler::start();
 
-    manager1 = new JDManager("database", "Persons", "USER 1");
-    manager2 = new JDManager("database", "Persons", "USER 2");
-    manager3 = new JDManager("database", "Persons", "USER 3");
-    manager4 = new JDManager("database", "Persons", "USER 4");
-    manager5 = new JDManager("database", "Persons", "USER 5");
+    manager1 = new JDManager;
+    manager2 = new JDManager;
+    manager3 = new JDManager;
+    manager4 = new JDManager;
+    manager5 = new JDManager;
 
     Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
 //    console->attachLogger(logger);
     console->show();
 
-    manager1->setup();
-    manager2->setup();
-    manager3->setup();
-    manager4->setup();
-    manager5->setup();
+    manager1->setup("database", "Persons", "USER 1");
+    manager2->setup("database", "Persons", "USER 2");
+    manager3->setup("database", "Persons", "USER 3");
+    manager4->setup("database", "Persons", "USER 4");
+    manager5->setup("database", "Persons", "USER 5");
 
 #ifdef NDEBUG
     watcher = new Internal::FileChangeWatcher("database\\Persons.json");

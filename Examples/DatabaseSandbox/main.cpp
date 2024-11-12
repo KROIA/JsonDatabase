@@ -19,10 +19,10 @@ int main(int argc, char* argv[])
 	Log::LogObject logger("main");
 
 	// Create a Database
-	JsonDatabase::JDManager db("SandboxDB","DBName","User");
+	JsonDatabase::JDManager db;
 
 	// Setup the Database
-	bool setup = db.setup();
+	bool setup = db.setup("SandboxDB", "DBName", "User");
 	if (!setup)
 	{
 		logger.logError("Failed to setup the Database");
