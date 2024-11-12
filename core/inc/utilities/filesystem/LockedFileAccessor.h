@@ -17,7 +17,7 @@ namespace JsonDatabase
 		class JSON_DATABASE_EXPORT LockedFileAccessor
 		{
 		public:
-			enum class Error
+			/*enum class Error
 			{
 				none = 0,
 
@@ -45,7 +45,7 @@ namespace JsonDatabase
 				file_cantVerifyFileContents = 45,
 
 
-			};
+			};*/
 
 			enum class AccessMode
 			{
@@ -86,7 +86,6 @@ namespace JsonDatabase
 			Error writeFile(const QByteArray& fileData) const;
 
 
-			static const std::string& getErrorStr(Error err);
 
 		private:
 			Error readFile_internal(QByteArray& fileDataOut) const;

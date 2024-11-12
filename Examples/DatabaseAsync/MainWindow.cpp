@@ -201,7 +201,7 @@ void MainWindow::on_editObject_pushButton_clicked()
 	}
 	else
 	{*/
-	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	JsonDatabase::Error lastError;
 	if(m_manager->lockObject(p, lastError))
 	{
 		editMode = true;
@@ -229,7 +229,7 @@ void MainWindow::on_editObject_pushButton_clicked()
 	{
 		editMode = true;
 	}*/
-	if (lastError != JsonDatabase::Internal::JDObjectLocker::Error::none)
+	if (lastError != JsonDatabase::Error::none)
 		editMode = false;
 	//}
 	m_uiPersonEditor->setPerson(p, editMode);
@@ -242,7 +242,7 @@ void MainWindow::on_lockObject_pushButton_clicked()
 	JDObject obj = getSelectedObject();
 	if (!obj)
 		return;
-	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	JsonDatabase::Error lastError;
 	obj->lock();
 	/*if (m_manager->lockObject(obj, lastError))
 	{
@@ -272,7 +272,7 @@ void MainWindow::on_lockAllObjects_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
-	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	JsonDatabase::Error lastError;
 	if (m_manager->lockAllObjs(lastError))
 	{
 		DEBUG << "locked: all objects\n";
@@ -287,7 +287,7 @@ void MainWindow::on_unlockObject_pushButton_clicked()
 	EASY_FUNCTION(profiler::colors::Amber);
 
 	JDObject obj = getSelectedObject();
-	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	JsonDatabase::Error lastError;
 	if (!obj)
 	{
 		JDObjectID::IDType id = atoi(ui.id_lineEdit->text().toStdString().c_str());
@@ -323,7 +323,7 @@ void MainWindow::on_unlockAllObjects_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 
-	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	JsonDatabase::Error lastError;
 	if (m_manager->unlockAllObjs(lastError))
 	{
 		DEBUG << "unlocked: all objects\n";
@@ -474,7 +474,7 @@ void MainWindow::onLockedObjectsChanged()
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG << "\n";
 	std::vector<JsonDatabase::Internal::JDObjectLocker::LockData> locked;
-	JsonDatabase::Internal::JDObjectLocker::Error lastError;
+	JsonDatabase::Error lastError;
 	m_manager->getLockedObjects(locked, lastError);
 	std::string text;
 	for (auto& id : locked)

@@ -36,11 +36,14 @@ int main(int argc, char* argv[])
 
 		// Save the Person Object to the Database
 		db.addObject(persons);
+		JsonDatabase::Error error;
+		db.lockAllObjs(error);
 		db.saveObjects();
 		
 		
 		db.loadObjects();
 		db.saveObjects();
+		db.unlockAllObjs(error);
 
 	}
 

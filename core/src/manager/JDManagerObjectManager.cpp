@@ -12,7 +12,7 @@ namespace JsonDatabase
         JDManagerObjectManager::JDManagerObjectManager(JDManager& manager, std::mutex& mtx)
             : m_manager(manager)
             , m_mutex(mtx)
-            , m_objLocker(manager, mtx)
+            , m_objLocker(manager)
         {   }
         JDManagerObjectManager::~JDManagerObjectManager()
         {
@@ -156,46 +156,65 @@ namespace JsonDatabase
 
 
 
-        bool JDManagerObjectManager::lockObject(const JDObject& obj, JDObjectLocker::Error& err)
+        bool JDManagerObjectManager::lockObject(const JDObject& obj, Error& err)
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.lockObject(obj, err);
         }
-        bool JDManagerObjectManager::unlockObject(const JDObject& obj, JDObjectLocker::Error& err)
+        bool JDManagerObjectManager::lockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors)
         {
+			JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			return m_objLocker.lockObjects(objs, errors);
+        }
+        bool JDManagerObjectManager::unlockObject(const JDObject& obj, Error& err)
+        {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.unlockObject(obj, err);
         }
-        bool JDManagerObjectManager::unlockObject(const JDObjectID::IDType& id, JDObjectLocker::Error& err)
+        bool JDManagerObjectManager::unlockObject(const JDObjectID::IDType& id, Error& err)
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.unlockObject(id, err);
 		}
-        bool JDManagerObjectManager::lockAllObjs(JDObjectLocker::Error& err)
+        bool JDManagerObjectManager::unlockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors)
         {
+			JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			return m_objLocker.unlockObjects(objs, errors);
+        }
+        bool JDManagerObjectManager::lockAllObjs(Error& err)
+        {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.lockAllObjs(err);
 		}
-        bool JDManagerObjectManager::unlockAllObjs(JDObjectLocker::Error& err)
+        bool JDManagerObjectManager::unlockAllObjs(Error& err)
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.unlockAllObjs(err);
         }
-        bool JDManagerObjectManager::isObjectLocked(const JDObject& obj, JDObjectLocker::Error& err) const
+        bool JDManagerObjectManager::isObjectLocked(const JDObject& obj, Error& err) const
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.isObjectLocked(obj, err);
         }
-        bool JDManagerObjectManager::isObjectLockedByMe(const JDObject& obj, JDObjectLocker::Error& err) const
+        bool JDManagerObjectManager::isObjectLockedByMe(const JDObject& obj, Error& err) const
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.isObjectLockedByMe(obj, err);
         }
-        bool JDManagerObjectManager::isObjectLockedByOther(const JDObject& obj, JDObjectLocker::Error& err) const
+        bool JDManagerObjectManager::isObjectLockedByOther(const JDObject& obj, Error& err) const
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.isObjectLockedByOther(obj, err);
         }
-        bool JDManagerObjectManager::getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, JDObjectLocker::Error& err) const
+        bool JDManagerObjectManager::getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, Error& err) const
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.getLockedObjects(lockedObjectsOut, err);
         }
         bool JDManagerObjectManager::getLockedObjectsByUser(
             const Utilities::JDUser& user, 
             std::vector<JDObjectLocker::LockData>& lockedObjectsOut, 
-            JDObjectLocker::Error& err) const
+            Error& err) const
         {
             std::vector<JDObjectLocker::LockData> tmp;
             if (!m_objLocker.getLockedObjects(tmp, err))
@@ -207,11 +226,11 @@ namespace JsonDatabase
 			}
 			return true;
         }
-        bool JDManagerObjectManager::getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, JDObjectLocker::Error& err) const
+        bool JDManagerObjectManager::getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, Error& err) const
         {
             if (!obj)
             {
-                err = JDObjectLocker::objIsNullptr;
+                err = Error::objIsNullptr;
                 return false;
             }
             std::vector<JDObjectLocker::LockData> lockedObjects;
@@ -228,7 +247,7 @@ namespace JsonDatabase
 					return true;
 				}
 			}
-            err = JDObjectLocker::notLocked;
+            err = Error::objectNotLocked;
             return false;
         }
         int JDManagerObjectManager::removeInactiveObjectLocks() const
@@ -393,7 +412,7 @@ namespace JsonDatabase
 
             
             /*// Check if Object is locked by this user
-            JDObjectLocker::Error err;
+            Error err;
             if (!m_objLocker.isObjectLockedByMe(obj, err))
             {
                 if (m_logger)
@@ -441,8 +460,8 @@ namespace JsonDatabase
             }
 
             // Check if Object is locked by this user
-            JDObjectLocker::Error err;
-            if(!m_objLocker.isObjectLockedByMe_noLock(obj, err))
+            Error err;
+            if(!m_objLocker.isObjectLockedByMe(obj, err))
 			{
 				if(m_logger)
                     m_logger->logWarning("Can't remove object with ID: " + obj->getObjectID().get()->toString() + ". Object is not locked by this user.");
@@ -470,8 +489,8 @@ namespace JsonDatabase
                 for (size_t i = 0; i < objs.size(); ++i)
                 {
                     // Check if Object is locked by this user
-                    JDObjectLocker::Error err;
-                    if (!m_objLocker.isObjectLockedByMe_noLock(objs[i], err))
+                    Error err;
+                    if (!m_objLocker.isObjectLockedByMe(objs[i], err))
                     {
                         if (m_logger)
                             m_logger->logWarning("Can't remove object with ID: " + objs[i]->getObjectID().get()->toString() + ". Object is not locked by this user.");

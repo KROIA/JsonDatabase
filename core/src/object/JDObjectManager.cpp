@@ -174,7 +174,7 @@ namespace JsonDatabase
 		{
 			if (m_databaseManager)
 			{
-				JDObjectLocker::Error err;
+				Error err;
 				return m_databaseManager->isObjectLocked(getObject(), err);
 			}
 			return false;
@@ -183,7 +183,7 @@ namespace JsonDatabase
 		{
 			if (m_databaseManager)
 			{
-				JDObjectLocker::Error err;
+				Error err;
 				return m_databaseManager->lockObject(getObject(), err);
 			}
 			return false;
@@ -192,7 +192,7 @@ namespace JsonDatabase
 		{
 			if (m_databaseManager)
 			{
-				JDObjectLocker::Error err;
+				Error err;
 				return m_databaseManager->unlockObject(getObject(), err);
 			}
 			return false;
@@ -202,7 +202,7 @@ namespace JsonDatabase
 			if (m_databaseManager)
 			{
 				Utilities::JDUser userOut; 
-				JDObjectLocker::Error err;
+				Error err;
 				isLocked = m_databaseManager->getLockOwner(getObject(), userOut, err);
 				return userOut;
 			}

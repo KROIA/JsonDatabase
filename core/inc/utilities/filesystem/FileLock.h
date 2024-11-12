@@ -1,6 +1,7 @@
 #pragma once
 
 #include "JsonDatabase_base.h"
+#include "utilities/ErrorCodes.h"
 
 #include <string>
 #include <vector>
@@ -18,7 +19,7 @@ namespace JsonDatabase
     {
         class JSON_DATABASE_EXPORT FileLock {
         public:
-            enum Error
+            /*enum Error
             {
                 none = 0,
 
@@ -31,7 +32,7 @@ namespace JsonDatabase
                 alreadyUnlocked = 7,
 
                 lockTimeout = 20,
-            };
+            };*/
             FileLock(const std::string& filePath, const std::string& fileName, Log::LogObject* logger);
             ~FileLock();
 
@@ -45,8 +46,6 @@ namespace JsonDatabase
 
             bool isLocked() const;
 
-
-            static const std::string& getErrorStr(Error err);
             static bool isLockInUse(const std::string& filePath, const std::string& fileName);
             
             static bool fileExists(const std::string& filePath, const std::string& fileName);

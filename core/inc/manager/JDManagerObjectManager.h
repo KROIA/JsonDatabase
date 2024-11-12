@@ -2,6 +2,7 @@
 
 #include "JsonDatabase_base.h"
 #include "JsonDatabase_Declaration.h"
+#include "utilities/ErrorCodes.h"
 #include "object/JDObjectContainer.h"
 #include "utilities/JDObjectIDDomain.h"
 #include "JDObjectLocker.h"
@@ -81,17 +82,19 @@ namespace JsonDatabase
             void clearObjects();
 
             // Object locker interface
-            bool lockObject(const JDObject& obj, JDObjectLocker::Error& err);
-            bool unlockObject(const JDObject& obj, JDObjectLocker::Error& err);
-            bool unlockObject(const JDObjectID::IDType& id, JDObjectLocker::Error& err);
-            bool lockAllObjs(JDObjectLocker::Error& err);
-            bool unlockAllObjs(JDObjectLocker::Error& err);
-            bool isObjectLocked(const JDObject& obj, JDObjectLocker::Error& err) const;
-            bool isObjectLockedByMe(const JDObject& obj, JDObjectLocker::Error& err) const;
-            bool isObjectLockedByOther(const JDObject& obj, JDObjectLocker::Error& err) const;
-            bool getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, JDObjectLocker::Error& err) const;
-            bool getLockedObjectsByUser(const Utilities::JDUser &user, std::vector<JDObjectLocker::LockData>& lockedObjectsOut, JDObjectLocker::Error& err) const;
-            bool getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, JDObjectLocker::Error& err) const;
+            bool lockObject(const JDObject& obj, Error& err);
+			bool lockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors);
+            bool unlockObject(const JDObject& obj, Error& err);
+            bool unlockObject(const JDObjectID::IDType& id, Error& err);
+			bool unlockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors);
+            bool lockAllObjs(Error& err);
+            bool unlockAllObjs(Error& err);
+            bool isObjectLocked(const JDObject& obj, Error& err) const;
+            bool isObjectLockedByMe(const JDObject& obj, Error& err) const;
+            bool isObjectLockedByOther(const JDObject& obj, Error& err) const;
+            bool getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, Error& err) const;
+            bool getLockedObjectsByUser(const Utilities::JDUser &user, std::vector<JDObjectLocker::LockData>& lockedObjectsOut, Error& err) const;
+            bool getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, Error& err) const;
             int removeInactiveObjectLocks() const;
 
 
