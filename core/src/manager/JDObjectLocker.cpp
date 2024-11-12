@@ -418,7 +418,7 @@ namespace JsonDatabase
 		
 		bool JDObjectLocker::getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const
 		{
-			JDM_UNIQUE_LOCK_P;
+			//JDM_UNIQUE_LOCK_P;
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
 			lockedObjectsOut.clear();
 
