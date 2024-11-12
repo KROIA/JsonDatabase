@@ -23,53 +23,28 @@ namespace JsonDatabase
     const unsigned int JDManager::s_fileLockTimeoutMs = 1000;
 
 
-    JDManager::JDManager(const std::string& databasePath,
-                         const std::string& databaseName)
+    JDManager::JDManager()
         : JDManagerObjectManager(*this, m_mutex)
-        , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
-        //, JDObjectLocker(*this, m_mutex)
+        , JDManagerFileSystem(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
-        //, m_signals(*this, m_mutex)
-    {
-        m_logger  = new Log::LogObject("JDManager");
-        JDManagerObjectManager::setParentLogger(m_logger);
-        JDManagerFileSystem::setParentLogger(m_logger);
-        JDManagerAsyncWorker::setParentLogger(m_logger);
-        
-
-        m_user = Utilities::JDUser::generateUser();
-        JDManagerObjectManager::setDomainName(m_user.getSessionID());
-    }
-    JDManager::JDManager(const std::string& databasePath,
-        const std::string& databaseName,
-        const std::string& user)
-        : JDManagerObjectManager(*this, m_mutex)
-        , JDManagerFileSystem(databasePath, databaseName, *this, m_mutex)
-        //, JDObjectLocker(*this, m_mutex)
-        , JDManagerAsyncWorker(*this, m_mutex)
-        , m_useZipFormat(false)
-        , m_signleEntryUpdateLock(false)
-        //, m_signals(*this, m_mutex)
     {
         m_logger = new Log::LogObject("JDManager");
         JDManagerObjectManager::setParentLogger(m_logger);
         JDManagerFileSystem::setParentLogger(m_logger);
         JDManagerAsyncWorker::setParentLogger(m_logger);
         
-        m_user = Utilities::JDUser::generateUser(user);
+        m_user = Utilities::JDUser::generateUser();
         JDManagerObjectManager::setDomainName(m_user.getSessionID());
     }
     JDManager::JDManager(const JDManager &other)
         : JDManagerObjectManager(*this, m_mutex)
-        , JDManagerFileSystem(other.getDatabaseFilePath(), other.getDatabaseName(), *this, m_mutex)
-        //, JDObjectLocker(*this, m_mutex)
+        , JDManagerFileSystem(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_user(other.m_user)
         , m_useZipFormat(other.m_useZipFormat)
         , m_signleEntryUpdateLock(false)
-        //, m_signals(*this, m_mutex)
     {
         if (other.m_logger)
         {
@@ -89,12 +64,19 @@ JDManager::~JDManager()
     delete m_logger;
 }
 
-bool JDManager::setup()
+bool JDManager::setup(const std::string& databasePath,
+                      const std::string& databaseName)
 {
+    if (m_setUp)
+    {
+		if (m_logger)
+			m_logger->logError("JDManager::setup() : JDManager already set up");
+		return false;
+    }
     bool success = true;
     if(m_logger)
         m_logger->logInfo("JDManager::setup() : Setting up JDManager");
-    success &= JDManagerFileSystem::setup();
+    success &= JDManagerFileSystem::setup(databasePath, databaseName);
     success &= JDManagerObjectManager::setup();
     Error lockerError;
     JDManagerAsyncWorker::setup();
@@ -105,7 +87,21 @@ bool JDManager::setup()
         else
             m_logger->logError("JDManager::setup() : JDManager setup failed");
     }
+    m_setUp = true;
     return success;
+}
+bool JDManager::setup(const std::string& databasePath,
+                      const std::string& databaseName,
+                      const std::string& user)
+{
+    if (m_setUp)
+    {
+        if (m_logger)
+            m_logger->logError("JDManager::setup() : JDManager already set up");
+        return false;
+    }
+    m_user = Utilities::JDUser::generateUser(user);
+	return setup(databasePath, databaseName);
 }
 bool JDManager::stop()
 {

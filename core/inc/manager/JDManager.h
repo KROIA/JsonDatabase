@@ -47,17 +47,15 @@ class JSON_DATABASE_EXPORT JDManager:
 
     Q_OBJECT
     public:
-        JDManager(
-            const std::string& databasePath,
-            const std::string& databaseName);
-        JDManager(
-            const std::string &databasePath,
-            const std::string &databaseName,
-            const std::string &user);
+        JDManager();
         JDManager(const JDManager &other);
         virtual ~JDManager();
 
-        bool setup();
+        bool setup(const std::string& databasePath,
+                   const std::string& databaseName);
+        bool setup(const std::string& databasePath,
+                   const std::string& databaseName,
+                   const std::string& user);
         bool stop();
 
         /*
@@ -240,7 +238,7 @@ class JSON_DATABASE_EXPORT JDManager:
 
         // Prevent multiple updates at the same time
         bool m_signleEntryUpdateLock;
-
+        bool m_setUp = false;
         
         
         /*struct SignalData

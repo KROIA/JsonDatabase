@@ -20,13 +20,12 @@ namespace JsonDatabase
         {
         protected:
             JDManagerFileSystem(
-                const std::string& databasePath,
-                const std::string& databaseName,
                 JDManager& manager,
                 std::mutex &mtx);
             ~JDManagerFileSystem();
             void setParentLogger(Log::LogObject* parentLogger);
-            bool setup();
+            bool setup(const std::string& databasePath,
+                       const std::string& databaseName);
             bool stop();
         public:
 

@@ -25,12 +25,9 @@ namespace JsonDatabase
         const std::string JDManagerFileSystem::s_jsonFileEnding = ".json";
 
         JDManagerFileSystem::JDManagerFileSystem(
-            const std::string& databasePath,
-            const std::string& databaseName,
             JDManager& manager,
             std::mutex& mtx)
-			: m_databasePath(databasePath)
-            , m_databaseName(databaseName)
+			: m_logger(nullptr)
             , m_databaseFileName("data")
             , m_manager(manager)
             , m_mutex(mtx)
@@ -59,9 +56,13 @@ namespace JsonDatabase
             }
         }
 
-        bool JDManagerFileSystem::setup()
+        bool JDManagerFileSystem::setup(const std::string& databasePath,
+                                        const std::string& databaseName)
         {
             bool success = true;
+            m_databasePath = databasePath;
+            m_databaseName = databaseName;
+
             success &= makeDatabaseDirs();
             success &= makeDatabaseFiles();
             
@@ -101,7 +102,6 @@ namespace JsonDatabase
             makeDatabaseDirs();
             makeDatabaseFiles();
             m_userRegistration.setDatabasePath(m_manager.getDatabasePath());
-           // m_userRegistration.createFiles();
             logOnDatabase();
             restartDatabaseFileWatcher();
         }
