@@ -30,6 +30,9 @@ namespace JsonDatabase
         , m_useZipFormat(false)
         , m_signleEntryUpdateLock(false)
     {
+        qRegisterMetaType<std::vector<JDObject>>();
+        qRegisterMetaType<JDObject>();
+
         m_logger = new Log::LogObject("JDManager");
         JDManagerObjectManager::setParentLogger(m_logger);
         JDManagerFileSystem::setParentLogger(m_logger);

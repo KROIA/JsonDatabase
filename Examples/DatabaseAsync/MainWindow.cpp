@@ -27,6 +27,12 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	//	delete m_manager;
 
 	m_manager = new JDManager;
+	m_userListWidget = new UI::JDUserListWidget();
+	m_userListWidget->setBaseSize(200, 200);
+	m_userListWidget->show();
+	m_objectListWidget = new UI::JDObjectListWidget(m_manager);
+	m_objectListWidget->setBaseSize(200, 200);
+	m_objectListWidget->show();
 
 	Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
 	//Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
@@ -101,7 +107,12 @@ void MainWindow::onTimerFinished()
 	EASY_FUNCTION(profiler::colors::Amber);
 	m_manager->update();
 	ui.objectCount_label->setText("Object count: "+QString::number(m_manager->getObjectCount()));
-	
+	auto users = m_manager->getUsers();
+	//users.push_back(Utilities::JDUser("sfefsefs", "name2", QTime(), QDate()));
+	m_userListWidget->setUsers(users);
+
+	//m_objectListWidget->setObjects(m_manager->getObjects());
+	//m_objectListWidget->update();
 	
 }
 void MainWindow::onAsyncUpdateTimerFinished()
@@ -475,7 +486,7 @@ void MainWindow::onLockedObjectsChanged()
 	DEBUG << "\n";
 	std::vector<JsonDatabase::Internal::JDObjectLocker::LockData> locked;
 	JsonDatabase::Error lastError;
-	m_manager->getLockedObjects(locked, lastError);
+	m_manager->getObjectLocks(locked, lastError);
 	std::string text;
 	for (auto& id : locked)
 	{
@@ -550,6 +561,7 @@ void MainWindow::onAsyncWorkStarted()
 void MainWindow::onAsyncWorkFinished()
 {
 	m_asyncUpdateTimer.stop();
+	m_objectListWidget->update();
 }
 void MainWindow::onSaveAllDone(bool success)
 {

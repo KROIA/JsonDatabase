@@ -209,6 +209,8 @@ class JSON_DATABASE_EXPORT JDManager:
             void onSaveObjectDone(bool success, JDObject obj);
             void onSaveObjectsDone(bool success);
 
+			void objectLocked(JDObject obj);
+			void objectUnlocked(JDObject obj);
 
     protected:
 

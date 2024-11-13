@@ -159,37 +159,65 @@ namespace JsonDatabase
         bool JDManagerObjectManager::lockObject(const JDObject& obj, Error& err)
         {
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return m_objLocker.lockObject(obj, err);
+			bool ret = m_objLocker.lockObject(obj, err);
+            if (ret)
+                emit m_manager.objectLocked(obj);
+            return ret;
         }
         bool JDManagerObjectManager::lockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors)
         {
 			JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-			return m_objLocker.lockObjects(objs, errors);
+			bool ret = m_objLocker.lockObjects(objs, errors);
+            for (size_t i = 0; i < errors.size(); ++i)
+            {
+                if (errors[i] == Error::none)
+                    emit m_manager.objectLocked(objs[i]);
+            }
+			return ret;
         }
         bool JDManagerObjectManager::unlockObject(const JDObject& obj, Error& err)
         {
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return m_objLocker.unlockObject(obj, err);
+			bool ret = m_objLocker.unlockObject(obj, err);
+            if(ret)
+				emit m_manager.objectUnlocked(obj);
+            return ret;
         }
         bool JDManagerObjectManager::unlockObject(const JDObjectID::IDType& id, Error& err)
         {
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return m_objLocker.unlockObject(id, err);
+            JDObject obj = m_manager.getObject_internal(id);
+            bool ret = m_objLocker.unlockObject(obj, err);
+            if (ret)
+                emit m_manager.objectUnlocked(obj);
+            return ret;
 		}
         bool JDManagerObjectManager::unlockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors)
         {
 			JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-			return m_objLocker.unlockObjects(objs, errors);
+            bool ret = m_objLocker.unlockObjects(objs, errors);
+            for (size_t i = 0; i < errors.size(); ++i)
+            {
+                if (errors[i] == Error::none)
+                    emit m_manager.objectUnlocked(objs[i]);
+            }
+            return ret;
         }
         bool JDManagerObjectManager::lockAllObjs(Error& err)
         {
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return m_objLocker.lockAllObjs(err);
+            std::vector<Error> errs;
+			bool ret = lockObjects(m_manager.getObjects_internal(), errs);
+            if (!ret)
+                err = Error::unableToLockObject;
+            return ret;
 		}
         bool JDManagerObjectManager::unlockAllObjs(Error& err)
         {
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return m_objLocker.unlockAllObjs(err);
+            std::vector<Error> errs;
+			bool ret = unlockObjects(m_manager.getObjects_internal(), errs);
+            if(!ret)
+				err = Error::unableToUnlockObject;
+            return ret;
         }
         bool JDManagerObjectManager::isObjectLocked(const JDObject& obj, Error& err) const
         {

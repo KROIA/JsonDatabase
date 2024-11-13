@@ -142,6 +142,7 @@ namespace JsonDatabase
 		template <typename T>
 		bool AbstractRegistry::readObjects(std::vector<std::shared_ptr<T>>& objects) const
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 			if (!isRegistryFileOpen())
 				return false;
 			JsonArray jsons;

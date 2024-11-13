@@ -146,6 +146,9 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         
 };
 
+Q_DECLARE_METATYPE(std::vector<JDObject>);
+Q_DECLARE_METATYPE(JDObject);
+
 template<typename T>
 std::shared_ptr<T> JDObjectInterface::deepClone() const
 {

@@ -121,12 +121,14 @@ namespace JsonDatabase
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, T&>::type get()
 		{
+			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 			return std::get<T>(m_value);
 		}
 		// Overload for ObjectA
 		template <class T>
 		typename std::enable_if<is_SharedPtr<T>::value, T&>::type get()
 		{
+			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 			return *std::get<std::shared_ptr<T>>(m_value).get();
 		}
 
@@ -136,12 +138,14 @@ namespace JsonDatabase
 		template <class T>
 		typename std::enable_if<!is_SharedPtr<T>::value, const T&>::type get() const
 		{
+			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 			return std::get<T>(m_value);
 		}
 		// Overload for ObjectA
 		template <class T>
 		typename std::enable_if<is_SharedPtr<T>::value, const T&>::type get() const
 		{
+			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
 			return *std::get<std::shared_ptr<T>>(m_value).get();
 		}
 

@@ -213,6 +213,7 @@ namespace JsonDatabase
 				return false;
 			}
 			bool success = true;
+			lockedObjectsOut.reserve(loadedObjects.size());
 			for(auto obj : loadedObjects)
 			{
 				if(obj->data.objectID != JDObjectID::invalidID)
@@ -528,14 +529,17 @@ namespace JsonDatabase
 		}
 		bool JDObjectLocker::LockEntryObjectImpl::load(const JsonObject& obj)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
 			bool success = LockEntryObject::load(obj);
 			if(!isValid(obj))
 				return false;
 			data.objectID = obj.at(JsonKeys::objectID).get<JDObjectID::IDType>();
 			data.user.load(obj.at(JsonKeys::user).get<JsonObject>());
 			
-			data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).get<std::string>());
-			data.lockTime = Utilities::stringToQTime(obj.at(JsonKeys::lockTime).get<std::string>());
+			data.lockDate = Utilities::fastStringToQDate(obj.at(JsonKeys::lockDate).get<std::string>());
+			//data.lockDate = Utilities::stringToQDate(obj.at(JsonKeys::lockDate).get<std::string>());
+			data.lockTime = Utilities::fastStringToQTime(obj.at(JsonKeys::lockTime).get<std::string>());
+			//data.lockTime = Utilities::stringToQTime(obj.at(JsonKeys::lockTime).get<std::string>());
 
 			return success;
 		}
@@ -556,7 +560,7 @@ namespace JsonDatabase
 
 		bool JDObjectLocker::LockEntryObjectImpl::isValid(const JsonObject& lock)
 		{
-			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_11);
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_12);
 			if (!lock.contains(JsonKeys::objectID.data())) return false;
 			if (!lock.contains(JsonKeys::user.data())) return false;
 			if (!lock.contains(JsonKeys::lockDate.data())) return false;

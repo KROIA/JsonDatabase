@@ -244,6 +244,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::LockEntryObject::load(const JsonObject& obj)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 			m_key = getKey(obj);
 			if(m_key.size() > 0)
 				return true;

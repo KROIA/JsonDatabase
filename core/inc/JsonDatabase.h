@@ -18,4 +18,8 @@
 #include "Json/JsonDeserializer.h"
 #include "Json/JsonSerializer.h"
 #include "Json/JsonValue.h"
+
+#include "ui/JDUserListWidget.h"
+#include "ui/JDUserWidget.h"
+#include "ui/JDObjectListWidget.h"
 /// USER_SECTION_END
