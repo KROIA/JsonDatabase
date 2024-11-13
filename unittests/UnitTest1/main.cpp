@@ -1,5 +1,5 @@
 #ifdef QT_ENABLED
-#include <QCoreApplication>
+#include <QApplication>
 #endif
 #include <iostream>
 #include "JsonDatabase.h"
@@ -23,13 +23,10 @@ int main(int argc, char* argv[])
 	QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
 #ifdef QT_ENABLED
-#ifdef QT_WIDGETS_ENABLED
 	QApplication app(argc, argv);
-#else
-	QCoreApplication app(argc, argv);
 #endif
-#endif
-
+	Log::UI::QConsoleView consoleView;
+	consoleView.show();
 	JsonDatabase::LibraryInfo::printInfo();
 
 	std::cout << "Running " << UnitTest::Test::getTests().size() << " tests...\n";

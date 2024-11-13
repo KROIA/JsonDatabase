@@ -117,10 +117,16 @@ namespace JsonDatabase
 		bool JDObjectLocker::unlockAllObjs(Error& err)
 		{
 			std::vector<Error> errors;
-			std::vector<JDObject> objs = m_manager.getObjects_internal();
-			if (!unlockObjects_internal(objs, errors))
+			std::vector<JDObjectLocker::LockData> locks;
+			Error err_;
+			std::vector<JDObject> lockedObjs;
+			if (!m_manager.getLockedObjects(lockedObjs,err_))
 			{
-				err = Error::unableToLockObject;
+				lockedObjs = m_manager.getObjects_internal();
+			}
+			if (!unlockObjects_internal(lockedObjs, errors))
+			{
+				err = Error::unableToUnlockObject;
 				return false;
 			}
 			err = Error::none;

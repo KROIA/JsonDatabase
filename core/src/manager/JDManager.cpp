@@ -156,7 +156,7 @@ bool JDManager::saveObject(const JDObject &obj)
     if (!JDManagerObjectManager::exists(obj))
     {
         if (m_logger)
-			m_logger->logError("Can't save object with ID: " + obj->getObjectID()->toString() + " which does not exist in the database.");
+			m_logger->logError("Can't save object with ID: " + JDObjectID::toString(obj->getShallowObjectID()) + " which does not exist in the database.");
 		return false;
     }
     return saveObject_internal(obj, s_fileLockTimeoutMs, nullptr);
@@ -166,7 +166,7 @@ void JDManager::saveObjectAsync(const JDObject &obj)
     if (!JDManagerObjectManager::exists(obj))
     {
         if (m_logger)
-            m_logger->logError("Can't save object with ID: " + obj->getObjectID()->toString() + " which does not exist in the database.");
+            m_logger->logError("Can't save object with ID: " + JDObjectID::toString(obj->getShallowObjectID()) + " which does not exist in the database.");
         return;
     }
     JDManagerAsyncWorker::addWork(std::make_shared < Internal::JDManagerAysncWorkSaveSingle>(*this, m_mutex, obj));
@@ -226,7 +226,7 @@ void JDManager::saveLockedObjects()
 {
     std::vector<JDObjectLocker::LockData> lockedObjectsOut;
     Error err;
-    if (JDManagerObjectManager::getLockedObjectsByUser(m_user, lockedObjectsOut, err))
+    if (JDManagerObjectManager::getObjectLocksByUser(m_user, lockedObjectsOut, err))
     {
         std::vector<JDObject> objs;
         objs.reserve(lockedObjectsOut.size());
@@ -244,7 +244,7 @@ void JDManager::saveLockedObjectsAsync()
 {
     std::vector<JDObjectLocker::LockData> lockedObjectsOut;
     Error err;
-    if (JDManagerObjectManager::getLockedObjectsByUser(m_user, lockedObjectsOut, err))
+    if (JDManagerObjectManager::getObjectLocksByUser(m_user, lockedObjectsOut, err))
     {
         std::vector<JDObject> objs;
         objs.reserve(lockedObjectsOut.size());
@@ -582,7 +582,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
 
     std::vector<JDObjectLocker::LockData> lockedObjects;
     Error lockerError;
-    if (!JDManagerObjectManager::getLockedObjects(lockedObjects, lockerError))
+    if (!JDManagerObjectManager::getObjectLocks(lockedObjects, lockerError))
     {
         if (m_logger)
 			m_logger->logError(std::string("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(lockerError));

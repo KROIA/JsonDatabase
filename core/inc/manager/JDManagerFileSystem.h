@@ -6,6 +6,7 @@
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/filesystem/LockedFileAccessor.h"
 #include "utilities/JDUserRegistration.h"
+#include "utilities/JDUser.h"
 
 #include "Logger.h"
 
@@ -39,6 +40,11 @@ namespace JsonDatabase
             std::string getDatabaseFilePath() const;
 
             bool isLoggedOnDatabase() const;
+
+            std::vector<Utilities::JDUser> getUsers() const
+			{
+				return m_userRegistration.getRegisteredUsers();
+			}
 
 
             static const std::string& getJsonFileEnding();
