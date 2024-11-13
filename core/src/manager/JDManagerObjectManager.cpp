@@ -206,12 +206,12 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.isObjectLockedByOther(obj, err);
         }
-        bool JDManagerObjectManager::getLockedObjects(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, Error& err) const
+        bool JDManagerObjectManager::getObjectLocks(std::vector<JDObjectLocker::LockData>& lockedObjectsOut, Error& err) const
         {
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.getLockedObjects(lockedObjectsOut, err);
         }
-        bool JDManagerObjectManager::getLockedObjectsByUser(
+        bool JDManagerObjectManager::getObjectLocksByUser(
             const Utilities::JDUser& user, 
             std::vector<JDObjectLocker::LockData>& lockedObjectsOut, 
             Error& err) const
@@ -219,12 +219,34 @@ namespace JsonDatabase
             std::vector<JDObjectLocker::LockData> tmp;
             if (!m_objLocker.getLockedObjects(tmp, err))
 				return false;
+			lockedObjectsOut.clear();
             for (size_t i = 0; i < tmp.size(); ++i)
 			{
 				if (tmp[i].user.getSessionID() == user.getSessionID())
 					lockedObjectsOut.push_back(tmp[i]);
 			}
 			return true;
+        }
+        
+        bool JDManagerObjectManager::getLockedObjects(std::vector<JDObject>& lockedObjectsOut, Error& err) const
+        {
+			return getLockedObjects(m_manager.getUser(), lockedObjectsOut, err);
+        }
+        bool JDManagerObjectManager::getLockedObjects(const Utilities::JDUser& user, std::vector<JDObject>& lockedObjectsOut, Error& err) const
+        {
+            std::vector<JDObjectLocker::LockData> locks;
+            lockedObjectsOut.clear();
+            err = Error::none;
+            if (getObjectLocksByUser(user, locks, err))
+            {
+                lockedObjectsOut.reserve(locks.size());
+                for (auto lock : locks)
+                {
+                    lockedObjectsOut.push_back(m_manager.getObject_internal(lock.objectID));
+                }
+                return true;
+            }
+            return false;
         }
         bool JDManagerObjectManager::getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, Error& err) const
         {
