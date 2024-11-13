@@ -144,6 +144,7 @@ namespace JsonDatabase
         // Implement load and save functions based on JD_USE_QJSON flag
         bool JDUser::load(const JsonObject& obj) 
         {
+            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
             bool success = true;
             auto sessionIt = obj.find(JsonKeys::sessionID);
             auto nameIt = obj.find(JsonKeys::name);
@@ -168,8 +169,8 @@ namespace JsonDatabase
             m_sessionID = sessionIt->second.get<std::string>();
             m_name = nameIt->second.get<std::string>();
 
-            m_loginDate = stringToQDate(dateIt->second.get<std::string>());
-            m_loginTime = stringToQTime(timeIt->second.get<std::string>());
+            m_loginDate = fastStringToQDate(dateIt->second.get<std::string>());
+            m_loginTime = fastStringToQTime(timeIt->second.get<std::string>());
 
             return success;
         }

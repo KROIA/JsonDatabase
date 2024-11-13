@@ -71,5 +71,8 @@ private:
 	QTimer m_asyncUpdateTimer;
 
 	JDManager *m_manager;
+	UI::JDUserListWidget* m_userListWidget;
+	UI::JDObjectListWidget* m_objectListWidget;
+
 	UIPerson* m_uiPersonEditor;
 };
