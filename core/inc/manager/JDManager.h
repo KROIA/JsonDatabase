@@ -223,7 +223,7 @@ class JSON_DATABASE_EXPORT JDManager:
         bool loadObjects_internal(int mode, Internal::WorkProgress* progress);
         bool saveObject_internal(const JDObject &obj, unsigned int timeoutMillis, Internal::WorkProgress* progress);
         bool saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress);
-        bool saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress);
+        bool saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress, bool objsRemoved = false);
 
 
         void onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> work);

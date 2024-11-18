@@ -40,6 +40,7 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
 	//Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
 	console->show();
+	ui.console_frame->layout()->addWidget(console);
 
 	m_manager->setup("asyncDatabase", "Person", user);
 
@@ -517,7 +518,7 @@ void MainWindow::onLockedObjectsChanged()
 void MainWindow::onObjectRemovedFromDatabase(JDObject removed)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	DEBUG_SIMPLE << "Removed: "<<removed->getObjectID()->toString().c_str() << "\n";
+	DEBUG_SIMPLE << "Removed: "<<removed->getShallowObjectID() << "\n";
 }
 void MainWindow::onObjectAddedToDatabase(JDObject added)
 {

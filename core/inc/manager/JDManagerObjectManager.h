@@ -51,8 +51,8 @@ namespace JsonDatabase
             bool addObject(JDObject obj);
             bool addObject(const std::vector<JDObject>& objList);
 
-            JDObject replaceObject(JDObject obj);
-            std::vector<JDObject> replaceObjects(const std::vector<JDObject>& objList);
+            //JDObject replaceObject(JDObject obj);
+            //std::vector<JDObject> replaceObjects(const std::vector<JDObject>& objList);
            
             bool removeObject(JDObject obj);
             bool removeObjects(const std::vector<JDObject>& objList);
@@ -120,8 +120,8 @@ namespace JsonDatabase
             bool packAndAddObject_internal(const std::vector<JDObject> &objs);
             bool packAndAddObject_internal(const std::vector<JDObjectID::IDType> &ids, const std::vector<JDObject>& objs);
 
-            JDObject replaceObject_internal(const JDObject& obj);
-            void replaceObject_internal(const std::vector<JDObject>& objs);
+            //JDObject replaceObject_internal(const JDObject& obj);
+            //void replaceObject_internal(const std::vector<JDObject>& objs);
             bool removeObject_internal(const JDObject& obj);
             bool removeObject_internal(const std::vector<JDObject>& objs);
             bool exists_internal(const JDObject& obj) const;
@@ -146,7 +146,7 @@ namespace JsonDatabase
 
             void update();
 
-            std::vector<JDObjectID::IDType> m_removedObjectIDs;
+           // std::vector<JDObjectID::IDType> m_removedObjectIDs;
         private:
             JDManager& m_manager;
             JDObjectIDDomain m_idDomain;

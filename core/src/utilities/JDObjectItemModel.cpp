@@ -66,8 +66,8 @@ namespace JsonDatabase
 			case Qt::DisplayRole:
 			{
 				QString text = obj->getDisplayName().c_str();
-				auto id = obj->getObjectID();
-				const auto& it = m_lockedObjects.find(id->get());
+				auto id = obj->getShallowObjectID();
+				const auto& it = m_lockedObjects.find(id);
 				if (it != m_lockedObjects.end())
 				{
 					text += " (Locked by " + QString(it->second.lockData.user.getName().c_str()) + ")";
