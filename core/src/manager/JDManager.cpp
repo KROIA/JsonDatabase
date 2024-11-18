@@ -576,7 +576,7 @@ bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkP
     std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
     return saveObjects_internal(objs, timeoutMillis, progress);
 }
-bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
+bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress, bool objsRemoved)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     if(objList.size() == 0)
@@ -589,7 +589,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
 
     std::vector<JDObjectLocker::LockData> lockedObjects;
     Error lockerError;
-    if (!JDManagerObjectManager::getObjectLocks(lockedObjects, lockerError))
+    if (!m_objLocker.getLockedObjects(lockedObjects, lockerError))
     {
         if (m_logger)
 			m_logger->logError(std::string("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(lockerError));
@@ -660,49 +660,53 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
     }
     
     bool success = true;
-    if (progress)
-    {
-        progress->startNewSubProgress(progressScalar * 0.6);
-        success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData, progress);
-    }
-	else
-	{
-		success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData);
-	}
-
-    // Replace the objects in the original json data
-    int replacedCount = 0;
-    if (m_removedObjectIDs.size() > 0)
+    
+    if (objsRemoved)
     {
         for (size_t i = 0; i < origJsonData.size(); ++i)
         {
             JDObjectID::IDType id = JDObjectInterface::getIDFromJson(origJsonData[i].get<JsonObject>());
-            if (std::find(m_removedObjectIDs.begin(), m_removedObjectIDs.end(), id) != m_removedObjectIDs.end())
+            for (size_t j = 0; j < objList.size(); ++j)
             {
-				origJsonData.erase(origJsonData.begin() + i);
-				--i;
-			}
-		}
+                if (id == objList[j]->getShallowObjectID())
+                {
+                    origJsonData.erase(origJsonData.begin() + i);
+                    --i;
+                    break;
+                }
+            }
+        }
     }
-    m_removedObjectIDs.clear();
-
-    for (size_t i = 0; i < origJsonData.size(); ++i)
+    else
     {
-        const JsonObject &objData = origJsonData[i].get<JsonObject>();
-        size_t index = JDObjectInterface::getJsonIndexByID(*jsonData, JDObjectInterface::getIDFromJson(objData));
-        if (index == std::string::npos)
-			continue;
-        origJsonData[i] = (*jsonData)[index];
-        jsonData->erase(jsonData->begin() + index);
-        ++replacedCount;
-    }
-    if (jsonData->size())
-    {
-        for (size_t i = 0; i < jsonData->size(); ++i)
+        if (progress)
         {
-			origJsonData.push_back((*jsonData)[i]);
-		}
-	}
+            progress->startNewSubProgress(progressScalar * 0.6);
+            success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData, progress);
+        }
+        else
+        {
+            success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData);
+        }
+        for (size_t i = 0; i < origJsonData.size(); ++i)
+        {
+            const JsonObject& objData = origJsonData[i].get<JsonObject>();
+            size_t index = JDObjectInterface::getJsonIndexByID(*jsonData, JDObjectInterface::getIDFromJson(objData));
+            if (index == std::string::npos)
+                continue;
+            origJsonData[i] = (*jsonData)[index];
+            jsonData->erase(jsonData->begin() + index);
+            //  ++replacedCount;
+        }
+        if (jsonData->size())
+        {
+            for (size_t i = 0; i < jsonData->size(); ++i)
+            {
+                origJsonData.push_back((*jsonData)[i]);
+            }
+        }
+    }
+    
     
     // Save the serialized objects
     if(progress) progress->startNewSubProgress(progressScalar * 0.4);

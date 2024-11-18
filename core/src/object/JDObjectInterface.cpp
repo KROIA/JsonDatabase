@@ -150,6 +150,12 @@ JDObjectIDptr JDObjectInterface::getObjectID() const
 }
 const JDObjectID::IDType& JDObjectInterface::getShallowObjectID() const
 {
+    if (m_manager)
+    {
+        auto id = m_manager->getID();
+        if (id)
+            return id->get();
+    }
     return m_shallowID;
 }
 

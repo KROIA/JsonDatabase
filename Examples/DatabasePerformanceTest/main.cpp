@@ -335,29 +335,27 @@ void threadFunction1() {
 
 void callback()
 {
+    //manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects);
     manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects);
-    manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects + JsonDatabase::LoadMode::overrideChanges);
    // manager2->disconnectDatabaseFileChangedSlot(callback);
 }
-void onObjectRemoved(const std::vector<JDObject>& list)
+void onObjectRemoved(JDObject obj)
 {
-    for(JDObject obj : list)
-        std::cout << "Object removed: " << obj->getObjectID() << "\n";
+    std::cout << "Object removed: " << obj->getObjectID() << "\n";
 }
-void onObjectAdded(const std::vector<JDObject>& list)
+void onObjectAdded(JDObject obj)
 {
-    for (JDObject obj : list)
-	    std::cout << "Object added: " << obj->getObjectID() << "\n";
+	std::cout << "Object added: " << obj->getObjectID() << "\n";
 }
 void onObjectOverrideChange(const std::vector<JDObject>& list)
 {
     for (JDObject obj : list)
         std::cout << "Object override change: " << obj->getObjectID() << "\n";
 }
-void onObjectChange(const std::vector<JDObjectPair>& list)
+void onObjectChange(const std::vector<JDObject>& list)
 {
-    for (const JDObjectPair& obj : list)
-        std::cout << "Object changed: " << obj.first->getObjectID() << "\n";
+    for (const JDObject& obj : list)
+        std::cout << "Object changed: " << obj->getObjectID() << "\n";
 }
 
 // Function for the second thread
@@ -369,9 +367,9 @@ void threadFunction2() {
     auto start = std::chrono::high_resolution_clock::now();
 
     QObject::connect(manager2, &JDManager::databaseFileChanged, []() {callback(); });
-    QObject::connect(manager2, &JDManager::objectAdded, [](const std::vector<JDObject>& list) {onObjectAdded(list); });
-    QObject::connect(manager2, &JDManager::objectRemoved, [](const std::vector<JDObject>& list) {onObjectRemoved(list); });
-    QObject::connect(manager2, &JDManager::objectChangedFromDatabase, [](const std::vector<JDObjectPair>& list) {onObjectChange(list); });
+    QObject::connect(manager2, &JDManager::objectAdded, [](JDObject obj) {onObjectAdded(obj); });
+    QObject::connect(manager2, &JDManager::objectRemoved, [](JDObject obj) {onObjectRemoved(obj); });
+    QObject::connect(manager2, &JDManager::objectOverrideChangeFromDatabase, [](std::vector<JDObject> list) {onObjectChange(list); });
 
     //manager2->getSignals().connect_databaseFileChanged_slot(callback);
     //manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);

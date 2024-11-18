@@ -55,23 +55,41 @@ namespace JsonDatabase
         bool JDManagerObjectManager::addObject(JDObject obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return packAndAddObject_internal(obj);
+			bool success = true;
+            {
+                JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+                success = packAndAddObject_internal(obj);
+            }
+			if (success)
+				emit m_manager.objectAdded(obj);
+			return success;
         }
         bool JDManagerObjectManager::addObject(const std::vector<JDObject>& objList)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             bool success = true;
-            for (size_t i = 0; i < objList.size(); ++i)
+            std::vector<JDObject> addedObjs;
             {
-                JDObject obj = objList[i];
-                success &= packAndAddObject_internal(obj);
+                JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+
+                
+                for (size_t i = 0; i < objList.size(); ++i)
+                {
+                    JDObject obj = objList[i];
+                    bool added = packAndAddObject_internal(obj);
+                    if (added)
+                        addedObjs.push_back(obj);
+                    success &= added;
+                }
             }
+			for (size_t i = 0; i < addedObjs.size(); ++i)
+			{
+				emit m_manager.objectAdded(addedObjs[i]);
+			}
             return success;
         }
         
-        JDObject JDManagerObjectManager::replaceObject(JDObject obj)
+        /*JDObject JDManagerObjectManager::replaceObject(JDObject obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
@@ -90,22 +108,40 @@ namespace JsonDatabase
                 replacedObjs.push_back(replaceObject_internal(objList[i]));
             }
             return replacedObjs;
-        }
+        }*/
         
         bool JDManagerObjectManager::removeObject(JDObject obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            return removeObject_internal(obj);
+			bool success;
+			{
+				JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+				success = removeObject_internal(obj);
+			}
+			if (success)
+				emit m_manager.objectRemoved(obj);
+            return success;
         }
         
         bool JDManagerObjectManager::removeObjects(const std::vector<JDObject>& objList)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             bool success = true;
-            for (size_t i = 0; i < objList.size(); ++i)
-                success &= removeObject_internal(objList[i]);
+			std::vector<JDObject> removedObjs;
+			{
+				JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+				for (size_t i = 0; i < objList.size(); ++i)
+				{
+					bool removed = removeObject_internal(objList[i]);
+					if (removed)
+						removedObjs.push_back(objList[i]);
+					success &= removed;
+				}
+			}
+			for (size_t i = 0; i < removedObjs.size(); ++i)
+			{
+				emit m_manager.objectRemoved(removedObjs[i]);
+			}
             return success;
         }
         std::size_t JDManagerObjectManager::getObjectCount() const
@@ -378,19 +414,20 @@ namespace JsonDatabase
                 return false; // Object already managed
 			
             JDObjectIDptr id = m_idDomain.getNewID();
-            for(size_t i=0; i< m_removedObjectIDs.size(); ++i)
+           /* for (size_t i = 0; i< m_removedObjectIDs.size(); ++i)
             {
                 if (m_removedObjectIDs[i] == id->get())
                 {
 					m_removedObjectIDs.erase(m_removedObjectIDs.begin() + i);
 					break;
 				}
-			}
+			}*/
             JDObjectManager *manager = new JDObjectManager(&m_manager, obj, id, m_logger);
             if(m_objs.addObject(manager))
             {
                 if(m_logger)
 					m_logger->logInfo("Added object with ID: " + obj->getObjectID().get()->toString());
+				
 				return true;
 			}
             if(m_logger)
@@ -421,14 +458,14 @@ namespace JsonDatabase
 #endif
                 return false; 
             }
-            for (size_t i = 0; i < m_removedObjectIDs.size(); ++i)
+           /* for (size_t i = 0; i < m_removedObjectIDs.size(); ++i)
             {
                 if (m_removedObjectIDs[i] == id->get())
                 {
                     m_removedObjectIDs.erase(m_removedObjectIDs.begin() + i);
                     break;
                 }
-            }
+            }*/
             JDObjectManager* manager = new JDObjectManager(&m_manager, obj, id, m_logger);
             return m_objs.addObject(manager);
         }
@@ -452,14 +489,14 @@ namespace JsonDatabase
             m_objs.reserve(m_objs.size() + objs.size());
             for (size_t i = 0; i < objs.size(); ++i)
             {
-                for (size_t j = 0; j < m_removedObjectIDs.size(); ++j)
+               /* for (size_t j = 0; j < m_removedObjectIDs.size(); ++j)
                 {
                     if (m_removedObjectIDs[j] == generatedIDs[i]->get())
                     {
                         m_removedObjectIDs.erase(m_removedObjectIDs.begin() + j);
                         break;
                     }
-                }
+                }*/
                 JDObjectManager* manager = new JDObjectManager(&m_manager, objs[i], generatedIDs[i], m_logger);
                 bool success2 = m_objs.addObject(manager);
                 success &= success2;
@@ -481,20 +518,11 @@ namespace JsonDatabase
             return success;
         }
 
-        JDObject JDManagerObjectManager::replaceObject_internal(const JDObject& obj)
+        /*JDObject JDManagerObjectManager::replaceObject_internal(const JDObject& obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 
             
-            /*// Check if Object is locked by this user
-            Error err;
-            if (!m_objLocker.isObjectLockedByMe(obj, err))
-            {
-                if (m_logger)
-                    m_logger->logWarning("Can't replace object with ID: " + obj->getObjectID().get()->toString() + ". Object is not locked by this user.");
-                return;
-            }*/
-
             JDObjectID::IDType id = obj->getShallowObjectID();
             JDObjectManager* replacedManager = m_objs.getObjectByID(id);
             if(!replacedManager)
@@ -523,7 +551,7 @@ namespace JsonDatabase
             {
                 replaceObject_internal(objs[i]);
             }
-        }
+        }*/
         bool JDManagerObjectManager::removeObject_internal(const JDObject & obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
@@ -547,9 +575,14 @@ namespace JsonDatabase
             bool removed = removedManager != nullptr;
             if (removed)
             {
-                m_removedObjectIDs.push_back(obj->getObjectID().get()->get());
+                //m_removedObjectIDs.push_back(obj->getObjectID().get()->get());
+               
+                m_manager.saveObjects_internal({ obj }, 1000, nullptr, true);
+                m_objLocker.unlockObject(obj, err);
                 m_idDomain.unregisterID(obj->getObjectID());
 				delete removedManager;
+                
+                
 			}
             if(m_logger)
                 m_logger->logInfo("Removed object with ID: " + JDObjectID::idToStr(obj->getShallowObjectID()));
@@ -560,7 +593,7 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if(m_objs.removeObject(objs))
             {
-                bool noLock = false;
+				std::vector<JDObject> lockedObjs;
                 for (size_t i = 0; i < objs.size(); ++i)
                 {
                     // Check if Object is locked by this user
@@ -569,20 +602,26 @@ namespace JsonDatabase
                     {
                         if (m_logger)
                             m_logger->logWarning("Can't remove object with ID: " + objs[i]->getObjectID().get()->toString() + ". Object is not locked by this user.");
-                        noLock = true;
                     }
+                    else
+						lockedObjs.push_back(objs[i]);
                 }
-                if (noLock)
-                    return false;
-                for(size_t i=0; i<objs.size(); ++i)
+
+
+                std::vector<Error> errors(lockedObjs.size());
+                m_manager.saveObjects_internal(lockedObjs, 1000, nullptr, true);
+                m_objLocker.unlockObjects(lockedObjs, errors);
+                for(size_t i=0; i< lockedObjs.size(); ++i)
 				{
-                    m_removedObjectIDs.push_back(objs[i]->getObjectID().get()->get());
-                    m_idDomain.unregisterID(objs[i]->getObjectID());
-					JDObjectManager* manager = m_objs.getObjectByID(objs[i]->getObjectID());
+                    //m_removedObjectIDs.push_back(objs[i]->getObjectID().get()->get());
+                    m_idDomain.unregisterID(lockedObjs[i]->getObjectID());
+					JDObjectManager* manager = m_objs.getObjectByID(lockedObjs[i]->getObjectID());
 					delete manager;
                     if (m_logger)
-                        m_logger->logInfo("Removed object with ID: " + JDObjectID::idToStr(objs[i]->getShallowObjectID()));
+                        m_logger->logInfo("Removed object with ID: " + JDObjectID::idToStr(lockedObjs[i]->getShallowObjectID()));
 				}
+               
+				
                 return true;
 			}  
             return false;
