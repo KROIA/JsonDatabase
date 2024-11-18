@@ -194,23 +194,25 @@ class JSON_DATABASE_EXPORT JDManager:
         
 
         signals:
-            void onDatabaseFileChanged(); // Emitted when the database file has changed
-            void onLockedObjectsChanged(); // Emitted when the locked objects have changed
-            void onObjectRemovedFromDatabase(std::vector<JDObject> objs); // Emitted when an object is removed from the database
-            void onObjectAddedToDatabase(std::vector<JDObject> objs); // Emitted when an object is added to the database
-            void onObjectChangedFromDatabase(std::vector<JDObjectPair> objs); // Emitted when an object is changed in the database
-            void onObjectOverrideChangeFromDatabase(std::vector<JDObject> objs); // Emitted when an object is changed in the database
-            void onDatabaseOutdated(); // Emitted when the database is outdated
+            void databaseFileChanged(); // Emitted when the database file has changed
+            void lockedObjectsChanged(); // Emitted when the locked objects have changed
+            //void onObjectRemovedFromDatabase(std::vector<JDObject> objs); // Emitted when an object is removed from the database
+           // void onObjectAddedToDatabase(std::vector<JDObject> objs); // Emitted when an object is added to the database
+            //void objectChangedFromDatabase(std::vector<JDObjectPair> objs); // Emitted when an object is changed in the database
+            void objectOverrideChangeFromDatabase(std::vector<JDObject> objs); // Emitted when an object is changed in the database
+            void databaseOutdated(); // Emitted when the database is outdated
 
-            void onStartAsyncWork(); // Emitted when an async work is started
-            void onEndAsyncWork(); // Emitted when an async work is done
-            void onLoadObjectDone(bool success, JDObject obj); 
-            void onLoadObjectsDone(bool success); 
-            void onSaveObjectDone(bool success, JDObject obj);
-            void onSaveObjectsDone(bool success);
+            void startAsyncWork(); // Emitted when an async work is started
+            void endAsyncWork(); // Emitted when an async work is done
+            void loadObjectDone(bool success, JDObject obj); 
+            void loadObjectsDone(bool success); 
+            void saveObjectDone(bool success, JDObject obj);
+            void saveObjectsDone(bool success);
 
 			void objectLocked(JDObject obj);
 			void objectUnlocked(JDObject obj);
+            void objectAdded(JDObject obj);
+			void objectRemoved(JDObject obj);
 
     protected:
 

@@ -3,10 +3,10 @@
 #include "JsonDatabase_base.h"
 #include "object/JDObjectInterface.h"
 #include "manager/JDManager.h"
+#include "utilities/JDObjectItemModel.h"
 
 #include <QWidget>
 #include <QListView>
-#include <QStandardItemModel>
 
 namespace JsonDatabase
 {
@@ -19,32 +19,25 @@ namespace JsonDatabase
 			JDObjectListWidget(JDManager* manager, QWidget* parent = nullptr);
 			~JDObjectListWidget();
 
-			//void setObjects(const std::vector<JDObject>& objects);
-			void update();
+			signals:
+			void objectClicked(JDObject obj);
 
 			private slots:
-			void onObjectLocked(JDObject obj);
-			void onObjectUnlocked(JDObject obj);
+			void onItemClicked(const QModelIndex& index);
+
 
 			private:
+			
 			void setupUI();
 			void updateUI();
-			size_t findObjectIndex(const JDObject& object) const;
 
 			QListView* m_objectListWidget;
-			QStandardItemModel* m_model;
+			Utilities::JDObjectItemModel* m_model;
 
-			struct JDObjectItem
-			{
-				JDObject object;
-				QStandardItem* item = nullptr;
-			};
-			std::vector<JDObjectItem> m_objects;
 			JDManager* m_manager = nullptr;
 			//std::unordered_map<JDObject, JDObjectItem> m_objectItems;
 
-			static const QString s_iconLock;
-			static const QString s_iconUnlock;
+		
 		};
 	}
 }

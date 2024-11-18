@@ -32,6 +32,9 @@ public:
     bool operator==(const Person& other);
     bool operator!=(const Person& other);
 
+    std::string getToolTip() const override { return firstName +" "+lastName + "\n" + email; }
+    std::string getDisplayName() const override { return firstName + " " + lastName; }
+
 
     std::string firstName, lastName, gender;
     std::string age;

@@ -379,7 +379,7 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     bool modeChangedObjects = (mode & (int)LoadMode::changedObjects);
     bool modeRemovedObjects = (mode & (int)LoadMode::removedObjects);
 
-    bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
+    //bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
 
     //const bool hasOverrideChangeFromDatabaseSlots = m_signals.objectOverrideChangeFromDatabase.signal.getSlotCount();
     //const bool hasChangeFromDatabaseSlots = m_signals.objectChangedFromDatabase.signal.getSlotCount();
@@ -411,18 +411,18 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
     // Copy the data to the signals
     if (modeChangedObjects)
     {
-        if (overrideChanges)
-        {
+       // if (overrideChanges)
+        //{
             //if (hasOverrideChangeFromDatabaseSlots && overridingObjs.size())
             //    m_signals.objectOverrideChangeFromDatabase.addObjs(overridingObjs);
             if (overridingObjs.size())
             {
                 //std::lock_guard lck(m_signalDataMutex);
                 //m_signalData.onObjectOverrideChangeFromDatabase = overridingObjs;
-                emit onObjectOverrideChangeFromDatabase(overridingObjs);
+                emit objectOverrideChangeFromDatabase(overridingObjs);
             }
-        }
-		else
+        //}
+		/*else
 		{
             if (pairsForSignal.size())
             {
@@ -430,9 +430,9 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
                 //m_signalData.onObjectChangedFromDatabase = pairsForSignal;
                 //if (hasChangeFromDatabaseSlots)
                 //    m_signals.objectChangedFromDatabase.addPairs(pairsForSignal);
-                emit onObjectChangedFromDatabase(pairsForSignal);
+                emit objectChangedFromDatabase(pairsForSignal);
             }
-		}
+		}*/
     }
     if (modeRemovedObjects)
     {
@@ -442,7 +442,9 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
             //m_signalData.onObjectRemovedFromDatabase = removedObjs;
             //if (hasObjectRemovedFromDatabaseSlots)
             //    m_signals.objectRemovedFromDatabase.addObjs(removedObjs);
-            emit onObjectRemovedFromDatabase(removedObjs);
+            for (size_t i = 0; i < removedObjs.size(); ++i)
+                emit objectRemoved(removedObjs[i]);
+            //emit onObjectRemovedFromDatabase(removedObjs);
         }
     }
     if (modeNewObjects)
@@ -456,7 +458,9 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
                 m_signals.objectAddedToDatabase.reserve(m_signals.objectAddedToDatabase.size() + newObjInstances.size());
                 m_signals.objectAddedToDatabase.addObjs(newObjInstances);
             }*/
-            emit onObjectAddedToDatabase(newObjInstances);
+            //emit onObjectAddedToDatabase(newObjInstances);
+            for (size_t i = 0; i < newObjInstances.size(); ++i)
+                emit objectAdded(newObjInstances[i]);
         }
     }
     if (m_logger)
@@ -506,7 +510,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     if (fileError != Error::none)
     {
         if(fileError == Error::fileAlreadyLockedForWritingByOther)
-            emit onDatabaseOutdated();
+            emit databaseOutdated();
             //m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
 
         if (m_logger)m_logger->logError(std::string("bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMillis): Error: ") + errorToString(fileError));
@@ -634,7 +638,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
     if (fileError != Error::none)
     {
         if (fileError == Error::fileAlreadyLockedForWritingByOther)
-            emit onDatabaseOutdated();
+            emit databaseOutdated();
             //m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_databaseOutdated, true);
 
         if (m_logger)m_logger->logError(std::string("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(fileError));
@@ -734,27 +738,27 @@ void JDManager::onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> wo
 
     if (loadAllWork)
     {
-        emit onLoadObjectsDone(loadAllWork->hasSucceeded());
+        emit loadObjectsDone(loadAllWork->hasSucceeded());
         //m_signalData.onLoadObjectsDone.success = loadAllWork->hasSucceeded();
         //m_signalData.onLoadObjectsDone.signalActive = true;
         //m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectsDone, loadAllWork->hasSucceeded(), true);
     }
     else if (loadSingle)
     {
-        emit onLoadObjectDone(loadSingle->hasSucceeded(), loadSingle->getObject());
+        emit loadObjectDone(loadSingle->hasSucceeded(), loadSingle->getObject());
 		//m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onLoadObjectDone, loadSingle->hasSucceeded(), loadSingle->getObject(), true);
 	}
     else if (saveSingle)
     {
-        emit onSaveObjectDone(saveSingle->hasSucceeded(), saveSingle->getObject());
+        emit saveObjectDone(saveSingle->hasSucceeded(), saveSingle->getObject());
 		//m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectDone, saveSingle->hasSucceeded(), loadSingle->getObject(), true);
 	}
     else if (saveList)
     {
-        emit onSaveObjectsDone(saveList->hasSucceeded());
+        emit saveObjectsDone(saveList->hasSucceeded());
 		//m_signals.addToQueue(Internal::JDManagerSignals::Signals::signal_onSaveObjectsDone, saveList->hasSucceeded(), true);
 	}
-    emit onLockedObjectsChanged();
+    emit lockedObjectsChanged();
     //m_signals.lockedObjectsChanged.emitSignal();
     if (!work->hasSucceeded())
         onAsyncWorkError(work);
@@ -813,12 +817,12 @@ const std::string& JDManager::getLoadModeStr(int mode) const
             str += "removedObjects";
         }
     }
-    if (mode & (int)LoadMode::overrideChanges)
+    /*if (mode & (int)LoadMode::overrideChanges)
     {
         if (str.size())
             str += " + ";
         str += "overrideChanges";
-    }
+    }*/
 	return str;
 
 }

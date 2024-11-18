@@ -69,7 +69,7 @@ namespace JsonDatabase
                 if (m_workList.size() == 0)
                     return;
             }
-            emit m_manager.onStartAsyncWork();
+            emit m_manager.startAsyncWork();
             //m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onStartAsyncWork, true);
             m_cv.notify_all();
         }
@@ -166,7 +166,7 @@ namespace JsonDatabase
                         }
                     }
                     //m_manager.m_signals.addToQueue(JDManagerSignals::Signals::signal_onEndAsyncWork, true);
-                    emit m_manager.onEndAsyncWork();
+                    emit m_manager.endAsyncWork();
                 }
             }
         }

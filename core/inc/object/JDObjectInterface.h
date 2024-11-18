@@ -28,6 +28,16 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         friend class AutoObjectAddToRegistry;
 
     public:
+        enum class Color
+        {
+            Default,
+            Error,
+            UnsavedChanges,
+            Locked
+
+
+        };
+
         JDObjectInterface();
         //JDObjectInterface(const JDObjectIDptr& id);
 
@@ -55,6 +65,8 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
 
 
         virtual const std::string& className() const = 0;
+		virtual std::string getToolTip() const { return ""; }
+		virtual std::string getDisplayName() const { return className(); }
 
         JDObjectIDptr getObjectID() const;
 

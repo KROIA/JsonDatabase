@@ -259,7 +259,7 @@ namespace JsonDatabase
             if (m_fileWatcher.hasFileChanged())
             {
                 //m_manager.getSignals().databaseFileChanged.emitSignal();
-                emit m_manager.onDatabaseFileChanged();
+                emit m_manager.databaseFileChanged();
                 m_fileWatcher.clearHasFileChanged();
             }
         }
