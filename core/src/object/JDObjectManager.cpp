@@ -295,15 +295,15 @@ namespace JsonDatabase
 				return ManagedLoadStatus::noLoadNeeded;
 			if (hasChanged)
 			{
-				if (loadMode.overridingObjects)
-				{
+				//if (loadMode.overridingObjects)
+				//{
 					
 					if (!manager->loadAndOverrideData(json))
 						return ManagedLoadStatus::loadFailed;
 
 					containers.overridingObjs.push_back(obj);
-				}
-				else
+				//}
+				/*else
 				{
 					JDObject instance = obj->deepClone();
 					if (!instance.get())
@@ -314,7 +314,7 @@ namespace JsonDatabase
 					containers.changedPairs.push_back(std::make_pair(obj, instance));
 					containers.replaceObjs.push_back(instance);
 
-				}
+				}*/
 			}
 			containers.loadedObjects[obj] = obj;
 			return ManagedLoadStatus::success;

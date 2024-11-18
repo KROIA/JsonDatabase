@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     JDObject c1(new C());
     JDObject c2(new C());
 
-    QObject::connect(&manager, &JDManager::onSaveObjectsDone, [](bool s) {onSaveCallback(s); });
+    QObject::connect(&manager, &JDManager::saveObjectsDone, [](bool s) {onSaveCallback(s); });
 
 
     manager.addObject(a1);

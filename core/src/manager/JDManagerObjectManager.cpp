@@ -16,7 +16,7 @@ namespace JsonDatabase
         {   }
         JDManagerObjectManager::~JDManagerObjectManager()
         {
-            stop();
+           // stop();
             delete m_logger;
         }
         void JDManagerObjectManager::setParentLogger(Log::LogObject* parentLogger)
@@ -39,6 +39,8 @@ namespace JsonDatabase
         }
         bool JDManagerObjectManager::stop()
         {
+            Error err;
+            m_objLocker.unlockAllObjs(err);
             return true;
         }
         
@@ -256,9 +258,32 @@ namespace JsonDatabase
 			return true;
         }
         
+        bool JDManagerObjectManager::getLockedObjects(std::vector<LockedObject>& lockedObjectsOut, Error& err) const
+        {
+            std::vector<JDObjectLocker::LockData> tmp;
+            if (!m_objLocker.getLockedObjects(tmp, err))
+                return false;
+            lockedObjectsOut.clear();
+            for (size_t i = 0; i < tmp.size(); ++i)
+            {
+                LockedObject data;
+				data.obj = m_manager.getObject_internal(tmp[i].objectID);
+				data.lockData = tmp[i];
+                lockedObjectsOut.push_back(data);
+            }
+            return true;
+        }
         bool JDManagerObjectManager::getLockedObjects(std::vector<JDObject>& lockedObjectsOut, Error& err) const
         {
-			return getLockedObjects(m_manager.getUser(), lockedObjectsOut, err);
+            std::vector<JDObjectLocker::LockData> tmp;
+            if (!m_objLocker.getLockedObjects(tmp, err))
+                return false;
+            lockedObjectsOut.clear();
+            for (size_t i = 0; i < tmp.size(); ++i)
+            {
+                lockedObjectsOut.push_back(m_manager.getObject_internal(tmp[i].objectID));
+            }
+            return true;
         }
         bool JDManagerObjectManager::getLockedObjects(const Utilities::JDUser& user, std::vector<JDObject>& lockedObjectsOut, Error& err) const
         {
@@ -660,7 +685,7 @@ namespace JsonDatabase
             bool modeChangedObjects = (mode & (int)LoadMode::changedObjects);
             bool modeRemovedObjects = (mode & (int)LoadMode::removedObjects);
 
-            bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
+           // bool overrideChanges = (mode & (int)LoadMode::overrideChanges);
 
             std::vector<JDObject> replaceObjs;
             std::unordered_map<JDObject, JDObject> loadedObjects;
@@ -678,7 +703,7 @@ namespace JsonDatabase
 				.newObjects = modeNewObjects,
                 .removedObjects = modeRemovedObjects,
 				.changedObjects = modeChangedObjects,
-				.overridingObjects = overrideChanges
+			//	.overridingObjects = overrideChanges
 			};
 
             if (progress)
@@ -834,7 +859,7 @@ namespace JsonDatabase
             }
             JD_GENERAL_PROFILING_END_BLOCK;
 
-            JD_GENERAL_PROFILING_BLOCK("Replace objects", JD_COLOR_STAGE_3);
+           /* JD_GENERAL_PROFILING_BLOCK("Replace objects", JD_COLOR_STAGE_3);
             if (modeChangedObjects && !overrideChanges && changedPairs.size())
             {
                 if(progress)
@@ -848,7 +873,7 @@ namespace JsonDatabase
                     ++counter;
                 }
             }
-            JD_GENERAL_PROFILING_END_BLOCK;
+            JD_GENERAL_PROFILING_END_BLOCK;*/
 
             JD_GENERAL_PROFILING_BLOCK("Add new objects", JD_COLOR_STAGE_3);
             if (modeNewObjects && newObjIDs.size())

@@ -38,6 +38,8 @@ private slots:
 	void on_unlockAllObjects_pushButton_clicked();
 	void on_test_pushButton_clicked();
 
+	void onObjectClicked(JDObject obj);
+
 
 
 	void onPersonSave(JDderivedObject<Person> person);
@@ -51,9 +53,9 @@ private:
 	// Signals from the manager
 	void onDatabaseFileChanged();
 	void onLockedObjectsChanged();
-	void onObjectRemovedFromDatabase(const std::vector<JDObject>& removed);
-	void onObjectAddedToDatabase(const std::vector<JDObject>& added);
-	void onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>&changedPairs);
+	void onObjectRemovedFromDatabase(JDObject removed);
+	void onObjectAddedToDatabase(JDObject added);
+	//void onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>&changedPairs);
 	void onObjectOverrideChangeFromDatabase(const std::vector<JDObject>& overwritten);
 	void onDatabaseOutdated();
 

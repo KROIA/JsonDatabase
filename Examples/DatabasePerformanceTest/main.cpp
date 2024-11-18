@@ -258,8 +258,8 @@ void threadFunction1() {
     //bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    QObject::connect(manager1, &JDManager::onDatabaseFileChanged, [] {manager1->loadObjectsAsync(); });
-    QObject::connect(manager1, &JDManager::onSaveObjectsDone, [](bool success)
+    QObject::connect(manager1, &JDManager::databaseFileChanged, [] {manager1->loadObjectsAsync(); });
+    QObject::connect(manager1, &JDManager::saveObjectsDone, [](bool success)
         {
             std::cout << "Save Objects success: " << success << "\n";
             finishSave = true; 
@@ -368,10 +368,10 @@ void threadFunction2() {
     //JDObject lockedPerson = nullptr;
     auto start = std::chrono::high_resolution_clock::now();
 
-    QObject::connect(manager2, &JDManager::onDatabaseFileChanged, []() {callback(); });
-    QObject::connect(manager2, &JDManager::onObjectAddedToDatabase, [](const std::vector<JDObject>& list) {onObjectAdded(list); });
-    QObject::connect(manager2, &JDManager::onObjectRemovedFromDatabase, [](const std::vector<JDObject>& list) {onObjectRemoved(list); });
-    QObject::connect(manager2, &JDManager::onObjectChangedFromDatabase, [](const std::vector<JDObjectPair>& list) {onObjectChange(list); });
+    QObject::connect(manager2, &JDManager::databaseFileChanged, []() {callback(); });
+    QObject::connect(manager2, &JDManager::objectAdded, [](const std::vector<JDObject>& list) {onObjectAdded(list); });
+    QObject::connect(manager2, &JDManager::objectRemoved, [](const std::vector<JDObject>& list) {onObjectRemoved(list); });
+    QObject::connect(manager2, &JDManager::objectChangedFromDatabase, [](const std::vector<JDObjectPair>& list) {onObjectChange(list); });
 
     //manager2->getSignals().connect_databaseFileChanged_slot(callback);
     //manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);
@@ -427,7 +427,7 @@ void threadFunction3() {
    // bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    QObject::connect(manager3, &JDManager::onDatabaseFileChanged, [] {
+    QObject::connect(manager3, &JDManager::databaseFileChanged, [] {
         //manager3->loadObjectsAsync();
         });
 
@@ -509,7 +509,7 @@ void threadFunction5() {
     //bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    QObject::connect(manager5, &JDManager::onDatabaseFileChanged, [] {
+    QObject::connect(manager5, &JDManager::databaseFileChanged, [] {
 		//manager5->loadObjectsAsync();
 		});
 

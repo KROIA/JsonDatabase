@@ -98,7 +98,7 @@ namespace JsonDatabase
 				bool newObjects;
 				bool removedObjects;
 				bool changedObjects;
-				bool overridingObjects;
+				//bool overridingObjects;
 			};
 			struct ManagedLoadMisc
 			{
