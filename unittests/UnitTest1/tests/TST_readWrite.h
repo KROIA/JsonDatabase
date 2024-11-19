@@ -37,6 +37,7 @@ private:
 
 	std::string person0Age;
 	JDObjectID::IDType person0ID;
+	size_t objCount = 0;
 
 	// Tests
 	TEST_FUNCTION(initialize)
@@ -48,6 +49,7 @@ private:
 
 		// Create a Person Object
 		std::vector<JDObject> persons = createPersons();
+		objCount = persons.size();
 
 		// Should return false because the object is not in the database
 		TEST_ASSERT(db.saveObject(persons[0]) == false);
@@ -99,8 +101,8 @@ private:
 
 		TEST_ASSERT(db.loadObjects());
 
-		TEST_ASSERT(db.getObjectCount() == 4);
-		TEST_ASSERT(db.getObjects().size() == 4);
+		TEST_ASSERT(db.getObjectCount() == objCount);
+		TEST_ASSERT(db.getObjects().size() == objCount);
 
 		JDObject obj = db.getObject(person0ID);
 		Person* person = dynamic_cast<Person*>(obj.get());
