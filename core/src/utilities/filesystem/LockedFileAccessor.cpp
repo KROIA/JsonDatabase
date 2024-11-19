@@ -286,7 +286,13 @@ namespace JsonDatabase
                 m_progress->startNewSubProgress(progressScalar * 0.9);
                 m_progress->setComment("Import Json Objects");
             }
-            if (m_useZipFormat)
+
+            // Check if the file is ziped
+            bool isZiped = false;
+            if (fileData.size() > 0)
+                isZiped = fileData[0] != '[';
+
+            if (m_useZipFormat || isZiped)
             {
                 JD_GENERAL_PROFILING_NONSCOPED_BLOCK("uncompressing data", JD_COLOR_STAGE_6);
                 QString uncompressed;

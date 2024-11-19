@@ -248,7 +248,7 @@ namespace JsonDatabase
 				m_lockTableWatcher.clearHasFileChanged();
 				m_manager.onObjectLockerFileChanged();
 				//m_manager.getSignals().lockedObjectsChanged.emitSignal();
-				emit m_manager.lockedObjectsChanged();
+				m_manager.m_signalsToEmit.setLockedObjectsChanged();
 			}
 		}
 

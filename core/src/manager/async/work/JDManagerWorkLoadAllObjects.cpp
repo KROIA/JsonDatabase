@@ -27,10 +27,7 @@ namespace JsonDatabase
 		void JDManagerAysncWorkLoadAllObjects::process()
 		{
 			JD_ASYNC_WORKER_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-			{
-				JDM_UNIQUE_LOCK_P;
-				m_success = m_manager.loadObjects_internal(m_loadMode, &m_progress);
-			}
+			m_success = m_manager.loadObjects(m_loadMode, &m_progress);
 		}
 		std::string JDManagerAysncWorkLoadAllObjects::getErrorMessage() const
 		{

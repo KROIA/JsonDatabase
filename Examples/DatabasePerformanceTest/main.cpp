@@ -84,11 +84,7 @@ int main(int argc, char* argv[])
     manager4->setup("database", "Persons", "USER 4");
     manager5->setup("database", "Persons", "USER 5");
 
-#ifdef NDEBUG
     watcher = new Internal::FileChangeWatcher("database\\Persons.json");
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-    watcher = new Internal::FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
-#endif
     watcher->setup(&logger);
     //manager1->addObjectDefinition<Person>();
     //manager2->addObjectDefinition<Person>();
@@ -352,10 +348,9 @@ void onObjectOverrideChange(const std::vector<JDObject>& list)
     for (JDObject obj : list)
         std::cout << "Object override change: " << obj->getObjectID() << "\n";
 }
-void onObjectChange(const std::vector<JDObject>& list)
+void onObjectChange(JDObject obj)
 {
-    for (const JDObject& obj : list)
-        std::cout << "Object changed: " << obj->getObjectID() << "\n";
+    std::cout << "Object changed: " << obj->getObjectID() << "\n";
 }
 
 // Function for the second thread
@@ -369,7 +364,7 @@ void threadFunction2() {
     QObject::connect(manager2, &JDManager::databaseFileChanged, []() {callback(); });
     QObject::connect(manager2, &JDManager::objectAdded, [](JDObject obj) {onObjectAdded(obj); });
     QObject::connect(manager2, &JDManager::objectRemoved, [](JDObject obj) {onObjectRemoved(obj); });
-    QObject::connect(manager2, &JDManager::objectOverrideChangeFromDatabase, [](std::vector<JDObject> list) {onObjectChange(list); });
+    QObject::connect(manager2, &JDManager::objectChanged, [](JDObject obj) {onObjectChange(obj); });
 
     //manager2->getSignals().connect_databaseFileChanged_slot(callback);
     //manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);

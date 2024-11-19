@@ -56,7 +56,7 @@ private:
 	void onObjectRemovedFromDatabase(JDObject removed);
 	void onObjectAddedToDatabase(JDObject added);
 	//void onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>&changedPairs);
-	void onObjectOverrideChangeFromDatabase(const std::vector<JDObject>& overwritten);
+	void onObjectChanged(JDObject overwritten);
 	void onDatabaseOutdated();
 
 	void onAsyncWorkStarted();

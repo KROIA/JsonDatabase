@@ -401,6 +401,9 @@ namespace JsonDatabase
 				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
 				return false;
 			}
+			
+			if(m_databaseManager)
+				m_databaseManager->m_signalsToEmit.addObjectChanged(obj);
 			return true;
 		}
 		bool JDObjectManager::deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj)
@@ -411,6 +414,8 @@ namespace JsonDatabase
 				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
 				return false;
 			}
+			if(m_databaseManager)
+				m_databaseManager->m_signalsToEmit.addObjectChanged(obj);
 			return true;
 		}
 	}
