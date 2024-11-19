@@ -77,7 +77,7 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	connect(m_manager, &JDManager::objectRemoved, this, &MainWindow::onObjectRemovedFromDatabase);
 	connect(m_manager, &JDManager::objectAdded, this, &MainWindow::onObjectAddedToDatabase);
 	//connect(m_manager, &JDManager::objectChangedFromDatabase, this, &MainWindow::onObjectChangedFromDatabase);
-	connect(m_manager, &JDManager::objectOverrideChangeFromDatabase, this, &MainWindow::onObjectOverrideChangeFromDatabase);
+	connect(m_manager, &JDManager::objectChanged, this, &MainWindow::onObjectChanged);
 	connect(m_manager, &JDManager::databaseOutdated, this, &MainWindow::onDatabaseOutdated);
 
 	connect(m_manager, &JDManager::startAsyncWork, this, &MainWindow::onAsyncWorkStarted);
@@ -109,7 +109,7 @@ MainWindow::~MainWindow()
 void MainWindow::onTimerFinished()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	m_manager->update();
+	//m_manager->update();
 	ui.objectCount_label->setText("Object count: "+QString::number(m_manager->getObjectCount()));
 	auto users = m_manager->getUsers();
 	//users.push_back(Utilities::JDUser("sfefsefs", "name2", QTime(), QDate()));
@@ -196,9 +196,11 @@ void MainWindow::on_deleteObject_pushButton_clicked()
 	if (p)
 	{
 		DEBUG << p->getObjectID()->toString().c_str() << "\n";
-		m_manager->removeObject(p);
-		JDObjectInterface* obj = p.get();
-		p.reset();
+		if (m_manager->removeObject(p))
+		{
+			JDObjectInterface* obj = p.get();
+			p.reset();
+		}
 		//delete obj;
 	}
 	else
@@ -534,16 +536,11 @@ void MainWindow::onObjectAddedToDatabase(JDObject added)
 		DEBUG_SIMPLE << "  " << obj.first->getObjectID()->toString().c_str() << "\n";
 	}
 }*/
-void MainWindow::onObjectOverrideChangeFromDatabase(const std::vector<JDObject>& overwritten)
+void MainWindow::onObjectChanged(JDObject overwritten)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG;
-	std::string buffer;
-	buffer.reserve(overwritten.size() * 32);
-	for (auto& obj : overwritten)
-	{
-		buffer += "  " + obj->getObjectID()->toString() + "\n";
-	}
+	std::string buffer = "  " + overwritten->getObjectID()->toString() + "\n";
 	DEBUG_SIMPLE << buffer.c_str();
 }
 void MainWindow::onDatabaseOutdated()

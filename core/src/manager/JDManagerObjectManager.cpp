@@ -55,37 +55,50 @@ namespace JsonDatabase
         bool JDManagerObjectManager::addObject(JDObject obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-			bool success = true;
+			bool success = false;
+			{
+				JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+				success = packAndAddObject_internal(obj);
+			}
+            if (success)
             {
-                JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-                success = packAndAddObject_internal(obj);
+                Error lockErr;
+				m_manager.lockObject(obj, lockErr);
+                if (lockErr == Error::none)
+                {
+                    m_manager.saveObjects_internal({ obj }, 1000, nullptr, false);
+                    m_manager.unlockObject(obj, lockErr);
+                }
             }
-			if (success)
-				emit m_manager.objectAdded(obj);
-			return success;
+            return success;
         }
         bool JDManagerObjectManager::addObject(const std::vector<JDObject>& objList)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            bool success = true;
             std::vector<JDObject> addedObjs;
+            addedObjs.reserve(objList.size());
+            bool success = true;
             {
                 JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-
-                
                 for (size_t i = 0; i < objList.size(); ++i)
                 {
-                    JDObject obj = objList[i];
+                    const JDObject &obj = objList[i];
                     bool added = packAndAddObject_internal(obj);
-                    if (added)
-                        addedObjs.push_back(obj);
-                    success &= added;
+					success &= added;
+					if (added)
+					{
+						addedObjs.push_back(obj);
+					}
                 }
             }
-			for (size_t i = 0; i < addedObjs.size(); ++i)
-			{
-				emit m_manager.objectAdded(addedObjs[i]);
-			}
+
+            if (addedObjs.size() > 0)
+            {
+                std::vector<Error> lockErr;
+                m_manager.lockObjects(addedObjs, lockErr);
+                m_manager.saveObjects_internal(addedObjs, 1000, nullptr, false);
+                m_manager.unlockObjects(addedObjs, lockErr);
+            }
             return success;
         }
         
@@ -113,34 +126,18 @@ namespace JsonDatabase
         bool JDManagerObjectManager::removeObject(JDObject obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-			bool success;
-			{
-				JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-				success = removeObject_internal(obj);
-			}
-			if (success)
-				emit m_manager.objectRemoved(obj);
-            return success;
+			JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+            return removeObject_internal(obj);
         }
         
         bool JDManagerObjectManager::removeObjects(const std::vector<JDObject>& objList)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
             bool success = true;
-			std::vector<JDObject> removedObjs;
+			JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			for (size_t i = 0; i < objList.size(); ++i)
 			{
-				JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-				for (size_t i = 0; i < objList.size(); ++i)
-				{
-					bool removed = removeObject_internal(objList[i]);
-					if (removed)
-						removedObjs.push_back(objList[i]);
-					success &= removed;
-				}
-			}
-			for (size_t i = 0; i < removedObjs.size(); ++i)
-			{
-				emit m_manager.objectRemoved(removedObjs[i]);
+                success &= removeObject_internal(objList[i]);
 			}
             return success;
         }
@@ -199,7 +196,7 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
 			bool ret = m_objLocker.lockObject(obj, err);
             if (ret)
-                emit m_manager.objectLocked(obj);
+                m_manager.m_signalsToEmit.addObjectLocked(obj);
             return ret;
         }
         bool JDManagerObjectManager::lockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors)
@@ -209,7 +206,7 @@ namespace JsonDatabase
             for (size_t i = 0; i < errors.size(); ++i)
             {
                 if (errors[i] == Error::none)
-                    emit m_manager.objectLocked(objs[i]);
+                    m_manager.m_signalsToEmit.addObjectLocked(objs[i]);
             }
 			return ret;
         }
@@ -218,7 +215,7 @@ namespace JsonDatabase
             JDM_UNIQUE_LOCK_P_M(m_objsMutex);
 			bool ret = m_objLocker.unlockObject(obj, err);
             if(ret)
-				emit m_manager.objectUnlocked(obj);
+				m_manager.m_signalsToEmit.addObjectUnlocked(obj);
             return ret;
         }
         bool JDManagerObjectManager::unlockObject(const JDObjectID::IDType& id, Error& err)
@@ -227,7 +224,7 @@ namespace JsonDatabase
             JDObject obj = m_manager.getObject_internal(id);
             bool ret = m_objLocker.unlockObject(obj, err);
             if (ret)
-                emit m_manager.objectUnlocked(obj);
+                m_manager.m_signalsToEmit.addObjectUnlocked(obj);
             return ret;
 		}
         bool JDManagerObjectManager::unlockObjects(const std::vector<JDObject>& objs, std::vector<Error>& errors)
@@ -237,7 +234,7 @@ namespace JsonDatabase
             for (size_t i = 0; i < errors.size(); ++i)
             {
                 if (errors[i] == Error::none)
-                    emit m_manager.objectUnlocked(objs[i]);
+                    m_manager.m_signalsToEmit.addObjectUnlocked(objs[i]);
             }
             return ret;
         }
@@ -425,6 +422,7 @@ namespace JsonDatabase
             JDObjectManager *manager = new JDObjectManager(&m_manager, obj, id, m_logger);
             if(m_objs.addObject(manager))
             {
+				m_manager.m_signalsToEmit.addObjectAdded(obj);
                 if(m_logger)
 					m_logger->logInfo("Added object with ID: " + obj->getObjectID().get()->toString());
 				
@@ -467,7 +465,10 @@ namespace JsonDatabase
                 }
             }*/
             JDObjectManager* manager = new JDObjectManager(&m_manager, obj, id, m_logger);
-            return m_objs.addObject(manager);
+            success &= m_objs.addObject(manager);
+            if(success)
+                m_manager.m_signalsToEmit.addObjectAdded(obj);
+            return success;
         }
         bool JDManagerObjectManager::packAndAddObject_internal(const std::vector<JDObject>& objs)
         {
@@ -475,14 +476,15 @@ namespace JsonDatabase
             m_objs.reserve(m_objs.size() + objs.size());
             bool success = true;
             for (size_t i = 0; i < objs.size(); ++i)
-				success &= packAndAddObject_internal(objs[i]);
+            {
+                success &= packAndAddObject_internal(objs[i]);
+            }
 			return success;
         }
         bool JDManagerObjectManager::packAndAddObject_internal(const std::vector<JDObjectID::IDType>& ids, const std::vector<JDObject>& objs)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             m_objs.reserve(m_objs.size() + objs.size());
-
             bool success = true;
             std::vector<JDObjectIDptr> generatedIDs = m_idDomain.getPredefinedIDs(ids, success);
 
@@ -499,6 +501,8 @@ namespace JsonDatabase
                 }*/
                 JDObjectManager* manager = new JDObjectManager(&m_manager, objs[i], generatedIDs[i], m_logger);
                 bool success2 = m_objs.addObject(manager);
+                if(success2)
+                    m_manager.m_signalsToEmit.addObjectAdded(objs[i]);
                 success &= success2;
                 if (m_logger)
                 {
@@ -581,6 +585,7 @@ namespace JsonDatabase
                 m_objLocker.unlockObject(obj, err);
                 m_idDomain.unregisterID(obj->getObjectID());
 				delete removedManager;
+				m_manager.m_signalsToEmit.addObjectRemoved(obj);
                 
                 
 			}

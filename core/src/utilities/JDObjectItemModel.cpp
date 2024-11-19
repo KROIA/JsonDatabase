@@ -49,7 +49,7 @@ namespace JsonDatabase
 		QModelIndex JDObjectItemModel::getIndex(const JDObject& obj) const
 		{
 			size_t index = findObjectIndex(obj);
-			if (index != -1)
+			if (index != (size_t)(-1))
 			{
 				return m_objects[index].item->index();
 			}
@@ -88,6 +88,8 @@ namespace JsonDatabase
 		void JDObjectItemModel::onObjectAdded(JDObject obj)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
+			if (findObjectIndex(obj) != (size_t)(-1))
+				return;
 			JDObjectItem item;
 			item.object = obj;
 			item.item = new QStandardItem();

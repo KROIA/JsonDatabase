@@ -21,6 +21,7 @@
 #include <mutex>
 
 #include <QObject>
+#include <QTimer>
 
 
 namespace JsonDatabase
@@ -35,6 +36,7 @@ class JSON_DATABASE_EXPORT JDManager:
 {
     friend class Internal::JDManagerFileSystem;
     friend class Internal::JDManagerObjectManager;
+    friend class Internal::JDObjectManager;
     friend class Internal::JDManagerSignals;
     friend class Internal::JDObjectLocker;
 
@@ -44,13 +46,14 @@ class JSON_DATABASE_EXPORT JDManager:
     friend class Internal::JDManagerAysncWorkLoadSingleObject;
     friend class Internal::JDManagerAysncWorkSaveSingle;
     friend class Internal::JDManagerAysncWorkSaveList;
-
     Q_OBJECT
     public:
         JDManager();
         JDManager(const JDManager &other);
         virtual ~JDManager();
 
+        void setUpdateInterval(int ms);
+		int getUpdateInterval() const { return m_updateTimer.interval(); }
         bool setup(const std::string& databasePath,
                    const std::string& databaseName);
         bool setup(const std::string& databasePath,
@@ -90,6 +93,7 @@ class JSON_DATABASE_EXPORT JDManager:
                 objectOverrideChangeFromDatabase
         */
         bool loadObjects(int mode = LoadMode::allObjects);
+        bool loadObjects(int mode, Internal::WorkProgress* progress = nullptr);
 
         /*
             Loads the objects from the database file asynchronously.
@@ -189,9 +193,7 @@ class JSON_DATABASE_EXPORT JDManager:
         const std::string& getLoadModeStr(int mode) const; // Returns a string representation of the load mode
 
 
-        // Checks for changes in the database file
-        void update();
-        
+       
 
         signals:
             void databaseFileChanged(); // Emitted when the database file has changed
@@ -199,7 +201,7 @@ class JSON_DATABASE_EXPORT JDManager:
             //void onObjectRemovedFromDatabase(std::vector<JDObject> objs); // Emitted when an object is removed from the database
            // void onObjectAddedToDatabase(std::vector<JDObject> objs); // Emitted when an object is added to the database
             //void objectChangedFromDatabase(std::vector<JDObjectPair> objs); // Emitted when an object is changed in the database
-            void objectOverrideChangeFromDatabase(std::vector<JDObject> objs); // Emitted when an object is changed in the database
+            //void objectOverrideChangeFromDatabase(std::vector<JDObject> objs); // Emitted when an object is changed in the database
             void databaseOutdated(); // Emitted when the database is outdated
 
             void startAsyncWork(); // Emitted when an async work is started
@@ -213,8 +215,15 @@ class JSON_DATABASE_EXPORT JDManager:
 			void objectUnlocked(JDObject obj);
             void objectAdded(JDObject obj);
 			void objectRemoved(JDObject obj);
+            void objectChanged(JDObject obj);
 
+    public slots:
+                // Checks for changes in the database file
+            void update();
     protected:
+
+    
+
 
 
     private:
@@ -231,6 +240,7 @@ class JSON_DATABASE_EXPORT JDManager:
 
         void onObjectLockerFileChanged();
 
+		void emitSignals();
         
 
         Log::LogObject* m_logger = nullptr;
@@ -243,44 +253,125 @@ class JSON_DATABASE_EXPORT JDManager:
         // Prevent multiple updates at the same time
         bool m_signleEntryUpdateLock;
         bool m_setUp = false;
-        
-        
-        /*struct SignalData
+        QTimer m_updateTimer;
+
+        struct SignalData
         {
-            std::vector<JDObject> onObjectRemovedFromDatabase;
-            std::vector<JDObject> onObjectAddedToDatabase;
-            std::vector<JDObjectPair> onObjectChangedFromDatabase;
-            std::vector<JDObject> onObjectOverrideChangeFromDatabase;
+			void setDatabaseFileChanged() { m_databaseFileChanged = true; }
+			void setLockedObjectsChanged() { m_lockedObjectsChanged = true; }
+			void setDatabaseOutdated() { m_databaseOutdated = true; }
 
-            struct OnLoadObjectDone
+			void addObjectLocked(JDObject obj) {
+				for (size_t i = 0; i < objectLocked.size(); ++i)
+				{
+					if (objectLocked[i] == obj)
+						return;
+				}
+				objectLocked.push_back(obj);
+            }
+			void addObjectLocked(const std::vector<JDObject>& objs) {
+				for (const JDObject& obj : objs)
+				{
+                    addObjectLocked(obj);
+				}
+			}
+
+			void addObjectUnlocked(JDObject obj) {
+				for (size_t i = 0; i < objectUnlocked.size(); ++i)
+				{
+					if (objectUnlocked[i] == obj)
+						return;
+				}
+				objectUnlocked.push_back(obj);
+			}
+			void addObjectUnlocked(const std::vector<JDObject>& objs) {
+				for (const JDObject& obj : objs)
+				{
+                    addObjectUnlocked(obj);
+				}
+			}
+
+			void addObjectAdded(JDObject obj) {
+				for (size_t i = 0; i < objectAdded.size(); ++i)
+				{
+					if (objectAdded[i] == obj)
+						return;
+				}
+				objectAdded.push_back(obj);
+			}
+			void addObjectAdded(const std::vector<JDObject>& objs) {
+				for (const JDObject& obj : objs)
+				{
+                    addObjectAdded(obj);
+				}
+			}
+
+			void addObjectRemoved(JDObject obj) {
+				for (size_t i = 0; i < objectRemoved.size(); ++i)
+				{
+					if (objectRemoved[i] == obj)
+						return;
+				}
+				objectRemoved.push_back(obj);
+			}
+			void addObjectRemoved(const std::vector<JDObject>& objs) {
+				for (const JDObject& obj : objs)
+				{
+                    addObjectRemoved(obj);
+				}
+			}
+
+			void addObjectChanged(JDObject obj) {
+				for (size_t i = 0; i < objectChanged.size(); ++i)
+				{
+					if (objectChanged[i] == obj)
+						return;
+				}
+				objectChanged.push_back(obj);
+			}
+			void addObjectChanged(const std::vector<JDObject>& objs) {
+				for (const JDObject& obj : objs)
+				{
+                    addObjectChanged(obj);
+				}
+			}
+
+			bool databaseFileChanged() const { return m_databaseFileChanged; }
+			bool lockedObjectsChanged() const { return m_lockedObjectsChanged; }
+			bool databaseOutdated() const { return m_databaseOutdated; }
+
+			const std::vector<JDObject>& getObjectLocked() const { return objectLocked; }
+			const std::vector<JDObject>& getObjectUnlocked() const { return objectUnlocked; }
+			const std::vector<JDObject>& getObjectAdded() const { return objectAdded; }
+			const std::vector<JDObject>& getObjectRemoved() const { return objectRemoved; }
+			const std::vector<JDObject>& getObjectChanged() const { return objectChanged; }
+
+
+
+            void clear()
             {
-				bool success;
-				JDObject obj;
-			} onLoadObjectDone;
-            struct OnLoadObjectsDone
-            {
-                bool signalActive = false;
-				bool success;
-			} onLoadObjectsDone;
+                m_databaseFileChanged = false;
+                m_lockedObjectsChanged = false;
+                m_databaseOutdated = false;
 
-            struct OnSaveObjectDone
-            {
-                bool success;
-                JDObject obj;
-            } onSaveObjectDone;
-            struct OnSaveObjectsDone
-            {
-				bool signalActive = false;
-				bool success;
-			} onSaveObjectsDone;
-        } m_signalData;
-        std::mutex m_signalDataMutex;*/
+                objectLocked.clear();
+                objectUnlocked.clear();
+                objectAdded.clear();
+                objectRemoved.clear();
+                objectChanged.clear();
+            }
+            private:
+            bool m_databaseFileChanged = false;
+            bool m_lockedObjectsChanged = false;
+            bool m_databaseOutdated = false;
 
-        //Internal::JDManagerSignals m_signals;
-
-
+            std::vector<JDObject> objectLocked;
+            std::vector<JDObject> objectUnlocked;
+            std::vector<JDObject> objectAdded;
+            std::vector<JDObject> objectRemoved;
+            std::vector<JDObject> objectChanged;
+        };
+        SignalData m_signalsToEmit;
         static const unsigned int s_fileLockTimeoutMs;
-
-
-};
+    };
 }
