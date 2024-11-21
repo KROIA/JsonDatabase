@@ -37,11 +37,13 @@ namespace JsonDatabase
 			m_objectListWidget->setIconSize(QSize(48, 48)); // Set the icon size if needed
 
 			m_model = new Utilities::JDObjectItemModel(m_manager, this);
+			m_delegate = new Utilities::JDObjectModelDelegate(m_model);
 
 			QVBoxLayout* layout = new QVBoxLayout(this);
 			layout->addWidget(m_objectListWidget);
 			setLayout(layout);
 			m_objectListWidget->setModel(m_model);
+			m_objectListWidget->setItemDelegate(m_delegate);
 			connect(m_objectListWidget, &QListView::clicked, this, &JDObjectListWidget::onItemClicked);
 		}
 		void JDObjectListWidget::updateUI()

@@ -24,6 +24,20 @@ namespace JsonDatabase
 			// Override data function
 			QVariant data(const QModelIndex& index, int role) const override;
 
+			bool isLocked(const JDObject& obj) const
+			{
+				return m_lockedObjects.find(obj->getShallowObjectID()) != m_lockedObjects.end();
+			}
+			JDManager::LockedObject getLockedObjectData(const JDObject& obj) const
+			{
+				auto it = m_lockedObjects.find(obj->getShallowObjectID());
+				if (it != m_lockedObjects.end())
+				{
+					return it->second;
+				}
+				return JDManager::LockedObject();
+			}
+
 		signals:
 			void objectClicked(JDObject obj);
 
@@ -53,8 +67,7 @@ namespace JsonDatabase
 			std::unordered_map<JDObjectID::IDType, JDManager::LockedObject> m_lockedObjects;
 			JDManager* m_manager = nullptr;
 
-			static const QString s_iconLock;
-			static const QString s_iconUnlock;
+			
 		};
 	}
 }
