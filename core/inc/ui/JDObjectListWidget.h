@@ -4,6 +4,7 @@
 #include "object/JDObjectInterface.h"
 #include "manager/JDManager.h"
 #include "utilities/JDObjectItemModel.h"
+#include "utilities/JDObjectModelDelegate.h"
 
 #include <QWidget>
 #include <QListView>
@@ -33,6 +34,7 @@ namespace JsonDatabase
 
 			QListView* m_objectListWidget;
 			Utilities::JDObjectItemModel* m_model;
+			Utilities::JDObjectModelDelegate* m_delegate;
 
 			JDManager* m_manager = nullptr;
 			//std::unordered_map<JDObject, JDObjectItem> m_objectItems;

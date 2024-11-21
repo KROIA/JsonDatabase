@@ -1,5 +1,5 @@
 #include "utilities/JDObjectItemModel.h"
-#include "utilities/ResourceManager.h"
+
 
 
 
@@ -7,8 +7,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		const QString JDObjectItemModel::s_iconLock = "lock.png";
-		const QString JDObjectItemModel::s_iconUnlock = "unlock.png";
+		
 
 		JDObjectItemModel::JDObjectItemModel(JDManager *manager, QObject* parent)
 			: QStandardItemModel(parent)
@@ -63,7 +62,7 @@ namespace JsonDatabase
 				return QVariant();
 			switch (role)
 			{
-			case Qt::DisplayRole:
+			/*case Qt::DisplayRole:
 			{
 				QString text = obj->getDisplayName().c_str();
 				auto id = obj->getShallowObjectID();
@@ -73,7 +72,7 @@ namespace JsonDatabase
 					text += " (Locked by " + QString(it->second.lockData.user.getName().c_str()) + ")";
 				}
 				return text;
-			}
+			}*/
 				case Qt::ToolTipRole:	return obj->getToolTip().c_str();
 			}
 			return QStandardItemModel::data(index, role);
@@ -158,7 +157,9 @@ namespace JsonDatabase
 		}
 		void JDObjectItemModel::updateObjectItemLockState(size_t index, bool isLocked)
 		{
-			JDObjectItem& item = m_objects[index];
+			index;
+			isLocked;
+			/*JDObjectItem& item = m_objects[index];
 			if (isLocked)
 			{
 				item.item->setIcon(Utilities::ResourceManager::getIcon(s_iconLock));
@@ -168,7 +169,7 @@ namespace JsonDatabase
 			{
 				item.item->setIcon(Utilities::ResourceManager::getIcon(s_iconUnlock));
 				item.item->setBackground(QBrush(QColor(0, 255, 0, 100)));
-			}
+			}*/
 		}
 		size_t JDObjectItemModel::findObjectIndex(const JDObject& object) const
 		{

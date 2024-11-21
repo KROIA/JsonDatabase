@@ -9,6 +9,8 @@
 
 #include "Json/JsonValue.h"
 #include <string>
+#include <QIcon>
+#include <QColor>
 
 
 
@@ -111,6 +113,9 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
 
         /// @brief Loads the object from the database asynchronously.
         void loadFromDatabaseAsync();
+
+		virtual QIcon getIcon() const { return QIcon(); }
+        virtual QColor getColor() const { return QColor(0,0,0,0); }
 
     protected:
         bool equalData(const JsonObject& obj) const;
