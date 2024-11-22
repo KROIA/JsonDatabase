@@ -203,7 +203,10 @@ namespace JsonDatabase
 			lockedObjectsOut.clear();
 
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
+			{
+				err = Error::cantOpenRegistryFile;
 				return false;
+			}
 			AbstractRegistry::AutoClose autoClose(this);
 
 			std::vector<std::shared_ptr<LockEntryObjectImpl>> loadedObjects;
@@ -213,6 +216,7 @@ namespace JsonDatabase
 				return false;
 			}
 			bool success = true;
+			err = Error::none;
 			lockedObjectsOut.reserve(loadedObjects.size());
 			for(auto obj : loadedObjects)
 			{
@@ -222,11 +226,40 @@ namespace JsonDatabase
 				{
 					if(m_logger)m_logger->logWarning("Object has empty objectID: "
 						+ obj->toString() + "\n");
-					err = corruptRegistryFileData;
+					err = Error::corruptRegistryFileData;
 					success = false;
 				}
 			}
 			return success;
+		}
+		bool JDObjectLocker::getLockData(JDObjectID::IDType objID, LockData& lockDataOut, Error& err) const
+		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
+
+			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
+			{
+				err = Error::cantOpenRegistryFile;
+				return false;
+			}
+			AbstractRegistry::AutoClose autoClose(this);
+
+			std::vector<std::shared_ptr<LockEntryObjectImpl>> loadedObjects;
+			if (!AbstractRegistry::readObjects<LockEntryObjectImpl>(loadedObjects))
+			{
+				err = Error::corruptRegistryFileData;
+				return false;
+			}
+			for (auto obj : loadedObjects)
+			{
+				if (obj->data.objectID == objID)
+				{
+					lockDataOut = obj->data;
+					err = Error::none;
+					return true;
+				}
+			}
+			err = Error::objectNotLocked;
+			return false;
 		}
 		int JDObjectLocker::removeInactiveObjectLocks() const
 		{
@@ -585,3 +618,4 @@ namespace JsonDatabase
 
 	
 }
+
