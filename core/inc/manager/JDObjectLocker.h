@@ -78,6 +78,7 @@ namespace JsonDatabase
 				LockData() : objectID(JDObjectID::invalidID) {}
 			};
 			bool getLockedObjects(std::vector<LockData>& lockedObjectsOut, Error& err) const;
+			bool getLockData(JDObjectID::IDType objID, LockData& lockDataOut, Error& err) const;
 			int removeInactiveObjectLocks() const;
 
 			struct JsonKeys

@@ -30,6 +30,14 @@ namespace JsonDatabase
 				emit objectClicked(obj);
 			}
 		}
+		void JDObjectListWidget::onItemDoubleClicked(const QModelIndex& index)
+		{
+			JDObject obj = m_model->getObject(index);
+			if (obj)
+			{
+				emit objectDoubleClicked(obj);
+			}
+		}
 		
 		void JDObjectListWidget::setupUI()
 		{
@@ -45,6 +53,8 @@ namespace JsonDatabase
 			m_objectListWidget->setModel(m_model);
 			m_objectListWidget->setItemDelegate(m_delegate);
 			connect(m_objectListWidget, &QListView::clicked, this, &JDObjectListWidget::onItemClicked);
+			connect(m_objectListWidget, &QListView::doubleClicked, this, &JDObjectListWidget::onItemDoubleClicked);
+
 		}
 		void JDObjectListWidget::updateUI()
 		{

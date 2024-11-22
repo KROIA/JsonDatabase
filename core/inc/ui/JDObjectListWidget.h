@@ -22,9 +22,11 @@ namespace JsonDatabase
 
 			signals:
 			void objectClicked(JDObject obj);
+			void objectDoubleClicked(JDObject obj);
 
 			private slots:
 			void onItemClicked(const QModelIndex& index);
+			void onItemDoubleClicked(const QModelIndex& index);
 
 
 			private:

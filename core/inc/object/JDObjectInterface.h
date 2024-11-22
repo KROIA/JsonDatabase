@@ -114,7 +114,18 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
         /// @brief Loads the object from the database asynchronously.
         void loadFromDatabaseAsync();
 
+		/**
+		 * @brief 
+         * Define a custom icon which is visible in the object list view
+		 * @return 
+		 */
 		virtual QIcon getIcon() const { return QIcon(); }
+
+        /**
+         * @brief 
+		 * Define a custom color which is used to color the object in the object list view
+         * @return 
+         */
         virtual QColor getColor() const { return QColor(0,0,0,0); }
 
     protected:
