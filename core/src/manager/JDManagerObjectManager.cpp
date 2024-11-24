@@ -358,6 +358,16 @@ namespace JsonDatabase
             err = Error::objectNotLocked;
             return false;
         }
+        bool JDManagerObjectManager::getLockData(const JDObject& obj, JDObjectLocker::LockData& lockDataOut, Error& err) const
+        {
+			if (!obj)
+			{
+				err = Error::objIsNullptr;
+				return false;
+			}
+            err = Error::none;
+            return m_objLocker.getLockData(obj->getShallowObjectID(), lockDataOut, err);
+        }
         int JDManagerObjectManager::removeInactiveObjectLocks() const
         {
             return m_objLocker.removeInactiveObjectLocks();

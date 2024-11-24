@@ -30,16 +30,38 @@ namespace JsonDatabase
 		{
 			return getInstance().m_icons.find(name) != getInstance().m_icons.end();
 		}
+		bool ResourceManager::hasIcon(Icon icon)
+		{
+			if (static_cast<int>(icon) >= getInstance().m_iconsVector.size())
+				return false;
+			return getInstance().m_iconsVector[static_cast<int>(icon)].isNull();
+		}
 		const QIcon& ResourceManager::getIcon(const QString& name)
 		{
-			ResourceManager& instance = getInstance();
-			if (instance.m_icons.find(name) == instance.m_icons.end())
+			return getInstance().getIcon_internal(name);
+		}
+		const QIcon& ResourceManager::getIcon_internal(const QString& name) const
+		{
+			const auto& it = m_icons.find(name);
+			if (it == m_icons.end())
 			{
 				static QIcon emptyIcon;
 				qWarning() << "ResourceManager::getIcon: Icon not found: " << name;
 				return emptyIcon;
 			}
-			return instance.m_icons[name];
+			return it.value();
+		}
+
+
+		const QIcon& ResourceManager::getIcon(Icon icon)
+		{
+			return getInstance().getIcon_internal(icon);
+		}
+
+		
+		const QIcon& ResourceManager::getIcon_internal(Icon icon) const
+		{
+			return m_iconsVector[static_cast<int>(icon)];
 		}
 
 
@@ -58,6 +80,16 @@ namespace JsonDatabase
 				}
 			}
 			m_icons = icons;
+
+			m_iconsVector.resize(static_cast<int>(Icon::__count));
+			m_iconsVector[static_cast<int>(Icon::accept)] = getIcon_internal("accept.png");
+			m_iconsVector[static_cast<int>(Icon::clock)] = getIcon_internal("clock.png");
+			m_iconsVector[static_cast<int>(Icon::lock)] = getIcon_internal("lock.png");
+			m_iconsVector[static_cast<int>(Icon::tag)] = getIcon_internal("tag.png");
+			m_iconsVector[static_cast<int>(Icon::unlock)] = getIcon_internal("unlock.png");
+			m_iconsVector[static_cast<int>(Icon::user)] = getIcon_internal("user.png");
+			// static assert when not all enum values are covered
+			static_assert(static_cast<int>(Icon::__count) == 6, "ResourceManager::loadIcons: Not all icons are covered");
 		}
 	}
 }

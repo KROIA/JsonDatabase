@@ -1,7 +1,7 @@
 #pragma once
 
 #include "JsonDatabase_base.h"
-#include "object/JDObjectInterface.h"
+//#include "object/JDObjectInterface.h"
 #include "utilities/JDSerializable.h"
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/JDUser.h"

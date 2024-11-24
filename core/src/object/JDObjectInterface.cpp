@@ -4,6 +4,7 @@
 
 
 
+
 namespace JsonDatabase
 {
 
@@ -178,12 +179,17 @@ bool JDObjectInterface::unlock()
     return false;
 }
 
-Utilities::JDUser JDObjectInterface::getLockOwner(bool& isLocked) const
+bool JDObjectInterface::getLockOwner(Utilities::JDUser &user) const
 {
     if(m_manager)
-		return m_manager->getLockOwner(isLocked);
-    isLocked = false;
-    return Utilities::JDUser();
+		return m_manager->getLockOwner(user);
+	return false;
+}
+bool JDObjectInterface::getLockData(Internal::JDObjectLocker::LockData& data) const
+{
+	if (m_manager)
+		return m_manager->getLockData(data);
+	return false;
 }
 
 bool JDObjectInterface::saveToDatabase()
@@ -251,7 +257,7 @@ bool JDObjectInterface::loadInternal(const JsonObject& obj)
     return success;
 }
 
-bool JDObjectInterface::saveInternal(JsonObject& obj)
+bool JDObjectInterface::saveInternal(JsonObject& obj) const
 {
     return getSaveData(obj);
 }

@@ -104,6 +104,7 @@ namespace JsonDatabase
             bool getLockedObjects(std::vector<JDObject>& lockedObjectsOut, Error& err) const;
 			bool getLockedObjects(const Utilities::JDUser& user, std::vector<JDObject>& lockedObjectsOut, Error& err) const;
             bool getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, Error& err) const;
+			bool getLockData(const JDObject& obj, JDObjectLocker::LockData& lockDataOut, Error& err) const;
             int removeInactiveObjectLocks() const;
 
 

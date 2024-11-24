@@ -10,6 +10,7 @@
 
 #include "Json/JsonSerializer.h"
 #include "Json/JsonDeserializer.h"
+#include "object/JDObjectInterface.h"
 
 #include <QDateTime>
 
@@ -235,7 +236,6 @@ namespace JsonDatabase
 		bool JDObjectLocker::getLockData(JDObjectID::IDType objID, LockData& lockDataOut, Error& err) const
 		{
 			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_5);
-
 			if (!AbstractRegistry::openRegistryFile(m_registryOpenTimeoutMs))
 			{
 				err = Error::cantOpenRegistryFile;

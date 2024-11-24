@@ -22,4 +22,5 @@
 #include "ui/JDUserListWidget.h"
 #include "ui/JDUserWidget.h"
 #include "ui/JDObjectListWidget.h"
+#include "ui/JDObjectLockDataWidget.h"
 /// USER_SECTION_END

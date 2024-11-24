@@ -4,6 +4,7 @@
 #include "JsonDatabase_Declaration.h"
 #include "JDObjectID.h"
 #include "utilities/JDUser.h"
+#include "manager/JDObjectLocker.h"
 
 
 #include "Json/JsonValue.h"
@@ -40,7 +41,9 @@ namespace JsonDatabase
 			bool isLocked() const;
 			bool lock();
 			bool unlock();
-			Utilities::JDUser getLockOwner(bool& isLocked) const;
+			bool getLockOwner(Utilities::JDUser &user) const;
+			bool getLockData(JDObjectLocker::LockData& data) const;
+
 
 			bool saveToDatabase();
 			void saveToDatabaseAsync();

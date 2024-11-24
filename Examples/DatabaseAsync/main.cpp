@@ -10,6 +10,7 @@ int main(int argc, char* argv[])
 {
 	QApplication a(argc, argv);
 	Profiler::start();
+
 	bool ret;
 	{
 		UIWrapper wrapper;
