@@ -5,6 +5,7 @@
 
 #include <QWidget>
 #include <QLabel>
+#include <QFrame>
 
 namespace JsonDatabase
 {
@@ -31,16 +32,15 @@ namespace JsonDatabase
 			void updateUI();
 			Utilities::JDUser m_user;
 
+			QFrame* m_frame;
 			QLabel* m_sessionIDLabel;
 			QLabel* m_nameLabel;
-			QLabel* m_loginTimeLabel;
+			QLabel* m_loginTimeDateLabel;
 
 			static QString s_defaultDateTimeFormat;
 			static std::vector<JDUserWidget*> s_instances;
 
-			static const QString s_iconSessionID;
-			static const QString s_iconName;
-			static const QString s_iconLoginTime;
+	
 			
 		};
 	}

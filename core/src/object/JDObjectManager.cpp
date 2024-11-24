@@ -197,17 +197,23 @@ namespace JsonDatabase
 			}
 			return false;
 		}
-		Utilities::JDUser JDObjectManager::getLockOwner(bool& isLocked) const
+		bool JDObjectManager::getLockOwner(Utilities::JDUser &user) const
 		{
 			if (m_databaseManager)
 			{
-				Utilities::JDUser userOut; 
 				Error err;
-				isLocked = m_databaseManager->getLockOwner(getObject(), userOut, err);
-				return userOut;
+				return m_databaseManager->getLockOwner(getObject(), user, err);
 			}
-			isLocked = false;
-			return Utilities::JDUser();
+			return false;
+		}
+		bool JDObjectManager::getLockData(JDObjectLocker::LockData& data) const
+		{
+			if (m_databaseManager)
+			{
+				Error err;
+				return m_databaseManager->getLockData(getObject(), data, err);
+			}
+			return false;
 		}
 		bool JDObjectManager::saveToDatabase()
 		{

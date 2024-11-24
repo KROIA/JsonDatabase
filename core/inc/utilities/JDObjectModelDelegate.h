@@ -62,8 +62,6 @@ namespace JsonDatabase
 			static bool s_useLockColor;
 			static unsigned int s_itemHeight;
 
-            static const QString s_iconLock;
-            static const QString s_iconUnlock;
         };
     }
 }

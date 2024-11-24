@@ -36,6 +36,10 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	m_objectListWidget->setBaseSize(200, 200);
 	m_objectListWidget->show();
 	connect(m_objectListWidget, &UI::JDObjectListWidget::objectClicked, this, &MainWindow::onObjectClicked);
+	m_lockDataWidget = new UI::JDObjectLockDataWidget();
+	ui.lockData_frame->layout()->addWidget(m_lockDataWidget);
+	m_lockDataWidget->hide();
+
 
 	Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
 	//Log::UI::QTreeConsoleView* console = new Log::UI::QTreeConsoleView();
@@ -273,11 +277,11 @@ void MainWindow::on_lockObject_pushButton_clicked()
 			DEBUG << "Can't lock object, nullptr\n";
 	}*/
 	
-	if (obj->isLocked())
+	Utilities::JDUser user;
+	bool isLocked = obj->getLockOwner(user);
+	if (isLocked)
 	{
 		DEBUG << "Object is locked\n";
-		bool isLocked;
-		auto user = obj->getLockOwner(isLocked);
 		DEBUG << user.toString();
 	}
 	else
@@ -457,6 +461,17 @@ void MainWindow::on_test_pushButton_clicked()
 void MainWindow::onObjectClicked(JDObject obj)
 {
 	ui.id_lineEdit->setText(QString::fromStdString(obj->getObjectID()->toString()));
+	
+	JsonDatabase::Internal::JDObjectLocker::LockData lockData;
+	if (obj->getLockData(lockData))
+	{
+		m_lockDataWidget->setLockData(lockData);
+		m_lockDataWidget->show();
+	}
+	else
+	{
+		m_lockDataWidget->hide();
+	}
 }
 void MainWindow::closeEvent(QCloseEvent* event)
 {

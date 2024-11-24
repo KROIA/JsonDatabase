@@ -75,6 +75,7 @@ private:
 	JDManager *m_manager;
 	UI::JDUserListWidget* m_userListWidget;
 	UI::JDObjectListWidget* m_objectListWidget;
+	UI::JDObjectLockDataWidget* m_lockDataWidget;
 
 	UIPerson* m_uiPersonEditor;
 };

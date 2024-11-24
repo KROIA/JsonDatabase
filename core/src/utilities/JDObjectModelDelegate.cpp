@@ -11,8 +11,6 @@ namespace JsonDatabase
         bool JDObjectModelDelegate::s_useLockColor = true;
 		unsigned int JDObjectModelDelegate::s_itemHeight = 80;
 
-        const QString JDObjectModelDelegate::s_iconLock = "lock.png";
-        const QString JDObjectModelDelegate::s_iconUnlock = "unlock.png";
 
         JDObjectModelDelegate::JDObjectModelDelegate(JDObjectItemModel* model)
             : QStyledItemDelegate(model)
@@ -74,14 +72,14 @@ namespace JsonDatabase
 			{
                 if(s_useLockColor)
                     painter->fillRect(option.rect, s_colorLock);
-                const QIcon& lockIcon = Utilities::ResourceManager::getIcon(s_iconLock);
+                const QIcon& lockIcon = Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::lock);
                 painter->drawPixmap(lockIconRect.x(), lockIconRect.y(), lockIcon.pixmap(lockIconRect.width(), lockIconRect.height()));
 			}
 			else
 			{
                 if(s_useLockColor)
                     painter->fillRect(option.rect, s_colorUnlock);
-                const QIcon& lockIcon = Utilities::ResourceManager::getIcon(s_iconUnlock);
+                const QIcon& lockIcon = Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::unlock);
                 painter->drawPixmap(lockIconRect.x(), lockIconRect.y(), lockIcon.pixmap(lockIconRect.width(), lockIconRect.height()));
 			}
 
