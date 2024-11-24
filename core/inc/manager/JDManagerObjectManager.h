@@ -123,8 +123,8 @@ namespace JsonDatabase
 
             //JDObject replaceObject_internal(const JDObject& obj);
             //void replaceObject_internal(const std::vector<JDObject>& objs);
-            bool removeObject_internal(const JDObject& obj);
-            bool removeObject_internal(const std::vector<JDObject>& objs);
+            bool removeObject_internal(const JDObject& obj, bool doSave = true);
+            bool removeObject_internal(const std::vector<JDObject>& objs, bool doSave = true);
             bool exists_internal(const JDObject& obj) const;
             bool exists_internal(const std::vector<JDObject>& objs) const;
             bool exists_internal(const JDObjectIDptr& id) const;
