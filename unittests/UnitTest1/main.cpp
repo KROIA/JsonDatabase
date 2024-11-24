@@ -5,6 +5,7 @@
 #include "JsonDatabase.h"
 #include <iostream>
 #include "tests.h"
+#include <QThread>
 
 #ifdef QT_WIDGETS_ENABLED
 #include <QWidget>
@@ -30,10 +31,17 @@ int main(int argc, char* argv[])
 	consoleView.show();
 	JsonDatabase::LibraryInfo::printInfo();
 
-	std::cout << "Running " << UnitTest::Test::getTests().size() << " tests...\n";
-	UnitTest::Test::TestResults results;
-	UnitTest::Test::runAllTests(results);
-	UnitTest::Test::printResults(results);
+	QThread t;
+	QObject::connect(&t, &QThread::started, [&]()
+		{
+			std::cout << "Running " << UnitTest::Test::getTests().size() << " tests...\n";
+			UnitTest::Test::TestResults results;
+			UnitTest::Test::runAllTests(results);
+			UnitTest::Test::printResults(results);
+		}
+	);
+	t.start();
+	
 
 #ifdef QT_WIDGETS_ENABLED
 	QWidget* widget = JsonDatabase::LibraryInfo::createInfoWidget();
@@ -41,8 +49,13 @@ int main(int argc, char* argv[])
 		widget->show();
 #endif
 #ifdef QT_ENABLED
-	return app.exec();
+	bool ret = app.exec();
+	t.quit();
+	t.wait();
+	return ret;
 #else
+	t.quit();
+	t.wait();
 	return 0;
 #endif
 }

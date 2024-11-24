@@ -61,122 +61,120 @@ class JSON_DATABASE_EXPORT JDManager:
                    const std::string& user);
         bool stop();
 
-        /*
-            Returns the signals handler of this manager.
-            Connect callbacks to the available signals.
-        */
-        //Internal::JDManagerSignals& getSignals();
-
-        
-
+        /**
+         * @brief 
+		 * Specifies if the database file should be in zip format.
+         * @param enable 
+         */
         void enableZipFormat(bool enable);
+
+        /**
+         * @brief 
+		 * Returns if the database file is in zip format.
+		 * @return true if the database file is in zip format, otherwise false
+         */
         bool isZipFormatEnabled() const;
 
-        /*
-            Overrides the data of the object with the data from the database file.
-        */
+
+        /**
+         * @brief 
+         * Overrides the data of the object with the data from the database file.
+		 * @param obj which should be loaded from the database
+		 * @return true if the object was loaded successfully, otherwise false
+         */
         bool loadObject(const JDObject &obj);
+
+        /**
+         * @brief 
+		 * Overrides the data of the object with the data from the database file asynchronously.
+		 * @param obj which should be loaded from the database
+         */
         void loadObjectAsync(const JDObject &obj);
 
-
-        
-        /*
-            Loads the objects from the database file.
-            New objects are created and added to the database. See signal objectAddedToDatabase.
-            Objects that have loaded different data are replaced with the new instance. See signal objectChangedFromDatabase.
-            Objects that are not in the database file anymore are removed from the database. See signal objectRemovedFromDatabase.
-        
-            Emits signals:
-				objectAddedToDatabase
-				objectChangedFromDatabase
-				objectRemovedFromDatabase
-                objectOverrideChangeFromDatabase
-        */
+        /**
+         * @brief 
+		 * Loads the objects from the database file.
+		 * @param mode to define which objects should be loaded
+		 * @return true if the loading was successful, otherwise false
+         */
         bool loadObjects(int mode = LoadMode::allObjects);
+
+        /**
+         * @brief 
+		 * Loads the objects from the database file.
+		 * @param mode to define which objects should be loaded
+		 * @param progress which is used to report the progress of the loading. Used for loading bar etc.
+		 * @return true if the loading was successful, otherwise false
+         */
         bool loadObjects(int mode, Internal::WorkProgress* progress = nullptr);
 
-        /*
-            Loads the objects from the database file asynchronously.
-
-            Emits signals:
-                objectAddedToDatabase
-                objectChangedFromDatabase
-                objectRemovedFromDatabase
-                objectOverrideChangeFromDatabase
-                onLoadObjectsDone after the async work is done
-        */
+        /**
+         * @brief 
+		 * Loads the objects from the database file asynchronously.
+		 * @param mode to define which objects should be loaded
+         */
         void loadObjectsAsync(int mode = LoadMode::allObjects);
 
-        /*
-            Saves the object to the database file.
-        */
+        /**
+         * @brief 
+		 * Tries to save the object to the database file.
+		 * The object must be locked by this session.
+		 * @param obj to save to the database
+		 * @return true if the object was saved successfully, otherwise false
+         */
         bool saveObject(const JDObject &obj);
 
-        /*
-            Saves the object to the database file asynchronously.
-
-            Emits signals:
-                onSaveObjectDone after the async work is done
-                databaseOutdated if the database has changed before the save could be completed
-                in this case the object is not saved. Try load the database first.
-        */
+        /**
+         * @brief 
+		 * Tries to save the object to the database file asynchronously.
+		 * The object must be locked by this session.
+		 * @param obj to save to the database
+         */
         void saveObjectAsync(const JDObject &obj);
 
-        /*
-            Saves all objects which are in this database instance to the database file.
-            
-            Emits signals:
-                databaseOutdated if the database has changed before the save could be completed
-                in this case the object is not saved. Try load the database first.
-        */
+        /**
+         * @brief 
+		 * Saves all objects which are in this database instance to the database file.
+		 * All objects must be locked by this session.
+		 * @return true if all objects were saved successfully, otherwise false
+         */
         bool saveObjects();
 
-        /*
-            Saves all objects from the list to the database file.
-
-            Emits signals:
-                databaseOutdated if the database has changed before the save could be completed
-                in this case the object is not saved. Try load the database first.
-        */
+        /**
+         * @brief 
+		 * Saves all objects from the list to the database file.
+		 * All objects must be locked by this session.
+		 * @param objs to save to the database
+		 * @return true if all objects were saved successfully, otherwise false
+         */
         bool saveObjects(const std::vector<JDObject> &objs);
 
-        /*
-            Saves all objects which are in this database instance to the database file asynchronously.
-
-            Emits signals:
-				onSaveObjectsDone after the async work is done
-				databaseOutdated if the database has changed before the save could be completed
-				in this case the object is not saved. Try load the database first.
-        */
+        /**
+         * @brief 
+		 * Saves all objects which are locked by this user to the database file.
+		 * All objects must be locked by this session.
+         */
         void saveObjectsAsync();
 
-        /*
-            Saves all objects from the list to the database file asynchronously.
-
-            Emits signals:
-                onSaveObjectsDone after the async work is done
-                databaseOutdated if the database has changed before the save could be completed
-                in this case the object is not saved. Try load the database first.
-        */
+        /**
+         * @brief 
+         * Saves all objects from the list to the database file asynchronously
+         * All objects must be locked by this session.
+         * @param objs 
+         */
         void saveObjectsAsync(const std::vector<JDObject>& objs);
 
-        /*
-        	Saves all objects, which are locked by this user
+        /**
+         * @brief 
+         * Saves all objects that are locked by this session
+         * @return true if all locked objects are saved, otherwise false
+         */
+        bool saveLockedObjects();
 
-            Emits signals:
-                databaseOutdated if the database has changed before the save could be completed
-                in this case the object is not saved. Try load the database first.
-        */
-        void saveLockedObjects();
-
-        /*
-            Saves all objects, which are locked by this user, asynchronously
-
-            Emits signals:
-				onSaveObjectsDone after the async work is done
-				databaseOutdated if the database has changed before the save could be completed
-				in this case the object is not saved. Try load the database first.
-        */
+        /**
+         * @brief 
+         * Saves all objects that are locked by this session asynchronously
+         */
         void saveLockedObjectsAsync();
 
 
@@ -257,11 +255,44 @@ class JSON_DATABASE_EXPORT JDManager:
 
         struct SignalData
         {
-			void setDatabaseFileChanged() { m_databaseFileChanged = true; }
-			void setLockedObjectsChanged() { m_lockedObjectsChanged = true; }
-			void setDatabaseOutdated() { m_databaseOutdated = true; }
+            SignalData()
+            {
+
+            }
+			SignalData(const SignalData& other)
+			{
+				m_databaseFileChanged = other.m_databaseFileChanged;
+				m_lockedObjectsChanged = other.m_lockedObjectsChanged;
+				m_databaseOutdated = other.m_databaseOutdated;
+
+				objectLocked = other.objectLocked;
+				objectUnlocked = other.objectUnlocked;
+				objectAdded = other.objectAdded;
+				objectRemoved = other.objectRemoved;
+				objectChanged = other.objectChanged;
+			}
+			SignalData copyAndClear()
+			{
+				std::lock_guard<std::mutex> lock(m_mutex);
+				SignalData copy = *this;
+                m_databaseFileChanged = false;
+                m_lockedObjectsChanged = false;
+                m_databaseOutdated = false;
+
+                objectLocked.clear();
+                objectUnlocked.clear();
+                objectAdded.clear();
+                objectRemoved.clear();
+                objectChanged.clear();
+				return copy;
+			}
+
+			void setDatabaseFileChanged() { std::lock_guard<std::mutex> lock(m_mutex); m_databaseFileChanged = true; }
+			void setLockedObjectsChanged() { std::lock_guard<std::mutex> lock(m_mutex); m_lockedObjectsChanged = true; }
+			void setDatabaseOutdated() { std::lock_guard<std::mutex> lock(m_mutex); m_databaseOutdated = true; }
 
 			void addObjectLocked(JDObject obj) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (size_t i = 0; i < objectLocked.size(); ++i)
 				{
 					if (objectLocked[i] == obj)
@@ -270,13 +301,21 @@ class JSON_DATABASE_EXPORT JDManager:
 				objectLocked.push_back(obj);
             }
 			void addObjectLocked(const std::vector<JDObject>& objs) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (const JDObject& obj : objs)
 				{
-                    addObjectLocked(obj);
+                    for (size_t i = 0; i < objectLocked.size(); ++i)
+                    {
+                        if (objectLocked[i] == obj)
+                            goto next;
+                    }
+                    objectLocked.push_back(obj);
+                    next:;
 				}
 			}
 
 			void addObjectUnlocked(JDObject obj) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (size_t i = 0; i < objectUnlocked.size(); ++i)
 				{
 					if (objectUnlocked[i] == obj)
@@ -285,28 +324,45 @@ class JSON_DATABASE_EXPORT JDManager:
 				objectUnlocked.push_back(obj);
 			}
 			void addObjectUnlocked(const std::vector<JDObject>& objs) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (const JDObject& obj : objs)
 				{
-                    addObjectUnlocked(obj);
+                    for (size_t i = 0; i < objectUnlocked.size(); ++i)
+                    {
+                        if (objectUnlocked[i] == obj)
+                            goto next;
+                    }
+                    objectUnlocked.push_back(obj);
+                    next:;
 				}
 			}
 
 			void addObjectAdded(JDObject obj) {
-				for (size_t i = 0; i < objectAdded.size(); ++i)
-				{
-					if (objectAdded[i] == obj)
-						return;
-				}
-				objectAdded.push_back(obj);
+                std::lock_guard<std::mutex> lock(m_mutex);
+                for (size_t i = 0; i < objectAdded.size(); ++i)
+                {
+                    if (objectAdded[i] == obj)
+                        return;
+                }
+                objectAdded.push_back(obj);
+				
 			}
 			void addObjectAdded(const std::vector<JDObject>& objs) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (const JDObject& obj : objs)
 				{
-                    addObjectAdded(obj);
+                    for (size_t i = 0; i < objectAdded.size(); ++i)
+                    {
+                        if (objectAdded[i] == obj)
+                            goto next;
+                    }
+                    objectAdded.push_back(obj);
+                    next:;      
 				}
 			}
 
 			void addObjectRemoved(JDObject obj) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (size_t i = 0; i < objectRemoved.size(); ++i)
 				{
 					if (objectRemoved[i] == obj)
@@ -315,13 +371,21 @@ class JSON_DATABASE_EXPORT JDManager:
 				objectRemoved.push_back(obj);
 			}
 			void addObjectRemoved(const std::vector<JDObject>& objs) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (const JDObject& obj : objs)
 				{
-                    addObjectRemoved(obj);
+                    for (size_t i = 0; i < objectRemoved.size(); ++i)
+                    {
+                        if (objectRemoved[i] == obj)
+                            goto next;
+                    }
+                    objectRemoved.push_back(obj);
+                    next:;
 				}
 			}
 
 			void addObjectChanged(JDObject obj) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (size_t i = 0; i < objectChanged.size(); ++i)
 				{
 					if (objectChanged[i] == obj)
@@ -330,9 +394,16 @@ class JSON_DATABASE_EXPORT JDManager:
 				objectChanged.push_back(obj);
 			}
 			void addObjectChanged(const std::vector<JDObject>& objs) {
+                std::lock_guard<std::mutex> lock(m_mutex);
 				for (const JDObject& obj : objs)
 				{
-                    addObjectChanged(obj);
+                    for (size_t i = 0; i < objectChanged.size(); ++i)
+                    {
+                        if (objectChanged[i] == obj)
+                            goto next;
+                    }
+                    objectChanged.push_back(obj);
+                    next:;
 				}
 			}
 
@@ -350,6 +421,7 @@ class JSON_DATABASE_EXPORT JDManager:
 
             void clear()
             {
+                std::lock_guard<std::mutex> lock(m_mutex);
                 m_databaseFileChanged = false;
                 m_lockedObjectsChanged = false;
                 m_databaseOutdated = false;
@@ -370,6 +442,8 @@ class JSON_DATABASE_EXPORT JDManager:
             std::vector<JDObject> objectAdded;
             std::vector<JDObject> objectRemoved;
             std::vector<JDObject> objectChanged;
+
+			std::mutex m_mutex;
         };
         SignalData m_signalsToEmit;
         static const unsigned int s_fileLockTimeoutMs;

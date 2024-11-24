@@ -240,7 +240,7 @@ void JDManager::saveObjectsAsync(const std::vector<JDObject>& objs)
     }
     JDManagerAsyncWorker::addWork(std::make_shared<Internal::JDManagerAysncWorkSaveList>(*this, m_mutex, objs, m_logger));
 }
-void JDManager::saveLockedObjects()
+bool JDManager::saveLockedObjects()
 {
     std::vector<JDObjectLocker::LockData> lockedObjectsOut;
     Error err;
@@ -254,8 +254,11 @@ void JDManager::saveLockedObjects()
 			if (obj)
 				objs.push_back(obj);
 		}
-        saveObjects(objs);
+        if(objs.size() > 0)
+            return saveObjects(objs);
+        return true;
     }
+    return false;
 }
 
 void JDManager::saveLockedObjectsAsync()
@@ -747,8 +750,7 @@ void JDManager::onObjectLockerFileChanged()
 }
 void JDManager::emitSignals()
 {
-    SignalData signalsToEmit = m_signalsToEmit;
-    m_signalsToEmit.clear();
+    SignalData signalsToEmit = m_signalsToEmit.copyAndClear();
     
     for (size_t i = 0; i < signalsToEmit.getObjectLocked().size(); ++i)
 		emit objectLocked(signalsToEmit.getObjectLocked()[i]);

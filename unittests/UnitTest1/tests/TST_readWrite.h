@@ -21,6 +21,9 @@ public:
 	{
 		ADD_TEST(TST_readWrite::initialize);
 		ADD_TEST(TST_readWrite::readBack);
+		ADD_TEST(TST_readWrite::loadObjectsAsync);
+		ADD_TEST(TST_readWrite::saveObjectsAsync);
+		ADD_TEST(TST_readWrite::multiSession);
 
 		// Delete the Database
 		QDir dbDir(dbPath.c_str());
@@ -38,6 +41,17 @@ private:
 	std::string person0Age;
 	JDObjectID::IDType person0ID;
 	size_t objCount = 0;
+
+	void waitUntilTimeoutOrCondition(volatile bool& condition, int timeoutMs = 10000)
+	{
+		while (timeoutMs > 0 && !condition)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			timeoutMs -= 100;
+			// process events of this thread
+			QCoreApplication::processEvents();
+		}
+	}
 
 	// Tests
 	TEST_FUNCTION(initialize)
@@ -109,6 +123,84 @@ private:
 		TEST_ASSERT(person != nullptr);
 		TEST_ASSERT(person->age == person0Age);
 		TEST_ASSERT(person->isLocked() == false);
+	}
+
+	TEST_FUNCTION(loadObjectsAsync)
+	{
+		TEST_START;
+		JDManager db;
+
+		TEST_ASSERT(db.setup(dbPath, dbName, dbUser));
+		volatile bool loadSuccess = false;
+		QObject::connect(&db, &JDManager::loadObjectsDone, [&loadSuccess](bool result) 
+						 {
+							 loadSuccess = result; 
+						 });
+		db.loadObjectsAsync();
+		waitUntilTimeoutOrCondition(loadSuccess);
+
+		if(!loadSuccess)
+			TEST_MESSAGE("Timeout while loading objects");
+
+		TEST_ASSERT(db.getObjectCount() == objCount);
+		TEST_ASSERT(loadSuccess);
+	}
+
+	TEST_FUNCTION(saveObjectsAsync)
+	{
+		TEST_START;
+		JDManager db;
+
+		TEST_ASSERT(db.setup(dbPath, dbName, dbUser));
+		TEST_ASSERT(db.loadObjects());
+		JsonDatabase::Error lckErr;
+		TEST_ASSERT(db.lockAllObjs(lckErr));
+		if (lckErr != JsonDatabase::Error::none)
+		{
+			TEST_MESSAGE(std::string("Error while locking objects: ") + JsonDatabase::errorToString(lckErr));
+		}
+		volatile bool saveSuccess = false;
+		QObject::connect(&db, &JDManager::saveObjectsDone, [&saveSuccess](bool result)
+						 {
+							 saveSuccess = result;
+						 });
+		db.saveObjectsAsync();
+		waitUntilTimeoutOrCondition(saveSuccess);
+
+		if (!saveSuccess)
+			TEST_MESSAGE("Timeout while loading objects");
+
+		TEST_ASSERT(db.getObjectCount() == objCount);
+		TEST_ASSERT(saveSuccess);
+	}
+
+	TEST_FUNCTION(multiSession)
+	{
+		TEST_START;
+		JDManager db1;
+		JDManager db2;
+
+		TEST_ASSERT(db1.setup(dbPath, dbName, dbUser));
+		TEST_ASSERT(db2.setup(dbPath, dbName, dbUser));
+
+		TEST_ASSERT(db1.loadObjects());
+		TEST_ASSERT(db2.loadObjects());
+
+		JsonDatabase::Error lckErr;
+		TEST_ASSERT(db1.lockAllObjs(lckErr));
+		if (lckErr != JsonDatabase::Error::none)
+		{
+			TEST_MESSAGE(std::string("Error while locking objects: ") + JsonDatabase::errorToString(lckErr));
+		}
+		TEST_ASSERT(db1.saveObjects());
+		TEST_ASSERT(db2.loadObjects());
+		TEST_ASSERT(db2.getObjectCount() == objCount);
+		TEST_ASSERT(db2.getObjects().size() == objCount);
+		TEST_ASSERT(db2.getObject(person0ID) != nullptr);
+		Person* person = dynamic_cast<Person*>(db2.getObject(person0ID).get());
+		TEST_ASSERT(person != nullptr);
+		TEST_ASSERT(person->age == person0Age);
+		TEST_ASSERT(person->isLocked() == true);
 	}
 
 };
