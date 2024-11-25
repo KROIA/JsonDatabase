@@ -6,5 +6,6 @@
         <file>JDIcons/tag.png</file>
         <file>JDIcons/lock.png</file>
         <file>JDIcons/unlock.png</file>
+        <file>JDIcons/search.png</file>
     </qresource>
 </RCC>

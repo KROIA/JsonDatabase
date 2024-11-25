@@ -751,7 +751,22 @@ void JDManager::onObjectLockerFileChanged()
 void JDManager::emitSignals()
 {
     SignalData signalsToEmit = m_signalsToEmit.copyAndClear();
-    
+    if(signalsToEmit.getObjectLocked().size() > 0)
+		emit objectLocked(signalsToEmit.getObjectLocked());
+
+	if (signalsToEmit.getObjectUnlocked().size() > 0)
+		emit objectUnlocked(signalsToEmit.getObjectUnlocked());
+
+	if (signalsToEmit.getObjectAdded().size() > 0)
+		emit objectAdded(signalsToEmit.getObjectAdded());
+
+	if (signalsToEmit.getObjectRemoved().size() > 0)
+		emit objectRemoved(signalsToEmit.getObjectRemoved());
+
+	if (signalsToEmit.getObjectChanged().size() > 0)
+		emit objectChanged(signalsToEmit.getObjectChanged());
+
+    /*
     for (size_t i = 0; i < signalsToEmit.getObjectLocked().size(); ++i)
 		emit objectLocked(signalsToEmit.getObjectLocked()[i]);
 	for (size_t i = 0; i < signalsToEmit.getObjectUnlocked().size(); ++i)
@@ -761,7 +776,7 @@ void JDManager::emitSignals()
 	for (size_t i = 0; i < signalsToEmit.getObjectRemoved().size(); ++i)
 		emit objectRemoved(signalsToEmit.getObjectRemoved()[i]);
 	for (size_t i = 0; i < signalsToEmit.getObjectChanged().size(); ++i)
-		emit objectChanged(signalsToEmit.getObjectChanged()[i]);
+		emit objectChanged(signalsToEmit.getObjectChanged()[i]);*/
 
     if (signalsToEmit.databaseFileChanged())
 		emit databaseFileChanged();

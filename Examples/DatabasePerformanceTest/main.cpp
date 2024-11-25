@@ -335,22 +335,25 @@ void callback()
     manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects);
    // manager2->disconnectDatabaseFileChangedSlot(callback);
 }
-void onObjectRemoved(JDObject obj)
+void onObjectRemoved(std::vector<JDObject> objs)
 {
-    std::cout << "Object removed: " << obj->getObjectID() << "\n";
+    for (JDObject obj : objs)
+        std::cout << "Object removed: " << obj->getObjectID() << "\n";
 }
-void onObjectAdded(JDObject obj)
+void onObjectAdded(std::vector<JDObject> objs)
 {
-	std::cout << "Object added: " << obj->getObjectID() << "\n";
+    for (JDObject obj : objs)
+	    std::cout << "Object added: " << obj->getObjectID() << "\n";
 }
 void onObjectOverrideChange(const std::vector<JDObject>& list)
 {
     for (JDObject obj : list)
         std::cout << "Object override change: " << obj->getObjectID() << "\n";
 }
-void onObjectChange(JDObject obj)
+void onObjectChange(std::vector<JDObject> objs)
 {
-    std::cout << "Object changed: " << obj->getObjectID() << "\n";
+	for (JDObject obj : objs)
+        std::cout << "Object changed: " << obj->getObjectID() << "\n";
 }
 
 // Function for the second thread
@@ -362,9 +365,9 @@ void threadFunction2() {
     auto start = std::chrono::high_resolution_clock::now();
 
     QObject::connect(manager2, &JDManager::databaseFileChanged, []() {callback(); });
-    QObject::connect(manager2, &JDManager::objectAdded, [](JDObject obj) {onObjectAdded(obj); });
-    QObject::connect(manager2, &JDManager::objectRemoved, [](JDObject obj) {onObjectRemoved(obj); });
-    QObject::connect(manager2, &JDManager::objectChanged, [](JDObject obj) {onObjectChange(obj); });
+    QObject::connect(manager2, &JDManager::objectAdded, [](std::vector<JDObject> objs) {onObjectAdded(objs); });
+    QObject::connect(manager2, &JDManager::objectRemoved, [](std::vector<JDObject> objs) {onObjectRemoved(objs); });
+    QObject::connect(manager2, &JDManager::objectChanged, [](std::vector<JDObject> objs) {onObjectChange(objs); });
 
     //manager2->getSignals().connect_databaseFileChanged_slot(callback);
     //manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);

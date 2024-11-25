@@ -532,15 +532,21 @@ void MainWindow::onLockedObjectsChanged()
 	}
 	ui.lockedObjects_label->setText(QString::fromStdString(text));
 }
-void MainWindow::onObjectRemovedFromDatabase(JDObject removed)
+void MainWindow::onObjectRemovedFromDatabase(std::vector<JDObject>  removed)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	DEBUG_SIMPLE << "Removed: "<<removed->getShallowObjectID() << "\n";
+	for (auto& obj : removed)
+	{
+		DEBUG_SIMPLE << "Removed: " << obj->getObjectID()->toString().c_str() << "\n";
+	}
 }
-void MainWindow::onObjectAddedToDatabase(JDObject added)
+void MainWindow::onObjectAddedToDatabase(std::vector<JDObject>  added)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	DEBUG_SIMPLE << "Added: " << added->getObjectID()->toString().c_str() << "\n";
+	for (auto& obj : added)
+	{
+		DEBUG_SIMPLE << "Added: " << obj->getObjectID()->toString().c_str() << "\n";
+	}
 }
 /*void MainWindow::onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>& changedPairs)
 {
@@ -551,12 +557,14 @@ void MainWindow::onObjectAddedToDatabase(JDObject added)
 		DEBUG_SIMPLE << "  " << obj.first->getObjectID()->toString().c_str() << "\n";
 	}
 }*/
-void MainWindow::onObjectChanged(JDObject overwritten)
+void MainWindow::onObjectChanged(std::vector<JDObject> overwritten)
 {
 	EASY_FUNCTION(profiler::colors::Amber);
 	DEBUG;
-	std::string buffer = "  " + overwritten->getObjectID()->toString() + "\n";
-	DEBUG_SIMPLE << buffer.c_str();
+	for (auto& obj : overwritten)
+	{
+		DEBUG_SIMPLE << "  " << obj->getObjectID()->toString().c_str() << "\n";
+	}
 }
 void MainWindow::onDatabaseOutdated()
 {
