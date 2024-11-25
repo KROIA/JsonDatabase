@@ -21,6 +21,7 @@ namespace JsonDatabase
 				tag,
 				unlock,
 				user,
+				search,
 
 				__count
 			};

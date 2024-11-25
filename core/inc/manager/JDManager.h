@@ -209,11 +209,11 @@ class JSON_DATABASE_API JDManager:
             void saveObjectDone(bool success, JDObject obj);
             void saveObjectsDone(bool success);
 
-			void objectLocked(JDObject obj);
-			void objectUnlocked(JDObject obj);
-            void objectAdded(JDObject obj);
-			void objectRemoved(JDObject obj);
-            void objectChanged(JDObject obj);
+			void objectLocked(std::vector<JDObject> objs);
+			void objectUnlocked(std::vector<JDObject> objs);
+            void objectAdded(std::vector<JDObject> objs);
+			void objectRemoved(std::vector<JDObject> objs);
+            void objectChanged(std::vector<JDObject> objs);
 
     public slots:
                 // Checks for changes in the database file
