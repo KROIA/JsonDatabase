@@ -246,6 +246,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="cloneObject_pushButton">
+           <property name="text">
+            <string>Clone Object</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="deleteObject_pushButton">
            <property name="text">
             <string>Delete Object</string>

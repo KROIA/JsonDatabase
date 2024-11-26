@@ -17,7 +17,6 @@ namespace JsonDatabase
 			: QWidget(parent)
 			, m_manager(manager)
 		{
-			
 			m_searchFilter = std::make_shared<SearchFilter>();
 			setupUI();
 			//setEnableSearchField(false);

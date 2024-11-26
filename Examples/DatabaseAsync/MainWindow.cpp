@@ -184,13 +184,39 @@ void MainWindow::on_saveDatabase_pushButton_clicked()
 void MainWindow::on_addObject_pushButton_clicked()
 {
 	EASY_FUNCTION(profiler::colors::Amber);
-	JDderivedObject<Person> p(new Person("Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4"));
+	/*class Test
+	{
+
+	};
+	auto p = m_manager->createInstance<Test>();*/
+	auto p = m_manager->createInstance<Person>("Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4");
 	
-	if (!m_manager->addObject(p))
+	//JDderivedObject<Person> p(new Person("Samuel", "Richards", "Male", "30", "s.richards@randatmail.com", "666-1856-78", "Upper secondary", "Mechanic", "1", "2127", "Single", "4"));
+	
+	if (!p)
 	{
 		DEBUG << "Can't add object to database\n";
 	}
-	DEBUG << p->getObjectID()->toString().c_str() << "\n";
+	else
+		DEBUG << p->getObjectID()->toString().c_str() << "\n";
+}
+void MainWindow::on_cloneObject_pushButton_clicked()
+{
+	EASY_FUNCTION(profiler::colors::Amber);
+
+	JDObject p = getSelectedObject();
+	if (p)
+	{
+		JDObject clone = p->deepClone();
+		if (clone)
+		{
+			m_manager->addObject(clone);
+		}
+	}
+	else
+	{
+		DEBUG << "Object not found\n";
+	}
 }
 void MainWindow::on_deleteObject_pushButton_clicked()
 {

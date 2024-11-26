@@ -59,7 +59,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        JDObjectID::IDType id;
+        
         const JsonObject* obj = jsons[i].get_if<JsonObject>();
         if (!obj)
             continue;
@@ -67,26 +67,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
         if(it == obj->end())
 			continue;
         const JsonDatabase::JsonValue& value = it->second;
-        
-#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
-        const std::string* idPtr = value.get_if<std::string>();
-        if (!idPtr)
-            continue;
-        id = *idPtr;
-#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
-        const long* idPtr = value.get_if<long>();
-        if (!idPtr)
-        {
-            const double* idPtrD = value.get_if<double>();
-            if (!idPtrD)
-                continue;
-            id = static_cast<long>(*idPtrD);
-        }
-        else
-            id = *idPtr;
-#else 
-    #error "Invalid JD_ID_TYPE_SWITCH value"
-#endif 
+		JDObjectID::IDType id = getIDFromJson(value);
         if (id == objID)
             return i;
     }
@@ -98,24 +79,28 @@ JDObjectID::IDType JDObjectInterface::getIDFromJson(const JsonObject& obj)
 	if(it == obj.end())
 		return JDObjectID::invalidID;
 	const JsonDatabase::JsonValue& value = it->second;
-    #if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+	return getIDFromJson(value);
+}
+JDObjectID::IDType JDObjectInterface::getIDFromJson(const JsonValue& value)
+{
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
     const std::string* idPtr = value.get_if<std::string>();
-		if (!idPtr)
-			return JDObjectID::invalidID;
-		return *idPtr;
-        #elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+    if (!idPtr)
+        return JDObjectID::invalidID;
+    return *idPtr;
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
     const long* idPtr = value.get_if<long>();
     if (!idPtr)
     {
-		const double* idPtrD = value.get_if<double>();
-		if (!idPtrD)
-			return JDObjectID::invalidID;
-		return static_cast<long>(*idPtrD);
-	}
+        const double* idPtrD = value.get_if<double>();
+        if (!idPtrD)
+            return JDObjectID::invalidID;
+        return static_cast<long>(*idPtrD);
+    }
     return *idPtr;
-		#else 
-	#error "Invalid JD_ID_TYPE_SWITCH value"
-	#endif
+#else 
+#error "Invalid JD_ID_TYPE_SWITCH value"
+#endif
 }
 
 

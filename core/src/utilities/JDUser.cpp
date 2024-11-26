@@ -4,6 +4,11 @@
 
 #include "Json/JsonSerializer.h"
 
+//#include <QNetworkInterface>
+#include <QDateTime>
+#include <QRandomGenerator>
+#include <QProcess>
+
 namespace JsonDatabase
 {
 	namespace Utilities
@@ -197,7 +202,48 @@ namespace JsonDatabase
         }
         std::string JDUser::generateSessionID()
         {
-            return Utilities::generateRandomString(s_sessionIDLength);
+            // Get MAC address
+           /* QString macAddress;
+            const QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
+            for (const QNetworkInterface& interface : interfaces) {
+                if (interface.flags().testFlag(QNetworkInterface::IsUp) &&
+                    interface.flags().testFlag(QNetworkInterface::IsRunning) &&
+                    !interface.flags().testFlag(QNetworkInterface::IsLoopBack)) {
+                    macAddress = interface.hardwareAddress();
+                    if (!macAddress.isEmpty()) {
+                        break;
+                    }
+                }
+            }
+
+            if (macAddress.isEmpty()) {
+                macAddress = "UNKNOWN_MAC";
+            }*/
+
+            // Get current timestamp
+            QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmsszzz");
+
+            // Get username
+            QString username = qEnvironmentVariable("USER");
+            if (username.isEmpty()) {
+                username = qEnvironmentVariable("USERNAME");
+            }
+            if (username.isEmpty()) {
+                username = "UNKNOWN_USER";
+            }
+
+            // Generate a random number for uniqueness
+            quint64 randomNumber = QRandomGenerator::global()->generate();
+
+            // Combine all parts into a session ID
+            QString sessionID = QString("%1_%2_%3")
+                //.arg(macAddress)
+                .arg(timestamp)
+                .arg(username)
+                .arg(randomNumber);
+
+			return sessionID.toStdString();
+            //return Utilities::generateRandomString(s_sessionIDLength);
         }
         JDUser JDUser::generateUser()
         {

@@ -33,9 +33,9 @@ namespace JsonDatabase
             bool removeObject(const std::vector<JDObject>& objs);
             bool removeObject(const std::vector<JDObjectManager*>& objs);
 
-            JDObjectManager* getObjectByID(const JDObjectIDptr& id);
-            JDObjectManager* getObjectByID(const JDObjectID::IDType& id);
-            JDObjectManager* getObjectByPtr(JDObjectInterface* obj);
+            JDObjectManager* getObjectByID(const JDObjectIDptr& id) const;
+            JDObjectManager* getObjectByID(const JDObjectID::IDType& id) const;
+            JDObjectManager* getObjectByPtr(JDObjectInterface* obj) const;
             const std::vector<JDObjectManager*> &getAllObjects() const;
             const std::unordered_map<JDObjectID::IDType, JDObjectManager*>& getAllObjectsIDMap() const;
             const std::unordered_map<JDObjectInterface*, JDObjectManager*>& getAllObjectsPtrMap() const;

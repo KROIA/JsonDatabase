@@ -46,18 +46,49 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
+        /**
+         * @brief 
+         * Creates a deep clone with all its data using the copy constructor.
+		 * The shallow ID will be copied but the clone will not be managed by the database.
+		 * When the cloned object is added to the database, a new ID will be generated and assigned to the clone
+         * 
+		 * Usecases:
+		 *  - Create a new instance of the object with the same data to add it to the database
+		 *  - create a temporary work copy whose data can be saved back to the original after the work is done
+         * 
+		 * @return instance of a unmanaged clone of the object
+         */
         JDObject deepClone() const;
         template<typename T>
         std::shared_ptr<T> deepClone() const;
 
+        /**
+         * @brief 
+         * Creates a instance of the derived class with no data. 
+		 * The default constructor is called.
+         * The objects id will be set to a invalid id.
+         * 
+         * Usecases:
+		 *   - Loading from the database needs to instantiate not the base class but the derived class
+		 *     Using a list of instances of every type, the database can clone from that object table to get the right type
+         * 
+		 * @return instance of a unmanaged clone of the object with no data and no valid id.
+         */
         JDObject shallowClone() const;
         template<typename T>
         std::shared_ptr<T> shallowClone() const;
         
 
-        
+        /**
+         * @brief 
+		 * Searches the JsonArray for a Json object that contains a value for the object id that matches the <objID>
+         * @param jsons array to search from
+		 * @param objID which has to match to the object id in the json object
+		 * @return the first index of the json object that contains the object id, if no object was found the return value is std::npos
+         */
         static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectID::IDType& objID);
         static JDObjectID::IDType getIDFromJson(const JsonObject& obj);
+        static JDObjectID::IDType getIDFromJson(const JsonValue& value);
 
         bool loadFrom(const JDObject& source);
         bool loadFrom(const JDObjectInterface* source);

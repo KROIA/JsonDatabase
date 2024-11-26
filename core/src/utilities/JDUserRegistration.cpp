@@ -63,6 +63,8 @@ namespace JsonDatabase
 					{
 						newSessionID = JDUser::generateSessionID();
 						++tryCount;
+						if (tryCount > 100)
+							goto failed;
 					}
 					++tryCount;
 					if (tryCount > 100)

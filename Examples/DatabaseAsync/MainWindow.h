@@ -29,6 +29,7 @@ private slots:
 	void on_loadDatabase_pushButton_clicked();
 	void on_saveDatabase_pushButton_clicked();
 	void on_addObject_pushButton_clicked();
+	void on_cloneObject_pushButton_clicked();
 	void on_deleteObject_pushButton_clicked();
 	void on_editObject_pushButton_clicked();
 
