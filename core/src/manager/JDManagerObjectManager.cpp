@@ -1,6 +1,5 @@
 #include "manager/JDManagerObjectManager.h"
 #include "manager/JDManager.h"
-#include "utilities/JDUniqueMutexLock.h"
 #include "object/JDObjectInterface.h"
 #include "manager/async/WorkProgress.h"
 #include "utilities/JsonUtilities.h"
@@ -101,27 +100,6 @@ namespace JsonDatabase
             }
             return success;
         }
-        
-        /*JDObject JDManagerObjectManager::replaceObject(JDObject obj)
-        {
-            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            if (!objectIDIsValid(obj))
-                return nullptr;
-            return replaceObject_internal(obj);
-        }
-        std::vector<JDObject> JDManagerObjectManager::replaceObjects(const std::vector<JDObject>& objList)
-        {
-            JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_1);
-            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
-            std::vector<JDObject> replacedObjs;
-            replacedObjs.reserve(objList.size());
-            for (size_t i = 0; i < objList.size(); ++i)
-            {
-                replacedObjs.push_back(replaceObject_internal(objList[i]));
-            }
-            return replacedObjs;
-        }*/
         
         bool JDManagerObjectManager::removeObject(JDObject obj)
         {
@@ -241,7 +219,8 @@ namespace JsonDatabase
         bool JDManagerObjectManager::lockAllObjs(Error& err)
         {
             std::vector<Error> errs;
-			bool ret = lockObjects(m_manager.getObjects_internal(), errs);
+            err = Error::none;
+			bool ret = lockObjects(getObjects_internal(), errs);
             if (!ret)
                 err = Error::unableToLockObject;
             return ret;
@@ -249,7 +228,8 @@ namespace JsonDatabase
         bool JDManagerObjectManager::unlockAllObjs(Error& err)
         {
             std::vector<Error> errs;
-			bool ret = unlockObjects(m_manager.getObjects_internal(), errs);
+            err = Error::none;
+			bool ret = unlockObjects(getObjects_internal(), errs);
             if(!ret)
 				err = Error::unableToUnlockObject;
             return ret;
@@ -279,97 +259,38 @@ namespace JsonDatabase
             std::vector<JDObjectLocker::LockData>& lockedObjectsOut, 
             Error& err) const
         {
-            std::vector<JDObjectLocker::LockData> tmp;
-            if (!m_objLocker.getLockedObjects(tmp, err))
-				return false;
-			lockedObjectsOut.clear();
-            for (size_t i = 0; i < tmp.size(); ++i)
-			{
-				if (tmp[i].user.getSessionID() == user.getSessionID())
-					lockedObjectsOut.push_back(tmp[i]);
-			}
-			return true;
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			return getObjectLocksByUser_internal(user, lockedObjectsOut, err);
         }
-        
+   
         bool JDManagerObjectManager::getLockedObjects(std::vector<LockedObject>& lockedObjectsOut, Error& err) const
         {
-            std::vector<JDObjectLocker::LockData> tmp;
-            if (!m_objLocker.getLockedObjects(tmp, err))
-                return false;
-            lockedObjectsOut.clear();
-            for (size_t i = 0; i < tmp.size(); ++i)
-            {
-                LockedObject data;
-				data.obj = m_manager.getObject_internal(tmp[i].objectID);
-				data.lockData = tmp[i];
-                lockedObjectsOut.push_back(data);
-            }
-            return true;
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			return getLockedObjects_internal(lockedObjectsOut, err);
         }
         bool JDManagerObjectManager::getLockedObjects(std::vector<JDObject>& lockedObjectsOut, Error& err) const
         {
-            std::vector<JDObjectLocker::LockData> tmp;
-            if (!m_objLocker.getLockedObjects(tmp, err))
-                return false;
-            lockedObjectsOut.clear();
-            for (size_t i = 0; i < tmp.size(); ++i)
-            {
-                lockedObjectsOut.push_back(m_manager.getObject_internal(tmp[i].objectID));
-            }
-            return true;
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+            return getLockedObjects_internal(lockedObjectsOut, err);
         }
         bool JDManagerObjectManager::getLockedObjects(const Utilities::JDUser& user, std::vector<JDObject>& lockedObjectsOut, Error& err) const
         {
-            std::vector<JDObjectLocker::LockData> locks;
-            lockedObjectsOut.clear();
-            err = Error::none;
-            if (getObjectLocksByUser(user, locks, err))
-            {
-                lockedObjectsOut.reserve(locks.size());
-                for (auto lock : locks)
-                {
-                    lockedObjectsOut.push_back(m_manager.getObject_internal(lock.objectID));
-                }
-                return true;
-            }
-            return false;
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			return getLockedObjects_internal(user, lockedObjectsOut, err);
         }
         bool JDManagerObjectManager::getLockOwner(const JDObject& obj, Utilities::JDUser& userOut, Error& err) const
         {
-            if (!obj)
-            {
-                err = Error::objIsNullptr;
-                return false;
-            }
-            std::vector<JDObjectLocker::LockData> lockedObjects;
-            if (!m_objLocker.getLockedObjects(lockedObjects, err))
-                return false;
-            for (size_t i = 0; i < lockedObjects.size(); ++i)
-            {
-                JDObjectID::IDType id = obj->getShallowObjectID();
-                if(obj->getObjectID())
-					id = obj->getObjectID()->get();
-				if (lockedObjects[i].objectID == id)
-				{
-					userOut = lockedObjects[i].user;
-					return true;
-				}
-			}
-            err = Error::objectNotLocked;
-            return false;
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			return getLockOwner_internal(obj, userOut, err);
         }
         bool JDManagerObjectManager::getLockData(const JDObject& obj, JDObjectLocker::LockData& lockDataOut, Error& err) const
         {
-			if (!obj)
-			{
-				err = Error::objIsNullptr;
-				return false;
-			}
-            err = Error::none;
-            return m_objLocker.getLockData(obj->getShallowObjectID(), lockDataOut, err);
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
+			return getLockData_internal(obj, lockDataOut, err);
         }
         int JDManagerObjectManager::removeInactiveObjectLocks() const
         {
+            JDM_UNIQUE_LOCK_P_M(m_objsMutex);
             return m_objLocker.removeInactiveObjectLocks();
         }
 
@@ -612,22 +533,38 @@ namespace JsonDatabase
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             if(m_objs.removeObject(objs))
-            {
-				
+            {				
                 if (doSave)
                 {
+                    Error err;
+                    std::vector<JDObjectLocker::LockData> lockedObjects;
+                    if (!m_objLocker.getLockedObjects(lockedObjects, err))
+                    {
+						if (m_logger)
+							m_logger->logError("Can't remove objects. Can't get locked objects.");
+                        return false;
+                    }
+
                     std::vector<JDObject> lockedObjs;
                     for (size_t i = 0; i < objs.size(); ++i)
                     {
+                        bool isLocked = false;
                         // Check if Object is locked by this user
-                        Error err;
-                        if (!m_objLocker.isObjectLockedByMe(objs[i], err))
+                        for (size_t j = 0; j < lockedObjects.size(); ++j)
+                        {
+							if (lockedObjects[j].objectID == objs[i]->getObjectID()->get())
+							{
+								lockedObjs.push_back(objs[i]);
+                                isLocked = true;
+								break;
+							}
+                        }
+                        
+                        if (!isLocked)
                         {
                             if (m_logger)
                                 m_logger->logWarning("Can't remove object with ID: " + objs[i]->getObjectID().get()->toString() + ". Object is not locked by this user.");
                         }
-                        else
-                            lockedObjs.push_back(objs[i]);
                     }
                     std::vector<Error> errors(lockedObjs.size());
                     m_manager.saveObjects_internal(lockedObjs, 1000, nullptr, true);
@@ -672,7 +609,7 @@ namespace JsonDatabase
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             return m_objs.exists(id);
         }
-        JDObject JDManagerObjectManager::getObject_internal(const JDObjectIDptr& id)
+        JDObject JDManagerObjectManager::getObject_internal(const JDObjectIDptr& id) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             JDObjectManager *manager = m_objs.getObjectByID(id);
@@ -680,7 +617,7 @@ namespace JsonDatabase
                 return manager->getObject();
             return nullptr;
         }
-        JDObject JDManagerObjectManager::getObject_internal(const JDObjectID::IDType& id)
+        JDObject JDManagerObjectManager::getObject_internal(const JDObjectID::IDType& id) const
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
             JDObjectManager* manager = m_objs.getObjectByID(id);
@@ -715,9 +652,102 @@ namespace JsonDatabase
         }
         void JDManagerObjectManager::clearObjects_internal()
         {
-            m_objs.clear();
+            auto objs = getObjects_internal();
+            removeObject_internal(objs, true);
         }
 
+        bool JDManagerObjectManager::getObjectLocksByUser_internal(const Utilities::JDUser& user, std::vector<JDObjectLocker::LockData>& lockedObjectsOut, Error& err) const
+        {
+            std::vector<JDObjectLocker::LockData> tmp;
+            if (!m_objLocker.getLockedObjects(tmp, err))
+                return false;
+            lockedObjectsOut.clear();
+            for (size_t i = 0; i < tmp.size(); ++i)
+            {
+                if (tmp[i].user.getSessionID() == user.getSessionID())
+                    lockedObjectsOut.push_back(tmp[i]);
+            }
+            return true;
+        }
+
+
+        bool JDManagerObjectManager::getLockedObjects_internal(std::vector<LockedObject>& lockedObjectsOut, Error& err) const
+        {
+            std::vector<JDObjectLocker::LockData> tmp;
+            if (!m_objLocker.getLockedObjects(tmp, err))
+                return false;
+            lockedObjectsOut.clear();
+            for (size_t i = 0; i < tmp.size(); ++i)
+            {
+                LockedObject data;
+                data.obj = getObject_internal(tmp[i].objectID);
+                data.lockData = tmp[i];
+                lockedObjectsOut.push_back(data);
+            }
+            return true;
+        }
+        bool JDManagerObjectManager::getLockedObjects_internal(std::vector<JDObject>& lockedObjectsOut, Error& err) const
+        {
+            std::vector<JDObjectLocker::LockData> tmp;
+            if (!m_objLocker.getLockedObjects(tmp, err))
+                return false;
+            lockedObjectsOut.clear();
+            for (size_t i = 0; i < tmp.size(); ++i)
+            {
+                lockedObjectsOut.push_back(getObject_internal(tmp[i].objectID));
+            }
+            return true;
+        }
+        bool JDManagerObjectManager::getLockedObjects_internal(const Utilities::JDUser& user, std::vector<JDObject>& lockedObjectsOut, Error& err) const
+        {
+            std::vector<JDObjectLocker::LockData> locks;
+            lockedObjectsOut.clear();
+            err = Error::none;
+            if (getObjectLocksByUser_internal(user, locks, err))
+            {
+                lockedObjectsOut.reserve(locks.size());
+                for (auto lock : locks)
+                {
+                    lockedObjectsOut.push_back(m_manager.getObject_internal(lock.objectID));
+                }
+                return true;
+            }
+            return false;
+        }
+        bool JDManagerObjectManager::getLockOwner_internal(const JDObject& obj, Utilities::JDUser& userOut, Error& err) const
+        {
+            if (!obj)
+            {
+                err = Error::objIsNullptr;
+                return false;
+            }
+            std::vector<JDObjectLocker::LockData> lockedObjects;
+            if (!m_objLocker.getLockedObjects(lockedObjects, err))
+                return false;
+            for (size_t i = 0; i < lockedObjects.size(); ++i)
+            {
+                JDObjectID::IDType id = obj->getShallowObjectID();
+                if (obj->getObjectID())
+                    id = obj->getObjectID()->get();
+                if (lockedObjects[i].objectID == id)
+                {
+                    userOut = lockedObjects[i].user;
+                    return true;
+                }
+            }
+            err = Error::objectNotLocked;
+            return false;
+        }
+        bool JDManagerObjectManager::getLockData_internal(const JDObject& obj, JDObjectLocker::LockData& lockDataOut, Error& err) const
+        {
+            if (!obj)
+            {
+                err = Error::objIsNullptr;
+                return false;
+            }
+            err = Error::none;
+            return m_objLocker.getLockData(obj->getShallowObjectID(), lockDataOut, err);
+        }
         bool JDManagerObjectManager::loadObjectFromJson_internal(const JsonObject& json, const JDObject& obj)
         {
             JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);

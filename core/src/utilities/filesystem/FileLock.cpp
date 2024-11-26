@@ -190,7 +190,9 @@ namespace JsonDatabase
             DWORD fileAttributes = GetFileAttributes(fullFilePath.c_str());
 #endif            
             if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
-                if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) {
+                DWORD lastError = GetLastError();
+                if (lastError == ERROR_FILE_NOT_FOUND || 
+                    lastError == ERROR_PATH_NOT_FOUND) {
                     return false; // File doesn't exist
                 }
             }
