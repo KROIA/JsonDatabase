@@ -31,6 +31,12 @@ namespace JsonDatabase
 			}
 			setSorter(std::make_shared<AlphabeticalSorter>());
 			endInsertRows();
+			/*
+			m_updateTimer.setInterval(1000);
+			connect(&m_updateTimer, &QTimer::timeout, this, [this]() {
+				emit this->layoutChanged();
+				});
+			m_updateTimer.start();*/
 		}
 		JDObjectItemModel::~JDObjectItemModel()
 		{

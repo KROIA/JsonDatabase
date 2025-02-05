@@ -32,13 +32,15 @@ namespace JsonDatabase
 			ChangeState getChangeState() const;
 
 
-			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
-			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
+			static std::vector<bool> getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
+			static std::vector<bool> getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
 				WorkProgress* progress);
 
 
 			// Interface for the Database Object
 			bool isLocked() const;
+			bool isLockedByMe() const;
+			bool isLockedByOther() const;
 			bool lock();
 			bool unlock();
 			bool getLockOwner(Utilities::JDUser &user) const;

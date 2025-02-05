@@ -249,14 +249,9 @@ void MainWindow::on_editObject_pushButton_clicked()
 	else
 	{*/
 	JsonDatabase::Error lastError;
-	if(m_manager->lockObject(p, lastError))
-	{
-		editMode = true;
-	}
-	else
-	{
-		editMode = false;
-	}
+	m_manager->lockObject(p, lastError);
+	editMode = p->isLocked();
+	
 	if (p)
 	{
 		if (p->isLocked())
@@ -276,8 +271,8 @@ void MainWindow::on_editObject_pushButton_clicked()
 	{
 		editMode = true;
 	}*/
-	if (lastError != JsonDatabase::Error::none)
-		editMode = false;
+	//if (lastError != JsonDatabase::Error::none)
+	//	editMode = false;
 	//}
 	m_uiPersonEditor->setPerson(p, editMode);
 }

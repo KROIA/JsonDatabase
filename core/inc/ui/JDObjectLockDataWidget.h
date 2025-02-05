@@ -14,20 +14,20 @@ namespace JsonDatabase
 			Q_OBJECT
 			public:
 			JDObjectLockDataWidget(QWidget* parent = nullptr);
-			JDObjectLockDataWidget(const Internal::JDObjectLocker::LockData &data, QWidget* parent = nullptr);
+			JDObjectLockDataWidget(const JsonDatabase::Internal::JDObjectLocker::LockData &data, QWidget* parent = nullptr);
 			~JDObjectLockDataWidget();
 
 			static void setDefaultDateTimeFormat(const QString& format);
 			static const QString& getDefaultDateTimeFormat() { return s_defaultDateTimeFormat; }
 
-			void setLockData(const Internal::JDObjectLocker::LockData &data);
+			void setLockData(const JsonDatabase::Internal::JDObjectLocker::LockData &data);
 			
 			
 			private:
 			void setupUI();
 			void updateUI();
 
-			Internal::JDObjectLocker::LockData m_data;
+			JsonDatabase::Internal::JDObjectLocker::LockData m_data;
 
 			JDUserWidget* m_userWidget;
 			QLabel* m_objectIDLabel;

@@ -24,6 +24,8 @@ namespace JsonDatabase
 				return "Object locked by other session";
 			case Error::objectNotLocked:
 				return "Object not locked";
+			case Error::objectAlreadyLocked:
+				return "Object already locked";
 
 			case Error::unableToCreateOrOpenLockFile:
 				return "Unable to create or open lock file";

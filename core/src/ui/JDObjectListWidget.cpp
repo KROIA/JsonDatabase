@@ -11,7 +11,8 @@ namespace JsonDatabase
 {
 	namespace UI
 	{
-		
+		std::vector<JDObjectListWidget*> JDObjectListWidget::s_instances;
+		Internal::RepaintUpdateSender* JDObjectListWidget::s_repaintSender = nullptr;
 
 		JDObjectListWidget::JDObjectListWidget(JDManager* manager, QWidget* parent)
 			: QWidget(parent)
@@ -19,11 +20,30 @@ namespace JsonDatabase
 		{
 			m_searchFilter = std::make_shared<SearchFilter>();
 			setupUI();
+			
+			s_instances.push_back(this);
+			if (s_repaintSender)
+			{
+				connect(s_repaintSender, &Internal::RepaintUpdateSender::repaint, this, &JDObjectListWidget::repaint, Qt::ConnectionType::QueuedConnection);
+			}
 			//setEnableSearchField(false);
 		}
 		JDObjectListWidget::~JDObjectListWidget()
 		{
+			s_instances.erase(std::remove(s_instances.begin(), s_instances.end(), this), s_instances.end());
+		}
 
+		void JDObjectListWidget::updateUI()
+		{
+			if (!s_repaintSender)
+			{
+				s_repaintSender = new Internal::RepaintUpdateSender();
+				for (auto widget : s_instances)
+				{
+					widget->connect(s_repaintSender, &Internal::RepaintUpdateSender::repaint, widget, &JDObjectListWidget::repaint, Qt::ConnectionType::QueuedConnection);
+				}
+			}
+			s_repaintSender->emitRepaint();
 		}
 
 		void JDObjectListWidget::setEnableSearchField(bool enable)
@@ -88,6 +108,11 @@ namespace JsonDatabase
 		{
 			m_model->onSort();
 		}
+		void JDObjectListWidget::repaint()
+		{
+			m_objectListWidget->viewport()->update();
+		}
+
 		
 		void JDObjectListWidget::setupUI()
 		{
@@ -104,7 +129,7 @@ namespace JsonDatabase
 			searchIcon->setPixmap(Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::search).pixmap(16, 16));
 			searchIcon->setAlignment(Qt::AlignCenter);
 			m_searchBox->setClearButtonEnabled(true);
-			m_searchBox->setPlaceholderText("Search");
+			m_searchBox->setPlaceholderText("Filter");
 			searchLayout->addWidget(searchIcon);
 			searchLayout->addWidget(m_searchBox);
 			m_mainLayout->addWidget(m_searchFrame);
@@ -128,25 +153,8 @@ namespace JsonDatabase
 			connect(m_objectListWidget, &QListView::doubleClicked, this, &JDObjectListWidget::onItemDoubleClicked);
 
 		}
-		void JDObjectListWidget::updateUI()
-		{
-			/*m_model->clear();
-			const QIcon& lockIcon = Utilities::ResourceManager::getIcon("lock.png");
-			const QIcon& unlockIcon = Utilities::ResourceManager::getIcon("unlock.png");
 
-			for (const JDObject& object : m_objects)
-			{
-				QStandardItem* item = new QStandardItem(object->className().c_str());
-				if (object->isLocked())
-					item->setIcon(lockIcon);
-				else
-					item->setIcon(unlockIcon);
-				m_model->appendRow(item);
-			}
-
-			m_objectListWidget->setModel(m_model);*/
-
-		}
+		
 
 		void JDObjectListWidget::onLineEditChanged(const QString& text)
 		{

@@ -18,10 +18,13 @@ namespace JsonDatabase
 				accept,
 				clock,
 				lock,
+				warning,
+				asterisk,
 				tag,
 				unlock,
 				user,
 				search,
+				filter,
 
 				__count
 			};

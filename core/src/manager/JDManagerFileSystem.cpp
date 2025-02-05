@@ -29,6 +29,7 @@ namespace JsonDatabase
             std::mutex& mtx)
 			: m_logger(nullptr)
             , m_databaseFileName("data")
+            , m_databaseChangeHistoryFileName("changeHistory")
             , m_manager(manager)
             , m_mutex(mtx)
             , m_fileLock(nullptr)
@@ -120,6 +121,10 @@ namespace JsonDatabase
         std::string JDManagerFileSystem::getDatabaseFilePath() const
         {
             return  getDatabasePath() + "\\" + m_databaseFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
+        }
+        std::string JDManagerFileSystem::getDatabaseChangeHistoryFilePath() const
+        {
+            return  getDatabasePath() + "\\" + m_databaseChangeHistoryFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
         }
         bool JDManagerFileSystem::isLoggedOnDatabase() const
         {
