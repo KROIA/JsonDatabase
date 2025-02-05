@@ -30,14 +30,12 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         friend class AutoObjectAddToRegistry;
 
     public:
-        enum class Color
+        enum class State
         {
             Default,
             Error,
             UnsavedChanges,
             Locked
-
-
         };
 
         JDObjectInterface();
@@ -135,6 +133,20 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         bool isLocked() const;
 
         /**
+		 * @brief
+		 * Gets the lock state of the object
+		 * @return true if the object is locked by the current session, otherwise false
+         */
+        bool isLockedByMe() const;
+
+		/**
+		 * @brief
+		 * Gets the lock state of the object
+		 * @return true if the object is locked by any user that is not this session, otherwise false
+         */
+        bool isLockedByOther() const;
+
+        /**
          * @brief 
 		 * Tries to lock the object
 		 * @return true if the object was successfully locked, false otherwise
@@ -206,6 +218,46 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
          */
         virtual QColor getColor() const { return QColor(0,0,0,0); }
 
+        /**
+         * @brief
+         * Marks the object as changed to indicate that there are unsaved changes
+         */
+        void markAsChanged() const;
+
+        /*
+         * @brief
+         * Marks the object as unchanged to indicate that there are no unsaved changes
+         */
+        void markAsUnchanged() const;
+
+        /**
+         * @brief
+         * Gets the change State of the object
+         * @return true if the object has changes, otherwise false
+         */
+        bool hasChanges() const { return m_hasChanges; }
+
+        /**
+         * @brief
+         * Marks the object to indicate that the object contains wrong data that can't be saved
+         */
+        void markAsWrongData() const;
+
+        /**
+         * @brief
+         * Marks the object to indicate that the object contains correct data that can be saved
+         */
+        void markAsCorrectData() const;
+
+        /**
+         * @brief
+         * Gets the state of the object
+         * @return true if the object contains wrong data, otherwise false
+         */
+        bool hasWrongData() const { return m_hasWrongData; }
+
+
+
     protected:
         /**
          * @brief 
@@ -232,7 +284,7 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         bool saveInternal(JsonObject& obj) const;
         bool getSaveData(JsonObject& obj) const;
 
-
+		
     class JSON_DATABASE_EXPORT AutoObjectAddToRegistry
     {
     public:
@@ -262,6 +314,9 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
             const JDObjectID::IDType& getShallowObjectID() const;
         */
         JDObjectID::IDType m_shallowID;
+
+        mutable bool m_hasChanges;
+		mutable bool m_hasWrongData;
 
     public:
 

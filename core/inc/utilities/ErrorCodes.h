@@ -15,6 +15,7 @@ namespace JsonDatabase
 		unableToUnlockObject,
 		objectLockedByOther,
 		objectNotLocked,
+		objectAlreadyLocked,
 
 		unableToCreateOrOpenLockFile,
 		unableToDeleteLockFile,

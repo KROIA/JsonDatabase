@@ -51,23 +51,23 @@ namespace JsonDatabase
 		}
 
 
-		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
+		std::vector<bool> JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
 		{
 			return getJsonArray(objs, jsonOut, nullptr);
 		}
-		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
+		std::vector<bool> JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
 			JsonArray& jsonOut,
 			WorkProgress* progress)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+			std::vector<bool> successList(objs.size(), true);
 			if (objs.size() == 0)
 			{
 				if(progress)
 					progress->setProgress(1.0);
-				return true;
+				return successList;
 			}
 
-			bool success = true;
 			double deltaProgress = 1.0 / (double)objs.size();
 #ifdef JD_ENABLE_MULTITHREADING
 			unsigned int threadCount = std::thread::hardware_concurrency();
@@ -100,7 +100,7 @@ namespace JsonDatabase
 					start += chunkSize;
 					if (i == threadCount - 1)
 						threadData[i].end += remainder;
-					threads[i] = new std::thread([&threadData, &objs, i, &jsonOut]()
+					threads[i] = new std::thread([&threadData, &objs, i, &jsonOut, &successList]()
 						{
 							ThreadData& data = threadData[i];
 							std::atomic<int> & finishCount = threadData[i].finishCount;
@@ -108,7 +108,7 @@ namespace JsonDatabase
 							{
 
 								std::shared_ptr<JsonObject> jsonData = std::make_shared<JsonObject>();
-								objs[j]->saveInternal(*jsonData);
+								successList[j] = objs[j]->saveInternal(*jsonData);
 								*jsonOut[j] = std::move(jsonData);
 								
 								finishCount++;
@@ -158,16 +158,16 @@ namespace JsonDatabase
 #endif
 			{
 				jsonOut.reserve(objs.size());
-				for (auto o : objs)
+				for (size_t i=0; i< objs.size(); ++i)
 				{
 					JsonObject data;
-					success &= o->saveInternal(data);
+					successList[i] = objs[i]->saveInternal(data);
 					jsonOut.emplace_back(std::move(data));
 					if (progress)
 						progress->addProgress(deltaProgress);
 				}
 			}
-			return success;
+			return successList;
 		}
 
 		bool JDObjectManager::isLocked() const
@@ -176,6 +176,24 @@ namespace JsonDatabase
 			{
 				Error err;
 				return m_databaseManager->isObjectLocked(getObject(), err);
+			}
+			return false;
+		}
+		bool JDObjectManager::isLockedByMe() const
+		{
+			if (m_databaseManager)
+			{
+				Error err;
+				return m_databaseManager->isObjectLockedByMe(getObject(), err);
+			}
+			return false;
+		}
+		bool JDObjectManager::isLockedByOther() const
+		{
+			if (m_databaseManager)
+			{
+				Error err;
+				return m_databaseManager->isObjectLockedByOther(getObject(), err);
 			}
 			return false;
 		}

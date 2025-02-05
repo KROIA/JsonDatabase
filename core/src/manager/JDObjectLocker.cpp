@@ -340,7 +340,10 @@ namespace JsonDatabase
 				JDObjectID::IDType id = obj->getObjectID()->get();
 				std::string key = obj->getObjectID()->toString();
 				if (alreadyLocked.find(id) != alreadyLocked.end())
+				{
+					errors[i] = Error::objectAlreadyLocked;
 					continue;
+				}
 				if (lockedByOther.find(id) != lockedByOther.end())
 				{
 					std::shared_ptr<LockEntryObjectImpl> lockEntry;

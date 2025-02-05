@@ -5,6 +5,7 @@
 #include "utilities/SystemCommand.h"
 #include "utilities/JsonUtilities.h"
 #include "utilities/AsyncContextDrivenDeleter.h"
+#include "ui/JDObjectListWidget.h"
 
 
 #include "manager/async/work/JDManagerWorkLoadAllObjects.h"
@@ -348,6 +349,9 @@ bool JDManager::loadObject_internal(const JDObject& obj, Internal::WorkProgress*
             m_logger->log("Object (id=" + id.get()->toString() + ") loaded successfully", Log::Level::info, Log::Colors::green);
         else
             m_logger->logError("Object (id=" + id.get()->toString() + ") can't be loaded");
+    //if (success)
+    //    obj->markAsUnchanged();
+    UI::JDObjectListWidget::updateUI();
     return success;
 }
 
@@ -446,6 +450,18 @@ bool JDManager::loadObjects_internal(int mode, Internal::WorkProgress* progress)
         {
             m_logger->logError("Objects can't be loaded");
         }
+    /*if (success)
+    {
+        for (size_t i = 0; i < newObjInstances.size(); ++i)
+        {
+            newObjInstances[i]->markAsUnchanged();
+        }
+        for (size_t i = 0; i < overridingObjs.size(); ++i)
+        {
+            overridingObjs[i]->markAsUnchanged();
+        }
+    }*/
+    UI::JDObjectListWidget::updateUI();
     return success;
 }
 
@@ -464,8 +480,20 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
                 " because it's not locked by this manager instance. Lock Error: " + errorToString(lockerError));
         return false;
     }
+    if (!obj->hasChanges())
+    {
+		if (m_logger)
+			m_logger->logInfo("Object (id=" + obj->getObjectID()->toString() + ") has no changes. It will not be saved");
+		return true;
+    }
+    if (obj->hasWrongData())
+    {
+		if (m_logger)
+			m_logger->logWarning("Object (id=" + obj->getObjectID()->toString() + ") has wrong data. It will not be saved");
+		return false;
+    }
     if(m_logger)
-        m_logger->log("Saving object with ID: " + obj->getObjectID()->toString(), Log::Level::info);
+        m_logger->logInfo("Saving Object(id = " + obj->getObjectID()->toString()+")");
     double progressScalar = 0;
     if (progress)
     {
@@ -533,13 +561,17 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     if (fileError != Error::none)
     {
         if (m_logger)m_logger->logError(std::string("bool JDManager::saveObject_internal(JDObject, unsigned int timeoutMs): Error: ") + errorToString(fileError));
-        return false;
+        success = false;
     }
     if(m_logger)
         if(success)
             m_logger->log("Object (id="+ ID.get()->toString() + ") saved successfully", Log::Level::info, Log::Colors::green);
 		else
             m_logger->logError("Object (id=" + ID.get()->toString() + ") can't be saved");
+    if (success)
+    {
+		obj->markAsUnchanged();
+    }
     return success;
 }
 bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkProgress* progress)
@@ -550,6 +582,7 @@ bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkP
 bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress, bool objsRemoved)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+    bool success = true;
     if(objList.size() == 0)
 		return true;
     if(m_logger)
@@ -580,24 +613,51 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
                 if (lockedObjects[j].user.getSessionID() != m_user.getSessionID())
                 {
                     if(m_logger)
-						m_logger->logWarning("Object with ID: " + std::to_string(objList[i]->getShallowObjectID()) + " is locked by another user. It will not be saved");
+						m_logger->logWarning("Object (id=" + std::to_string(objList[i]->getShallowObjectID()) + ") is locked by another user. It will not be saved");
                     objList.erase(objList.begin() + i);
                     notAllSaved = true;
+                    success = false;
                     ++removedFromListCount;
                     --i;
                 }
 				break;
 			}
 		}
-        if (!found)
+        if (found)
+        {
+            if (objList[i]->hasWrongData())
+            {
+                if (m_logger)
+                    m_logger->logWarning("Object (id=" + std::to_string(objList[i]->getShallowObjectID()) + ") has wrong data. It will not be saved");
+                objList.erase(objList.begin() + i);
+                ++removedFromListCount;
+                notAllSaved = true;
+                success = false;
+                --i;
+                continue;
+            }
+            if (!objList[i]->hasChanges())
+            {
+                if (m_logger)
+                    m_logger->logInfo("Object (id=" + std::to_string(objList[i]->getShallowObjectID()) + ") has no changes. It will not be saved");
+                objList.erase(objList.begin() + i);
+                ++removedFromListCount;
+                notAllSaved = true;
+                --i;
+                continue;
+            }
+        }
+        else
         {
 			if (m_logger)
-				m_logger->logWarning("Object with ID: " + std::to_string(objList[i]->getShallowObjectID()) + " is not locked by this user. It will not be saved");
+				m_logger->logWarning("Object (id=" + std::to_string(objList[i]->getShallowObjectID()) + ") is not locked by this user. It will not be saved");
 			objList.erase(objList.begin() + i);
             ++removedFromListCount;
+            success = false;
             notAllSaved = true;
 			--i;
 		}
+
 	}
    
 
@@ -631,7 +691,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
         return false;
     }
     
-    bool success = true;
+    
     
     if (objsRemoved)
     {
@@ -651,15 +711,30 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
     }
     else
     {
+        std::vector<bool> successList;
         if (progress)
         {
             progress->startNewSubProgress(progressScalar * 0.6);
-            success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData, progress);
+            successList = Internal::JDObjectManager::getJsonArray(objList, *jsonData, progress);
+            
         }
         else
         {
-            success &= Internal::JDObjectManager::getJsonArray(objList, *jsonData);
+            successList = Internal::JDObjectManager::getJsonArray(objList, *jsonData);
         }
+        for (size_t i = 0; i < objList.size(); ++i)
+        {
+            if (successList[i])
+            {
+                objList[i]->markAsUnchanged();
+                if (m_logger)
+                {
+					m_logger->log("Object (id=" + objList[i]->getObjectID()->toString() + ") saved successfully", Log::Level::info, Log::Colors::green);
+                }
+            }
+            success &= successList[i];
+        }
+
         for (size_t i = 0; i < origJsonData.size(); ++i)
         {
             const JsonObject& objData = origJsonData[i].get<JsonObject>();
@@ -686,19 +761,19 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
     if (fileError != Error::none)
     {
         if (m_logger)m_logger->logError(std::string("bool JDManager::saveObject_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(fileError));
-        return false;
+		success = false;
     }
     if (m_logger)
         if (success)
         {
             if(objList.size() > 0)
                 m_logger->log(std::to_string(objList.size()) + " objects saved successfully", Log::Level::info, Log::Colors::green);
-            if(removedFromListCount > 0)
-                m_logger->logWarning(std::to_string(removedFromListCount) + " objects can't be saved because they are not locked by this user.");
+            //if(removedFromListCount > 0)
+            //    m_logger->logWarning(std::to_string(removedFromListCount) + " objects can't be saved");
         }
-        else
-            m_logger->logError(std::to_string(objList.size() + removedFromListCount) + " objects can't be saved");
-    return success && !notAllSaved;
+        //else
+        //    m_logger->logError(std::to_string(objList.size() + removedFromListCount) + " objects can't be saved");
+    return success;
 }
 
 void JDManager::onAsyncWorkDone(std::shared_ptr<Internal::JDManagerAysncWork> work)

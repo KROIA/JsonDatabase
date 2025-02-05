@@ -38,6 +38,7 @@ namespace JsonDatabase
             std::string getDatabasePath() const;
 
             std::string getDatabaseFilePath() const;
+            std::string getDatabaseChangeHistoryFilePath() const;
 
             bool isLoggedOnDatabase() const;
 
@@ -82,6 +83,7 @@ namespace JsonDatabase
             std::string m_databasePath;
             std::string m_databaseName;
             std::string m_databaseFileName;
+            std::string m_databaseChangeHistoryFileName;
 
             size_t m_slowUpdateCounter;
             size_t m_middleUpdateCounter;

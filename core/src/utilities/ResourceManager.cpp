@@ -85,12 +85,15 @@ namespace JsonDatabase
 			m_iconsVector[static_cast<int>(Icon::accept)] = getIcon_internal("accept.png");
 			m_iconsVector[static_cast<int>(Icon::clock)] = getIcon_internal("clock.png");
 			m_iconsVector[static_cast<int>(Icon::lock)] = getIcon_internal("lock.png");
+			m_iconsVector[static_cast<int>(Icon::asterisk)] = getIcon_internal("asterisk.png");
+			m_iconsVector[static_cast<int>(Icon::warning)] = getIcon_internal("warning.png");
 			m_iconsVector[static_cast<int>(Icon::tag)] = getIcon_internal("tag.png");
 			m_iconsVector[static_cast<int>(Icon::unlock)] = getIcon_internal("unlock.png");
 			m_iconsVector[static_cast<int>(Icon::user)] = getIcon_internal("user.png");
 			m_iconsVector[static_cast<int>(Icon::search)] = getIcon_internal("search.png");
+			m_iconsVector[static_cast<int>(Icon::filter)] = getIcon_internal("filter.png");
 			// static assert when not all enum values are covered
-			static_assert(static_cast<int>(Icon::__count) == 7, "ResourceManager::loadIcons: Not all icons are covered");
+			static_assert(static_cast<int>(Icon::__count) == 10, "ResourceManager::loadIcons: Not all icons are covered");
 		}
 	}
 }

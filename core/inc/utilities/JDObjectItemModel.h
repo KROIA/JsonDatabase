@@ -127,6 +127,8 @@ namespace JsonDatabase
 
 			std::vector<std::shared_ptr<Filter>> m_filters;
 			std::shared_ptr<Sorter> m_sorter;
+
+			//QTimer m_updateTimer;
 		};
 	}
 }

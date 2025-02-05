@@ -14,12 +14,29 @@ namespace JsonDatabase
 {
 	namespace UI
 	{
+		namespace Internal
+		{
+			class RepaintUpdateSender : public QObject
+			{
+				Q_OBJECT
+			public:
+				void emitRepaint()
+				{
+					emit repaint();
+				}
+
+			signals:
+				void repaint();
+			};
+		}
 		class JSON_DATABASE_EXPORT JDObjectListWidget : public QWidget
 		{
 			Q_OBJECT
 			public:
 			JDObjectListWidget(JDManager* manager, QWidget* parent = nullptr);
 			~JDObjectListWidget();
+
+			static void updateUI();
 
 			void setEnableSearchField(bool enable);
 			bool isSearchFieldEnabled() const;
@@ -42,13 +59,14 @@ namespace JsonDatabase
 			public slots:
 			void onFilterChanged();
 			void onSort();
+			void repaint();
 
 			private slots:
 			void onLineEditChanged(const QString& text);
 			private:
 			
 			void setupUI();
-			void updateUI();
+			
 
 			QListView* m_objectListWidget;
 			QLineEdit* m_searchBox;
@@ -85,7 +103,13 @@ namespace JsonDatabase
 			std::shared_ptr<SearchFilter> m_searchFilter;
 			//std::unordered_map<JDObject, JDObjectItem> m_objectItems;
 
+
+			
 		
+			static std::vector<JDObjectListWidget*> s_instances;
+			static Internal::RepaintUpdateSender* s_repaintSender;
 		};
+
+		
 	}
 }
