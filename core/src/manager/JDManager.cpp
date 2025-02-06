@@ -571,6 +571,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     if (success)
     {
 		obj->markAsUnchanged();
+        obj->clearChangeTransactions();
     }
     return success;
 }
@@ -727,6 +728,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
             if (successList[i])
             {
                 objList[i]->markAsUnchanged();
+                objList[i]->clearChangeTransactions();
                 if (m_logger)
                 {
 					m_logger->log("Object (id=" + objList[i]->getObjectID()->toString() + ") saved successfully", Log::Level::info, Log::Colors::green);

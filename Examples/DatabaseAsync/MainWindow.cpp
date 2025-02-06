@@ -178,6 +178,17 @@ void MainWindow::on_saveDatabase_pushButton_clicked()
 		DEBUG << "Database is busy\n"; 
 		return;	
 	}
+	std::vector<JDObject> lockedObjectsOut;
+	Error err;
+	if (m_manager->getLockedObjects(lockedObjectsOut, err))
+	{
+		for (auto& obj : lockedObjectsOut)
+		{
+			std::string changes = obj->getChangeTransactionsJson().toString();
+			logger.logInfo("Changes for obj: "+obj->getObjectID()->toString() + "\n" + changes);
+		}
+	}
+
 	m_manager->saveLockedObjectsAsync();
 	//onTimerFinished();
 }

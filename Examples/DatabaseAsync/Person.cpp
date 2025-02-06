@@ -5,7 +5,32 @@ JD_OBJECT_IMPL(Person);
 
 Person::Person(const Person& other)
     : JDObjectInterface(other)
+	, firstName("firstName")
+	, lastName("lastName")
+    , gender("gender")
+	, age("age")
+	, email("email")
+	, phone("phone")
+	, education("education")
+	, occupation("occupation")
+	, experience("experience")
+	, salary("salary")
+    , martialStatus("martialStatus")
+	, numberOfChildren("numberOfChildren")
 {
+	addValue(firstName);
+	addValue(lastName);
+	addValue(gender);
+	addValue(age);
+	addValue(email);
+	addValue(phone);
+	addValue(education);
+	addValue(occupation);
+	addValue(experience);
+	addValue(salary);
+	addValue(martialStatus);
+	addValue(numberOfChildren);
+
     loadFrom(&other);
 }
 
@@ -14,7 +39,32 @@ Person::Person(string fn, string ln, string g, string age,
     string email, string ph, string edu, string occ,
     string exp, string sal, string mart, string chc)
     : JDObjectInterface()
+    , firstName("firstName")
+    , lastName("lastName")
+    , gender("gender")
+    , age("age")
+    , email("email")
+    , phone("phone")
+    , education("education")
+    , occupation("occupation")
+    , experience("experience")
+    , salary("salary")
+    , martialStatus("martialStatus")
+    , numberOfChildren("numberOfChildren")
 {
+    addValue(firstName);
+    addValue(lastName);
+    addValue(gender);
+    addValue(this->age);
+    addValue(this->email);
+    addValue(phone);
+    addValue(education);
+    addValue(occupation);
+    addValue(experience);
+    addValue(salary);
+    addValue(martialStatus);
+    addValue(numberOfChildren);
+
     firstName = fn;
     lastName = ln;
     gender = g;
@@ -36,7 +86,31 @@ Person::Person(string fn, string ln, string g, string age,
 }
 Person::Person()
     : JDObjectInterface()
+    , firstName("firstName")
+    , lastName("lastName")
+    , gender("gender")
+    , age("age")
+    , email("email")
+    , phone("phone")
+    , education("education")
+    , occupation("occupation")
+    , experience("experience")
+    , salary("salary")
+    , martialStatus("martialStatus")
+    , numberOfChildren("numberOfChildren")
 {
+    addValue(firstName);
+    addValue(lastName);
+    addValue(gender);
+    addValue(age);
+    addValue(email);
+    addValue(phone);
+    addValue(education);
+    addValue(occupation);
+    addValue(experience);
+    addValue(salary);
+    addValue(martialStatus);
+    addValue(numberOfChildren);
     //instanceCounter++;
     //setObjectID(std::to_string(instanceCounter));
 }
@@ -68,7 +142,7 @@ bool Person::operator!=(const Person& other)
 }
 
 
-
+/*
 
 bool Person::load(const JsonObject& obj)
 {
@@ -103,6 +177,7 @@ bool Person::save(JsonObject& obj) const
     obj["martialStatus"] = martialStatus;
     return true;
 }
+*/
 
 
 

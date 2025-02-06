@@ -22,7 +22,7 @@ namespace JsonDatabase
 			/**
 			 * @brief 
 			 * Gets called when the object is loaded from the database
-			 * Eead back the data from the json object
+			 * Read back the data from the json object
 			 * @param obj 
 			 * @return true if all data was read successfully, otherwise false
 			 */
