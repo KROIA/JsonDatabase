@@ -36,7 +36,7 @@ void UIPerson::setPerson(JDderivedObject<Person> person, bool editMode)
 	m_person = person;
 	if (m_person)
 	{
-		qDebug() << m_person->firstName.c_str();
+		qDebug() << m_person->firstName.getValue().c_str();
 		ui.objectID_label->setText(m_person->getObjectID()->toQString());
 		ui.firstName_lineEdit->setText(QString::fromStdString(m_person->firstName));
 		ui.lastName_lineEdit->setText(QString::fromStdString(m_person->lastName));

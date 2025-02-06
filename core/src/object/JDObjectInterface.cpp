@@ -242,6 +242,28 @@ void JDObjectInterface::markAsCorrectData() const
     UI::JDObjectListWidget::updateUI();
 }
 
+std::vector<std::shared_ptr<IChangeTransaction>> JDObjectInterface::getChangeTransactions() const
+{
+	std::vector<std::shared_ptr<IChangeTransaction>> transactions;
+	for (auto value : m_values)
+	{
+        transactions = IChangeTransaction::combine(transactions, value->getChangeTransactions());
+	}
+	return transactions;
+}
+JsonValue JDObjectInterface::getChangeTransactionsJson() const
+{
+	return IChangeTransaction::toJson(getChangeTransactions());
+}
+void JDObjectInterface::clearChangeTransactions()
+{
+    for (auto value : m_values)
+    {
+		value->clearChangeTransactions();
+    }
+}
+
+
 bool JDObjectInterface::equalData(const JsonObject& obj) const
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
@@ -312,6 +334,10 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
     return ret;
 }
 
+void JDObjectInterface::addValue(IJDObjectValue& value)
+{
+	m_values.push_back(&value);
+}
 
 void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
 {
@@ -338,5 +364,31 @@ void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
 Internal::JDObjectManager* JDObjectInterface::getManager() const
 {
     return m_manager;
+}
+
+bool JDObjectInterface::load(const JsonObject& obj)
+{
+    bool success = true;
+	for (auto value : m_values)
+	{
+		auto match = obj.find(value->getParamName());
+        if (match == obj.end())
+        {
+			success = false;
+			break;
+        }
+		if (!value->fromJson(match->second))
+			success = false;
+	}
+	return success;
+}
+bool JDObjectInterface::save(JsonObject& obj) const
+{
+	bool success = true;
+	for (auto value : m_values)
+	{
+		obj[value->getParamName()] = value->toJson();
+	}
+	return success;
 }
 }

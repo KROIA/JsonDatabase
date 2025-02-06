@@ -9,6 +9,8 @@
 /// USER_SECTION_START 2
 #include "utilities/JDSerializable.h"
 #include "object/JDObjectInterface.h"
+#include "object/value/JDObjectValue.h"
+#include "object/value/IJDObjectValue.h"
 #include "manager/JDManager.h"
 #include "utilities/ErrorCodes.h"
 

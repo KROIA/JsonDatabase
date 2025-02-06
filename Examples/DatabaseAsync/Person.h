@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 
+
 using namespace JsonDatabase;
 using std::string;
 
@@ -36,20 +37,20 @@ public:
     bool operator==(const Person& other);
     bool operator!=(const Person& other);
 
-    std::string getToolTip() const override { return firstName +" "+lastName + "\n" + email; }
+    std::string getToolTip() const override { return firstName +std::string(" ")+lastName + std::string("\n") + email; }
     std::string getDisplayName() const override { return firstName + " " + lastName; }
 
 
-    std::string firstName, lastName, gender;
-    std::string age;
-    std::string email, phone, education, occupation;
-    std::string experience, salary, numberOfChildren;
-    std::string martialStatus;
+    JDObjectValue<std::string> firstName, lastName, gender;
+    JDObjectValue<std::string> age;
+    JDObjectValue<std::string> email, phone, education, occupation;
+    JDObjectValue<std::string> experience, salary, numberOfChildren;
+    JDObjectValue<std::string> martialStatus;
 private:
    
 
-    bool load(const JsonObject& obj) override;
-    bool save(JsonObject& obj) const override;
+    // bool load(const JsonObject& obj) override;
+    // bool save(JsonObject& obj) const override;
     
 };
 

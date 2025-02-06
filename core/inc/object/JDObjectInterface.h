@@ -5,6 +5,7 @@
 #include "utilities/JDSerializable.h"
 #include "utilities/JDUser.h"
 #include "manager/JDObjectLocker.h"
+#include "value/IJDObjectValue.h"
 #include "JDObjectID.h"
 #include <memory>
 
@@ -256,7 +257,9 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
          */
         bool hasWrongData() const { return m_hasWrongData; }
 
-
+		std::vector<std::shared_ptr<IChangeTransaction>> getChangeTransactions() const;
+		JsonValue getChangeTransactionsJson() const;
+		void clearChangeTransactions();
 
     protected:
         /**
@@ -284,6 +287,9 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         bool saveInternal(JsonObject& obj) const;
         bool getSaveData(JsonObject& obj) const;
 
+
+		void addValue(IJDObjectValue& value);
+
 		
     class JSON_DATABASE_EXPORT AutoObjectAddToRegistry
     {
@@ -299,6 +305,9 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
 
         virtual JDObjectInterface* deepClone_internal() const = 0;
         virtual JDObjectInterface* shallowClone_internal() const = 0;
+
+        bool load(const JsonObject& obj) override;
+        bool save(JsonObject& obj) const override;
 
 
 
@@ -317,6 +326,8 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
 
         mutable bool m_hasChanges;
 		mutable bool m_hasWrongData;
+
+		std::vector<IJDObjectValue*> m_values;
 
     public:
 
