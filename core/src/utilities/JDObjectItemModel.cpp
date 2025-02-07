@@ -180,7 +180,7 @@ namespace JsonDatabase
 		}
 		void JDObjectItemModel::onObjectRemoved(std::vector<JDObject> objs)
 		{
-			beginRemoveRows(QModelIndex(), 0, m_objects.size());
+			beginRemoveRows(QModelIndex(), 0, m_objects.size()-1);
 			for (size_t i = 0; i < objs.size(); ++i)
 				removeObject_internal(objs[i]);
 			endRemoveRows();

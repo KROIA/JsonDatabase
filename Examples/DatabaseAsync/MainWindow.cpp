@@ -569,7 +569,7 @@ void MainWindow::onObjectRemovedFromDatabase(std::vector<JDObject>  removed)
 	EASY_FUNCTION(profiler::colors::Amber);
 	for (auto& obj : removed)
 	{
-		DEBUG_SIMPLE << "Removed: " << obj->getObjectID()->toString().c_str() << "\n";
+		DEBUG_SIMPLE << "Removed: " << obj->getShallowObjectID() << "\n";
 	}
 }
 void MainWindow::onObjectAddedToDatabase(std::vector<JDObject>  added)

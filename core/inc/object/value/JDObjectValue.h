@@ -37,26 +37,31 @@ namespace JsonDatabase
 			: IJDObjectValue(paramName)
 		{
 			m_value = T();
+			m_orgValue = m_value;
 		}
 		JDObjectValue(const std::string& paramName, const T& value)
 			: IJDObjectValue(paramName)
 		{
 			m_value = value;
+			m_orgValue = m_value;
 		}
 		JDObjectValue(const std::string& paramName, T&& value) noexcept
 			: IJDObjectValue(paramName)
 		{
 			m_value = std::move(value);
+			m_orgValue = m_value;
 		}
 		JDObjectValue(const JDObjectValue& other)
 			: IJDObjectValue(other)
 		{
 			m_value = other.m_value;
+			m_orgValue = other.m_orgValue;
 		}
 		JDObjectValue(JDObjectValue&& other) noexcept
 			: IJDObjectValue(other)
 		{
 			m_value = std::move(other.m_value);
+			m_orgValue = std::move(other.m_orgValue);
 		}
 		~JDObjectValue()
 		{
@@ -67,33 +72,20 @@ namespace JsonDatabase
 		{
 			if (m_value == other.m_value)
 				return *this;
-			onValueChange(std::make_shared<ChangeTransaction<JDObjectValueContainer>>(getParamName(), m_value, other.m_value));
+			T old = m_value;
 			m_value = other.m_value;
+			onValueChange(std::make_shared<ChangeTransaction<JDObjectValueContainer>>(getParamName(), old, m_value));
 			return *this;
 		}
 		JDObjectValue& operator=(const T& other)
 		{
 			if (m_value == other)
 				return *this;
-			onValueChange(std::make_shared<ChangeTransaction<JDObjectValueContainer>>(getParamName(), m_value, other));
+			T old = m_value;
 			m_value = other;
+			onValueChange(std::make_shared<ChangeTransaction<JDObjectValueContainer>>(getParamName(), old, m_value));
 			return *this;
 		}
-
-		/*
-		JDObjectValue& operator=(JDObjectValue&& other) noexcept
-		{
-			onValueChange(std::make_shared<ChangeTransaction<T>>(getParamName(), m_value, other.m_value));
-			m_value = std::move(other.m_value);
-			return *this;
-		}
-		
-		JDObjectValue& operator=(T&& other) noexcept
-		{
-			onValueChange(std::make_shared<ChangeTransaction<T>>(getParamName(), m_value, other));
-			m_value = std::move(other);
-			return *this;
-		}*/
 
 		operator T() const
 		{
@@ -210,26 +202,38 @@ namespace JsonDatabase
 			if (value.holds<T>())
 			{
 				m_value = value.get<T>();
+				clearChangeTransactions();
 				return true;
 			}
 			return false;
 		}
 
+		void clearChangeTransactions() override
+		{
+			IJDObjectValue::clearChangeTransactions();
+			m_orgValue = m_value;
+		}
+
+		bool hasChanged() const override
+		{
+			return m_value != m_orgValue;
+		}
+
+		void discardChanges() override
+		{
+			m_value = m_orgValue;
+			clearChangeTransactions();
+		}
+
 	private:
 		T m_value;
+		T m_orgValue; // The original value before any change transaction occured
 	};
 
-	// Non-member operator+ to allow std::string + Holder<std::string>
+	// Non-member operator+ to allow std::string + JDObjectValue<std::string>
 	template <typename T, typename std::enable_if<std::is_same<T, std::string>::value, int>::type = 0>
 	std::string operator+(const std::string& lhs, const JDObjectValue<T>& rhs) {
 		return lhs + rhs.getValue();
 	}
 
 }
-/*
-// Non-member operator+ to allow std::string + Holder<std::string>
-template <typename T, typename std::enable_if<std::is_same<T, std::string>::value, int>::type = 0>
-std::string operator+(const std::string& lhs, const JDObjectValue<T>& rhs) {
-	return lhs + rhs.get();
-}*/
-

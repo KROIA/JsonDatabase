@@ -19,7 +19,8 @@ JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObject obj
 }
 int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 {
-    obj->markAsUnchanged();
+    //obj->markAsUnchanged();
+    obj->m_hasBeenSaved = true;
     obj->markAsCorrectData();
     return Internal::JDObjectRegistry::registerType(obj);
 }
@@ -29,7 +30,8 @@ JDObjectInterface::JDObjectInterface()
     : m_manager(nullptr)
     , m_shallowID(JDObjectID::invalidID)
 {
-	markAsChanged();
+	//markAsChanged();
+	m_hasBeenSaved = false;
     markAsCorrectData();
 }
 
@@ -37,7 +39,8 @@ JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
     : m_manager(nullptr)
     , m_shallowID(other.m_shallowID)
 {
-	markAsChanged();
+	//markAsChanged();
+	m_hasBeenSaved = false;
     markAsCorrectData();
 }
 JDObjectInterface::~JDObjectInterface()
@@ -49,7 +52,7 @@ JDObject JDObjectInterface::deepClone() const
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     JDObjectInterface *instance = deepClone_internal();
-    instance->m_hasChanges = m_hasChanges;
+    instance->m_hasBeenSaved = m_hasBeenSaved;
     instance->m_hasWrongData = m_hasWrongData;
 	return JDObject(instance);
 }
@@ -57,7 +60,7 @@ JDObject JDObjectInterface::shallowClone() const
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     JDObjectInterface *instance = shallowClone_internal();
-    instance->m_hasChanges = m_hasChanges;
+    instance->m_hasBeenSaved = m_hasBeenSaved;
     instance->m_hasWrongData = m_hasWrongData;
 	return JDObject(instance);
 }
@@ -221,7 +224,7 @@ void JDObjectInterface::loadFromDatabaseAsync()
     if (m_manager)
 		m_manager->loadFromDatabaseAsync();
 }
-void JDObjectInterface::markAsChanged() const 
+/*void JDObjectInterface::markAsChanged() const
 { 
     m_hasChanges = true; 
     UI::JDObjectListWidget::updateUI();
@@ -229,6 +232,26 @@ void JDObjectInterface::markAsChanged() const
 void JDObjectInterface::markAsUnchanged() const 
 { 
     m_hasChanges = false; 
+    UI::JDObjectListWidget::updateUI();
+}*/
+bool JDObjectInterface::hasChanges() const
+{
+    if (!m_hasBeenSaved)
+        return true;
+	bool hasChanges = false;
+	for (auto value : m_values)
+	{
+		if (value->hasChanged())
+		{
+			hasChanges = true;
+			break;
+		}
+	}
+	return hasChanges;
+}
+void JDObjectInterface::onValueChanged(IJDObjectValue* value) const
+{
+    JD_UNUSED(value);
     UI::JDObjectListWidget::updateUI();
 }
 void JDObjectInterface::markAsWrongData() const 
@@ -261,6 +284,7 @@ void JDObjectInterface::clearChangeTransactions()
     {
 		value->clearChangeTransactions();
     }
+	m_hasBeenSaved = true;
 }
 
 
@@ -292,7 +316,7 @@ bool JDObjectInterface::equalData(const JsonObject& obj) const
 bool JDObjectInterface::loadInternal(const JsonObject& obj)
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    if (m_hasChanges)
+    if (hasChanges())
     {
         return true;
     }
@@ -336,6 +360,7 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
 
 void JDObjectInterface::addValue(IJDObjectValue& value)
 {
+	value.setParent(this);
 	m_values.push_back(&value);
 }
 
