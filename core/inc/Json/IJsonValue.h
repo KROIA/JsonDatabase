@@ -13,6 +13,5 @@ namespace JsonDatabase
 
 		virtual JsonValue toJson() const = 0;
 		virtual bool fromJson(const JsonValue& value) = 0;
-
 	};
 }

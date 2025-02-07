@@ -420,6 +420,14 @@ namespace JsonDatabase
 				hasChangedOut = true;
 				return true;
 			}
+			if (obj->hasChanges())
+			{
+				if (obj->isLockedByMe())
+				{
+					if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className() + " Object is locked by this user and has unsaved changes");
+					return false;
+				}
+			}
 			if (!obj->loadInternal(json))
 			{
 				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
@@ -433,6 +441,14 @@ namespace JsonDatabase
 		bool JDObjectManager::deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
+			if (obj->hasChanges())
+			{
+				if (obj->isLockedByMe())
+				{
+					if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className() + " Object is locked by this user and has unsaved changes");
+					return false;
+				}
+			}
 			if (!obj->loadInternal(json))
 			{
 				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());

@@ -111,8 +111,17 @@ namespace JsonDatabase
             {
                 QRect wrongDataIconRect = lockIconRect;
                 wrongDataIconRect.moveLeft(infoIconXPos);
+                infoIconXPos -= infoIconSize;
 				const QIcon& wrongDataIcon = Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::warning);
 				painter->drawPixmap(wrongDataIconRect.x(), wrongDataIconRect.y(), wrongDataIcon.pixmap(wrongDataIconRect.width(), wrongDataIconRect.height()));
+            }
+            if (obj->markedForRemoval())
+            {
+                QRect removalIconRect = lockIconRect;
+                removalIconRect.moveLeft(infoIconXPos);
+                infoIconXPos -= infoIconSize;
+                const QIcon& removalIcon = Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::deleted);
+                painter->drawPixmap(removalIconRect.x(), removalIconRect.y(), removalIcon.pixmap(removalIconRect.width(), removalIconRect.height()));
             }
 
             // Draw the text

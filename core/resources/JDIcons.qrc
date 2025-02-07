@@ -10,5 +10,6 @@
         <file>JDIcons/filter.png</file>
         <file>JDIcons/asterisk.png</file>
         <file>JDIcons/warning.png</file>
+        <file>JDIcons/deleted.png</file>
     </qresource>
 </RCC>

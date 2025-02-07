@@ -2,6 +2,7 @@
 #include "object/JDObjectRegistry.h"
 #include "object/JDObjectManager.h"
 #include "ui/JDObjectListWidget.h"
+#include "changehistory/ChangeTransaction.h"
 
 
 
@@ -21,6 +22,7 @@ int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 {
     //obj->markAsUnchanged();
     obj->m_hasBeenSaved = true;
+    obj->m_marketdForRemoval = false;
     obj->markAsCorrectData();
     return Internal::JDObjectRegistry::registerType(obj);
 }
@@ -32,7 +34,10 @@ JDObjectInterface::JDObjectInterface()
 {
 	//markAsChanged();
 	m_hasBeenSaved = false;
+    m_marketdForRemoval = false;
     markAsCorrectData();
+    std::shared_ptr<IChangeTransaction> change = std::make_shared<ChangeTransaction>("ObjectInstantiation", "Object instantiated");
+    m_changeHistory.push_back(change);
 }
 
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
@@ -41,7 +46,10 @@ JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
 {
 	//markAsChanged();
 	m_hasBeenSaved = false;
+    m_marketdForRemoval = false;
     markAsCorrectData();
+    std::shared_ptr<IChangeTransaction> change = std::make_shared<ChangeTransaction>("ObjectInstantiation", "Object instantiated");
+    m_changeHistory.push_back(change);
 }
 JDObjectInterface::~JDObjectInterface()
 {
@@ -54,6 +62,7 @@ JDObject JDObjectInterface::deepClone() const
     JDObjectInterface *instance = deepClone_internal();
     instance->m_hasBeenSaved = m_hasBeenSaved;
     instance->m_hasWrongData = m_hasWrongData;
+    instance->m_marketdForRemoval = m_marketdForRemoval;
 	return JDObject(instance);
 }
 JDObject JDObjectInterface::shallowClone() const
@@ -62,6 +71,7 @@ JDObject JDObjectInterface::shallowClone() const
     JDObjectInterface *instance = shallowClone_internal();
     instance->m_hasBeenSaved = m_hasBeenSaved;
     instance->m_hasWrongData = m_hasWrongData;
+    instance->m_marketdForRemoval = m_marketdForRemoval;
 	return JDObject(instance);
 }
 
@@ -236,7 +246,7 @@ void JDObjectInterface::markAsUnchanged() const
 }*/
 bool JDObjectInterface::hasChanges() const
 {
-    if (!m_hasBeenSaved)
+    if (!m_hasBeenSaved || m_marketdForRemoval)
         return true;
 	bool hasChanges = false;
 	for (auto value : m_values)
@@ -264,14 +274,40 @@ void JDObjectInterface::markAsCorrectData() const
     m_hasWrongData = false;
     UI::JDObjectListWidget::updateUI();
 }
+void JDObjectInterface::markForRemoval() 
+{
+    if (m_marketdForRemoval)
+        return;
+    m_marketdForRemoval = true; 
+	std::shared_ptr<IChangeTransaction> change = std::make_shared<ChangeTransaction>("ObjectRemove","Object market for removal");
+	m_changeHistory.push_back(change);
+    UI::JDObjectListWidget::updateUI();
+}
+void JDObjectInterface::markForNotRemoval() 
+{ 
+    if (!m_marketdForRemoval)
+        return;
+    for (size_t i = 0; i < m_changeHistory.size(); ++i)
+    {
+        if (m_changeHistory[i]->getIdentifyer() == "ObjectRemove")
+        {
+            m_changeHistory.erase(m_changeHistory.begin() + i);
+            break;
+        }
+    }
+    m_marketdForRemoval = false; 
+    UI::JDObjectListWidget::updateUI();
+}
 
 std::vector<std::shared_ptr<IChangeTransaction>> JDObjectInterface::getChangeTransactions() const
 {
 	std::vector<std::shared_ptr<IChangeTransaction>> transactions;
 	for (auto value : m_values)
 	{
-        transactions = IChangeTransaction::combine(transactions, value->getChangeTransactions());
+        transactions = IChangeTransaction::combine(transactions, value->getValueChangeTransactions());
 	}
+	transactions.insert(transactions.end(), m_changeHistory.begin(), m_changeHistory.end());
+	transactions = IChangeTransaction::sortByDate(transactions);
 	return transactions;
 }
 JsonValue JDObjectInterface::getChangeTransactionsJson() const
@@ -282,8 +318,9 @@ void JDObjectInterface::clearChangeTransactions()
 {
     for (auto value : m_values)
     {
-		value->clearChangeTransactions();
+		value->clearValueChangeTransactions();
     }
+	m_changeHistory.clear();
 	m_hasBeenSaved = true;
 }
 
@@ -316,10 +353,10 @@ bool JDObjectInterface::equalData(const JsonObject& obj) const
 bool JDObjectInterface::loadInternal(const JsonObject& obj)
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
-    if (hasChanges())
+    /*if (hasChanges())
     {
         return true;
-    }
+    }*/
     const JsonObject *data = obj.at(s_tag_data).get_if<JsonObject>();
     bool success = true;
 
@@ -394,6 +431,7 @@ Internal::JDObjectManager* JDObjectInterface::getManager() const
 bool JDObjectInterface::load(const JsonObject& obj)
 {
     bool success = true;
+	clearChangeTransactions();
 	for (auto value : m_values)
 	{
 		auto match = obj.find(value->getParamName());

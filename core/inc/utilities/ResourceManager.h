@@ -25,6 +25,7 @@ namespace JsonDatabase
 				user,
 				search,
 				filter,
+				deleted,
 
 				__count
 			};

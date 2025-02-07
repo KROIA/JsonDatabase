@@ -4,7 +4,7 @@
 namespace JsonDatabase
 {
 
-	void IJDObjectValue::clearChangeTransactions()
+	void IJDObjectValue::clearValueChangeTransactions()
 	{
 		m_changeHistory.clear();
 		if (m_parent)
@@ -20,6 +20,6 @@ namespace JsonDatabase
 				m_parent->onValueChanged(this);
 		}
 		else
-			clearChangeTransactions();
+			clearValueChangeTransactions();
 	}
 }

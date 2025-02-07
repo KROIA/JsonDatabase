@@ -16,17 +16,18 @@
 
 Log::LogObject logger("main");
 
-MainWindow::MainWindow(const std::string& user, QWidget *parent)
+MainWindow::MainWindow(QWidget *parent)
 	: QWidget(parent)
 	, m_manager(nullptr)
 {
 	ui.setupUi(this);
-	setWindowTitle(QString::fromStdString(user));
+	
 
 	//if(m_manager)
 	//	delete m_manager;
 
 	m_manager = new JDManager;
+	setWindowTitle(QString::fromStdString(m_manager->getSessionID().c_str()));
 	m_userListWidget = new UI::JDUserListWidget();
 	ui.userList_frame->layout()->addWidget(m_userListWidget);
 	m_userListWidget->setBaseSize(200, 200);
@@ -46,7 +47,7 @@ MainWindow::MainWindow(const std::string& user, QWidget *parent)
 	console->show();
 	ui.console_frame->layout()->addWidget(console);
 
-	m_manager->setup("asyncDatabase", "Person", user);
+	m_manager->setup("asyncDatabase", "Person");
 
 	m_uiPersonEditor = new UIPerson(ui.editor_frame);
 	connect(m_uiPersonEditor, &UIPerson::savePerson, this, &MainWindow::onPersonSave);
@@ -178,14 +179,18 @@ void MainWindow::on_saveDatabase_pushButton_clicked()
 		DEBUG << "Database is busy\n"; 
 		return;	
 	}
-	std::vector<JDObject> lockedObjectsOut;
+	std::vector<JsonDatabase::Internal::JDObjectLocker::LockData> lockData;
 	Error err;
-	if (m_manager->getLockedObjects(lockedObjectsOut, err))
+	if (m_manager->getObjectLocksByUser(m_manager->getUser(), lockData, err))
 	{
-		for (auto& obj : lockedObjectsOut)
+		for (auto& lockData : lockData)
 		{
-			std::string changes = obj->getChangeTransactionsJson().toString();
-			logger.logInfo("Changes for obj: "+obj->getObjectID()->toString() + "\n" + changes);
+			JDObject obj = m_manager->getObject(lockData.objectID);
+			if (obj)
+			{
+				std::string changes = obj->getChangeTransactionsJson().toString();
+				logger.logInfo("Changes for obj: " + obj->getObjectID()->toString() + "\n" + changes);
+			}
 		}
 	}
 
@@ -261,7 +266,7 @@ void MainWindow::on_editObject_pushButton_clicked()
 	{*/
 	JsonDatabase::Error lastError;
 	m_manager->lockObject(p, lastError);
-	editMode = p->isLocked();
+	editMode = p->isLockedByMe();
 	
 	if (p)
 	{
