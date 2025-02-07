@@ -92,8 +92,9 @@ namespace JsonDatabase
 			m_iconsVector[static_cast<int>(Icon::user)] = getIcon_internal("user.png");
 			m_iconsVector[static_cast<int>(Icon::search)] = getIcon_internal("search.png");
 			m_iconsVector[static_cast<int>(Icon::filter)] = getIcon_internal("filter.png");
+			m_iconsVector[static_cast<int>(Icon::deleted)] = getIcon_internal("deleted.png");
 			// static assert when not all enum values are covered
-			static_assert(static_cast<int>(Icon::__count) == 10, "ResourceManager::loadIcons: Not all icons are covered");
+			static_assert(static_cast<int>(Icon::__count) == 11, "ResourceManager::loadIcons: Not all icons are covered");
 		}
 	}
 }

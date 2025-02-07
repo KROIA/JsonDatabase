@@ -518,12 +518,11 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
 
     FileWatcherAutoPause paused(JDManagerFileSystem::getDatabaseFileWatcher());
 
-    if (progress) progress->setComment("Serializing object");
+    
     JDObjectIDptr ID = obj->getObjectID();
     
     JsonArray jsons;
-    std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
-    success &= obj->saveInternal(*data);
+    
 
 
     if (progress)
@@ -542,13 +541,26 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
     }
     size_t index = JDObjectInterface::getJsonIndexByID(jsons, ID->get());
 
-    if (index == std::string::npos)
+    if (obj->markedForRemoval())
     {
-        jsons.push_back(std::move(data));
+        if (index != std::string::npos)
+        {
+            jsons.erase(jsons.begin() + index);
+        }
     }
     else
     {
-        jsons[index] = std::move(data);
+        if (progress) progress->setComment("Serializing object");
+        std::shared_ptr<JsonObject> data = std::make_shared<JsonObject>();
+        success &= obj->saveInternal(*data);
+        if (index == std::string::npos)
+        {
+            jsons.push_back(std::move(data));
+        }
+        else
+        {
+            jsons[index] = std::move(data);
+        }
     }
 
     if (progress)
@@ -568,6 +580,10 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
             m_logger->log("Object (id="+ ID.get()->toString() + ") saved successfully", Log::Level::info, Log::Colors::green);
 		else
             m_logger->logError("Object (id=" + ID.get()->toString() + ") can't be saved");
+    if (obj->markedForRemoval())
+    {
+        obj->unlock();
+    }
     if (success)
     {
 		//obj->markAsUnchanged();
@@ -580,7 +596,7 @@ bool JDManager::saveObjects_internal(unsigned int timeoutMillis, Internal::WorkP
     std::vector<JDObject> objs = JDManagerObjectManager::getObjects();
     return saveObjects_internal(objs, timeoutMillis, progress);
 }
-bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress, bool objsRemoved)
+bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int timeoutMillis, Internal::WorkProgress* progress)
 {
     JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
     bool success = true;
@@ -693,68 +709,76 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
     }
     
     
-    
-    if (objsRemoved)
+    // Remove deleted objects
+    std::vector<JDObject> removedObjs;
+    removedObjs.reserve(objList.size());
+    for (size_t j = 0; j < objList.size(); ++j)
     {
-        for (size_t i = 0; i < origJsonData.size(); ++i)
+        if (objList[j]->markedForRemoval())
         {
-            JDObjectID::IDType id = JDObjectInterface::getIDFromJson(origJsonData[i].get<JsonObject>());
-            for (size_t j = 0; j < objList.size(); ++j)
+            removedObjs.push_back(objList[j]);
+            objList.erase(objList.begin() + j);
+            --j;
+        }
+    }
+    for (size_t i = 0; i < origJsonData.size(); ++i)
+    {
+        JDObjectID::IDType id = JDObjectInterface::getIDFromJson(origJsonData[i].get<JsonObject>());
+        for (size_t j = 0; j < objList.size(); ++j)
+        {
+            if (id == objList[j]->getShallowObjectID())
             {
-                if (id == objList[j]->getShallowObjectID())
-                {
-                    origJsonData.erase(origJsonData.begin() + i);
-                    --i;
-                    break;
-                }
+                origJsonData.erase(origJsonData.begin() + i);
+                objList.erase(objList.begin() + j);
+                --i;
+                break;
             }
         }
+    }
+    
+    std::vector<bool> successList;
+    if (progress)
+    {
+        progress->startNewSubProgress(progressScalar * 0.6);
+        successList = Internal::JDObjectManager::getJsonArray(objList, *jsonData, progress);
+        
     }
     else
     {
-        std::vector<bool> successList;
-        if (progress)
+        successList = Internal::JDObjectManager::getJsonArray(objList, *jsonData);
+    }
+    for (size_t i = 0; i < objList.size(); ++i)
+    {
+        if (successList[i])
         {
-            progress->startNewSubProgress(progressScalar * 0.6);
-            successList = Internal::JDObjectManager::getJsonArray(objList, *jsonData, progress);
-            
-        }
-        else
-        {
-            successList = Internal::JDObjectManager::getJsonArray(objList, *jsonData);
-        }
-        for (size_t i = 0; i < objList.size(); ++i)
-        {
-            if (successList[i])
+            //objList[i]->markAsUnchanged();
+            objList[i]->clearChangeTransactions();
+            if (m_logger)
             {
-                //objList[i]->markAsUnchanged();
-                objList[i]->clearChangeTransactions();
-                if (m_logger)
-                {
-					m_logger->log("Object (id=" + objList[i]->getObjectID()->toString() + ") saved successfully", Log::Level::info, Log::Colors::green);
-                }
+				m_logger->log("Object (id=" + objList[i]->getObjectID()->toString() + ") saved successfully", Log::Level::info, Log::Colors::green);
             }
-            success &= successList[i];
         }
+        success &= successList[i];
+    }
 
-        for (size_t i = 0; i < origJsonData.size(); ++i)
+    for (size_t i = 0; i < origJsonData.size(); ++i)
+    {
+        const JsonObject& objData = origJsonData[i].get<JsonObject>();
+        size_t index = JDObjectInterface::getJsonIndexByID(*jsonData, JDObjectInterface::getIDFromJson(objData));
+        if (index == std::string::npos)
+            continue;
+        origJsonData[i] = (*jsonData)[index];
+        jsonData->erase(jsonData->begin() + index);
+        //  ++replacedCount;
+    }
+    if (jsonData->size())
+    {
+        for (size_t i = 0; i < jsonData->size(); ++i)
         {
-            const JsonObject& objData = origJsonData[i].get<JsonObject>();
-            size_t index = JDObjectInterface::getJsonIndexByID(*jsonData, JDObjectInterface::getIDFromJson(objData));
-            if (index == std::string::npos)
-                continue;
-            origJsonData[i] = (*jsonData)[index];
-            jsonData->erase(jsonData->begin() + index);
-            //  ++replacedCount;
-        }
-        if (jsonData->size())
-        {
-            for (size_t i = 0; i < jsonData->size(); ++i)
-            {
-                origJsonData.push_back((*jsonData)[i]);
-            }
+            origJsonData.push_back((*jsonData)[i]);
         }
     }
+    
     
     
     // Save the serialized objects
@@ -775,6 +799,16 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
         }
         //else
         //    m_logger->logError(std::to_string(objList.size() + removedFromListCount) + " objects can't be saved");
+
+    // Free the locks of the removed objects
+    std::vector<Error> errs;
+    success &= m_objLocker.unlockObjects(removedObjs, errs);
+    for (size_t i = 0; i < removedObjs.size(); ++i)
+    {
+		unregisterAndRemove(removedObjs[i]);
+    }
+    
+
     return success;
 }
 

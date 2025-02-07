@@ -13,7 +13,7 @@ public:
 		w1 = nullptr;
 		w2 = nullptr;
 
-		w1 = new MainWindow("User1");
+		w1 = new MainWindow();
 		// Create a single shot timer that creates both MainWindows in differend times
 		// Create single shot with lambda
 
@@ -22,7 +22,7 @@ public:
 		if (useSecondWindow)
 		{
 			QTimer::singleShot(3000, [this]() {
-				w2 = new MainWindow("User2");
+				w2 = new MainWindow();
 				w2->show();
 				connect(w2, &MainWindow::closeWindow, this, &UIWrapper::onWindowClosed);
 				});

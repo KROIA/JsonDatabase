@@ -8,48 +8,38 @@
 
 namespace JsonDatabase
 {
-	template <typename T>
-	concept DerivedFromIJsonValue = std::is_base_of_v<IJsonValue, T>;
-
-
-	template<DerivedFromIJsonValue T>
 	class ChangeTransaction : public IChangeTransaction
 	{
 	public:
-		ChangeTransaction(const std::string& identifyer, const T &oldValue, const T &newValue)
+		ChangeTransaction(const std::string& identifyer, const std::string &msg)
 			: IChangeTransaction(identifyer)
-			, m_oldValue(oldValue)
-			, m_newValue(newValue)
-			
+			, m_message(msg)
+
 		{
 
 		}
 		ChangeTransaction(const ChangeTransaction& other)
 			: IChangeTransaction(other)
-			, m_oldValue(other.m_oldValue)
-			, m_newValue(other.m_newValue)
+			, m_message(other.m_message)
 		{
 
 		}
 		ChangeTransaction(ChangeTransaction&& other) noexcept
 			: IChangeTransaction(other)
-			, m_oldValue(std::move(other.m_oldValue))
-			, m_newValue(std::move(other.m_newValue))
+			, m_message(std::move(other.m_message))
 		{
 
 		}
 		ChangeTransaction& operator=(const ChangeTransaction& other)
 		{
 			IChangeTransaction::operator=(other);
-			m_oldValue = other.m_oldValue;
-			m_newValue = other.m_newValue;
+			m_message = other.m_message;
 			return *this;
 		}
 		ChangeTransaction& operator=(ChangeTransaction&& other) noexcept
 		{
 			IChangeTransaction::operator=(other);
-			m_oldValue = std::move(other.m_oldValue);
-			m_newValue = std::move(other.m_newValue);
+			m_message = std::move(other.m_message);
 			return *this;
 		}
 		~ChangeTransaction()
@@ -57,31 +47,26 @@ namespace JsonDatabase
 
 		}
 
-		const T& getOldValue() const
+		const std::string& getMessage() const
 		{
-			return m_oldValue;
-		}
-		const T& getNewValue() const
-		{
-			return m_newValue;
+			return m_message;
 		}
 
 
 		bool operator==(const ChangeTransaction& other) const
 		{
-			return m_oldValue == other.m_oldValue && m_newValue == other.m_newValue;
+			return m_message == other.m_message;
 		}
 		bool operator!=(const ChangeTransaction& other) const
 		{
-			return m_oldValue != other.m_oldValue || m_newValue != other.m_newValue;
+			return m_message != other.m_message;
 		}
 
 		JsonValue toJson() const override
 		{
 			JsonValue val = IChangeTransaction::toJson();
 			JsonObject obj = val.get<JsonObject>();
-			obj["oldValue"] = m_oldValue.toJson();
-			obj["newValue"] = m_newValue.toJson();
+			obj["msg"] = m_message;
 			return obj;
 		}
 		bool fromJson(const JsonValue& value) override
@@ -90,11 +75,9 @@ namespace JsonDatabase
 			if (value.holds<JsonObject>() && success)
 			{
 				const JsonObject& obj = value.get<JsonObject>();
-				if (obj.contains("oldValue") && 
-					obj.contains("newValue"))
+				if (obj.contains("msg"))
 				{
-					bool success = m_oldValue.fromJson(obj.find("oldValue")->second);
-					success &= m_newValue.fromJson(obj.find("newValue")->second);
+					m_message = obj.find("msg")->second.get<std::string>();
 					return success;
 				}
 			}
@@ -102,8 +85,6 @@ namespace JsonDatabase
 		}
 
 	private:
-		T m_oldValue;
-		T m_newValue;
-		
+		std::string m_message;
 	};
 }

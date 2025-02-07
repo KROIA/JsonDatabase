@@ -9,7 +9,7 @@ namespace JsonDatabase
 	template<class T>
 	class JDObjectValue : public IJDObjectValue
 	{
-		class JDObjectValueContainer : public IJsonValue
+		/*class JDObjectValueContainer : public IJsonValue
 		{
 		public:
 			JDObjectValueContainer(const T &var)
@@ -29,7 +29,7 @@ namespace JsonDatabase
 			}
 		private:
 			T var;
-		};
+		};*/
 	public:
 		
 
@@ -74,7 +74,7 @@ namespace JsonDatabase
 				return *this;
 			T old = m_value;
 			m_value = other.m_value;
-			onValueChange(std::make_shared<ChangeTransaction<JDObjectValueContainer>>(getParamName(), old, m_value));
+			onValueChange(std::make_shared<ValueChangeTransaction>(getParamName(), JsonValue(old), JsonValue(m_value)));
 			return *this;
 		}
 		JDObjectValue& operator=(const T& other)
@@ -83,7 +83,7 @@ namespace JsonDatabase
 				return *this;
 			T old = m_value;
 			m_value = other;
-			onValueChange(std::make_shared<ChangeTransaction<JDObjectValueContainer>>(getParamName(), old, m_value));
+			onValueChange(std::make_shared<ValueChangeTransaction>(getParamName(), JsonValue(old), JsonValue(m_value)));
 			return *this;
 		}
 
@@ -202,15 +202,15 @@ namespace JsonDatabase
 			if (value.holds<T>())
 			{
 				m_value = value.get<T>();
-				clearChangeTransactions();
+				clearValueChangeTransactions();
 				return true;
 			}
 			return false;
 		}
 
-		void clearChangeTransactions() override
+		void clearValueChangeTransactions() override
 		{
-			IJDObjectValue::clearChangeTransactions();
+			IJDObjectValue::clearValueChangeTransactions();
 			m_orgValue = m_value;
 		}
 
@@ -222,7 +222,7 @@ namespace JsonDatabase
 		void discardChanges() override
 		{
 			m_value = m_orgValue;
-			clearChangeTransactions();
+			clearValueChangeTransactions();
 		}
 
 	private:

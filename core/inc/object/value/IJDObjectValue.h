@@ -3,7 +3,7 @@
 #include "JsonDatabase_base.h"
 #include "JsonDatabase_Declaration.h"
 #include "Json/IJsonValue.h"
-#include "changehistory/ChangeTransaction.h"
+#include "changehistory/ValueChangeTransaction.h"
 #include <vector>
 
 namespace JsonDatabase
@@ -21,11 +21,11 @@ namespace JsonDatabase
 			return m_paramName;
 		}
 
-		const std::vector<std::shared_ptr<IChangeTransaction>>& getChangeTransactions() const
+		const std::vector<std::shared_ptr<IChangeTransaction>>& getValueChangeTransactions() const
 		{
 			return m_changeHistory;
 		}
-		virtual void clearChangeTransactions();
+		virtual void clearValueChangeTransactions();
 
 		/**
 		 * @brief 

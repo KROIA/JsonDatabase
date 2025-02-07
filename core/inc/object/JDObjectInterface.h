@@ -260,6 +260,11 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
          */
         bool hasWrongData() const { return m_hasWrongData; }
 
+
+        void markForRemoval();
+        void markForNotRemoval();
+		bool markedForRemoval() const { return m_marketdForRemoval; }
+
 		/**
 		 * @brief 
 		 * Gets the change transactions of the object
@@ -342,8 +347,12 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
 
         mutable bool m_hasBeenSaved;
 		mutable bool m_hasWrongData;
+        mutable bool m_marketdForRemoval;
 
 		std::vector<IJDObjectValue*> m_values;
+
+        // Changes about the object itself, not including the value changes
+		std::vector<std::shared_ptr<IChangeTransaction>> m_changeHistory;
 
     public:
 
