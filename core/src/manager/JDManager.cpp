@@ -570,7 +570,7 @@ bool JDManager::saveObject_internal(const JDObject &obj, unsigned int timeoutMil
             m_logger->logError("Object (id=" + ID.get()->toString() + ") can't be saved");
     if (success)
     {
-		obj->markAsUnchanged();
+		//obj->markAsUnchanged();
         obj->clearChangeTransactions();
     }
     return success;
@@ -727,7 +727,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
         {
             if (successList[i])
             {
-                objList[i]->markAsUnchanged();
+                //objList[i]->markAsUnchanged();
                 objList[i]->clearChangeTransactions();
                 if (m_logger)
                 {

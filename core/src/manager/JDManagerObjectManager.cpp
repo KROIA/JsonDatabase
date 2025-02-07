@@ -63,11 +63,11 @@ namespace JsonDatabase
             {
                 Error lockErr;
 				m_manager.lockObject(obj, lockErr);
-                if (lockErr == Error::none)
+                /*if (lockErr == Error::none)
                 {
                     m_manager.saveObjects_internal({ obj }, 1000, nullptr, false);
                     m_manager.unlockObject(obj, lockErr);
-                }
+                }*/
             }
             return success;
         }
@@ -95,8 +95,8 @@ namespace JsonDatabase
             {
                 std::vector<Error> lockErr;
                 m_manager.lockObjects(addedObjs, lockErr);
-                m_manager.saveObjects_internal(addedObjs, 1000, nullptr, false);
-                m_manager.unlockObjects(addedObjs, lockErr);
+                //m_manager.saveObjects_internal(addedObjs, 1000, nullptr, false);
+                //m_manager.unlockObjects(addedObjs, lockErr);
             }
             return success;
         }

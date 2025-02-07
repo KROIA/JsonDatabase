@@ -56,7 +56,7 @@ void UIPerson::on_save_pushButton_clicked()
 
 	m_person->firstName = ui.firstName_lineEdit->text().toStdString();
 	m_person->lastName = ui.lastName_lineEdit->text().toStdString();
-	m_person->markAsChanged();
+	//m_person->markAsChanged();
 }
 void UIPerson::on_wrongData_pushButton_clicked()
 {

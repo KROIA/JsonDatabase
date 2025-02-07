@@ -126,7 +126,7 @@ namespace JsonDatabase
 			connect(m_searchBox, &QLineEdit::textChanged, this, &JDObjectListWidget::onLineEditChanged);
 			// add search icon to the search box
 			QLabel* searchIcon = new QLabel(m_searchFrame);
-			searchIcon->setPixmap(Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::search).pixmap(16, 16));
+			searchIcon->setPixmap(Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::filter).pixmap(16, 16));
 			searchIcon->setAlignment(Qt::AlignCenter);
 			m_searchBox->setClearButtonEnabled(true);
 			m_searchBox->setPlaceholderText("Filter");

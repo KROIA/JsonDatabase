@@ -223,20 +223,22 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
          * @brief
          * Marks the object as changed to indicate that there are unsaved changes
          */
-        void markAsChanged() const;
+        //void markAsChanged() const;
 
         /*
          * @brief
          * Marks the object as unchanged to indicate that there are no unsaved changes
          */
-        void markAsUnchanged() const;
+        //void markAsUnchanged() const;
 
         /**
          * @brief
          * Gets the change State of the object
          * @return true if the object has changes, otherwise false
          */
-        bool hasChanges() const { return m_hasChanges; }
+        //bool hasChanges() const { return m_hasChanges; }
+        bool hasChanges() const;
+		virtual void onValueChanged(IJDObjectValue* value) const;
 
         /**
          * @brief
@@ -257,8 +259,24 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
          */
         bool hasWrongData() const { return m_hasWrongData; }
 
+		/**
+		 * @brief 
+		 * Gets the change transactions of the object
+		 * @return List of changes that were made to the objects values
+		 */
 		std::vector<std::shared_ptr<IChangeTransaction>> getChangeTransactions() const;
+
+		/**
+		 * @brief 
+		 * Gets the change transactions of the object as a json array
+		 * @return Json array with the changes that were made to the objects values
+		 */
 		JsonValue getChangeTransactionsJson() const;
+
+		/**
+		 * @brief 
+		 * Clears all change transactions of the object
+		 */
 		void clearChangeTransactions();
 
     protected:
@@ -324,7 +342,7 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         */
         JDObjectID::IDType m_shallowID;
 
-        mutable bool m_hasChanges;
+        mutable bool m_hasBeenSaved;
 		mutable bool m_hasWrongData;
 
 		std::vector<IJDObjectValue*> m_values;
