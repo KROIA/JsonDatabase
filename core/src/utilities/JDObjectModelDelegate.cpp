@@ -39,7 +39,7 @@ namespace JsonDatabase
             painter->save();
 
             QIcon objIcon = obj->getIcon();
-            QColor objColor = obj->getColor();
+            //QColor objColor = obj->getColor();
             bool hasIcon = !objIcon.isNull();
             QRect iconRect = option.rect;
             int iconSize = option.rect.height();

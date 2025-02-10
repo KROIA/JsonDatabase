@@ -28,6 +28,7 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
         friend Internal::JDManagerObjectManager;
         friend Utilities::JsonUtilities;
         friend Internal::JDObjectManager;
+        friend IJDObjectValue;
 
         friend class AutoObjectAddToRegistry;
 
@@ -263,31 +264,18 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
 
         /**
          * @brief 
-		 * Define a custom color which is used to color the object in the object list view
+		 * Define a custom color which can be used if a object specific color is used
          * @return 
          */
         virtual QColor getColor() const { return QColor(0,0,0,0); }
 
         /**
          * @brief
-         * Marks the object as changed to indicate that there are unsaved changes
+		 * Gets the change transactions of the object
+         * @return true if parameters are changed since the last save/load
          */
-        //void markAsChanged() const;
-
-        /*
-         * @brief
-         * Marks the object as unchanged to indicate that there are no unsaved changes
-         */
-        //void markAsUnchanged() const;
-
-        /**
-         * @brief
-         * Gets the change State of the object
-         * @return true if the object has changes, otherwise false
-         */
-        //bool hasChanges() const { return m_hasChanges; }
         bool hasChanges() const;
-		virtual void onValueChanged(IJDObjectValue* value) const;
+		
 
         /**
          * @brief
@@ -361,6 +349,21 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
 
 
     class JSON_DATABASE_API AutoObjectAddToRegistry
+        /**
+        virtual void onValueChanged(IJDObjectValue* value) const;
+         */
+         * Called from the IJDObjectValue when its value changes
+         * @brief
+        /**
+
+		void addValue(IJDObjectValue& value);
+         */
+		 * Values need to be added in the constructor of the object.
+         * from the database.
+		 * Registers a value to the object, values added by this function are automaticly saved and loaded
+         * @brief
+
+		
     {
     public:
         AutoObjectAddToRegistry(JDObject obj);
