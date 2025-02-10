@@ -249,7 +249,7 @@ class JSON_DATABASE_EXPORT JDManager:
         bool m_useZipFormat;
 
         // Prevent multiple updates at the same time
-        bool m_signleEntryUpdateLock;
+        bool m_signalEntryUpdateLock;
         bool m_setUp = false;
         QTimer m_updateTimer;
 

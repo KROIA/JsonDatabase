@@ -36,8 +36,9 @@ namespace JsonDatabase
             const std::string& getDatabaseName() const;
             const std::string& getDatabaseFileName() const;
             std::string getDatabasePath() const;
-
             std::string getDatabaseFilePath() const;
+
+			const std::string& getDatabaseChangeHistoryFileName() const;
             std::string getDatabaseChangeHistoryFilePath() const;
 
             bool isLoggedOnDatabase() const;

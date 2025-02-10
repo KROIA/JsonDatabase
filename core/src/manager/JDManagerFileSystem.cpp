@@ -122,6 +122,10 @@ namespace JsonDatabase
         {
             return  getDatabasePath() + "\\" + m_databaseFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
         }
+        const std::string& JDManagerFileSystem::getDatabaseChangeHistoryFileName() const
+        {
+			return m_databaseChangeHistoryFileName;
+        }
         std::string JDManagerFileSystem::getDatabaseChangeHistoryFilePath() const
         {
             return  getDatabasePath() + "\\" + m_databaseChangeHistoryFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
