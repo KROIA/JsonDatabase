@@ -142,7 +142,7 @@ namespace JsonDatabase
 
 			m_model = new Utilities::JDObjectItemModel(m_manager, this);
 			m_model->setFilter(m_searchFilter);
-			m_delegate = new Utilities::JDObjectModelDelegate(m_model);
+			m_delegate = new Utilities::JDObjectModelDelegate(m_model, m_objectListWidget);
 
 			
 			

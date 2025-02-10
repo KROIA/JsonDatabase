@@ -3,6 +3,7 @@
 #include "object/JDObjectManager.h"
 #include "ui/JDObjectListWidget.h"
 #include "changehistory/ChangeTransaction.h"
+#include "utilities/ResourceManager.h"
 
 
 
@@ -233,6 +234,25 @@ void JDObjectInterface::loadFromDatabaseAsync()
 {
     if (m_manager)
 		m_manager->loadFromDatabaseAsync();
+}
+
+const QIcon& JDObjectInterface::getIcon() const
+{
+    static QIcon icon;
+    return icon;
+}
+const QIcon& JDObjectInterface::getStatusIcon(Status status) const
+{
+    switch (status)
+    {
+    case Status::Default: return getIcon();
+    case Status::Locked: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::lock);
+    case Status::UnsavedChanges: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::asterisk);
+    case Status::WrongData: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::warning);
+    case Status::MarkedForRemoval: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::deleted);
+    }
+	static QIcon defaultIcon;
+	return defaultIcon;
 }
 /*void JDObjectInterface::markAsChanged() const
 { 

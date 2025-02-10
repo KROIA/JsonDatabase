@@ -712,7 +712,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
     // Remove deleted objects
     std::vector<JDObject> removedObjs;
     removedObjs.reserve(objList.size());
-    for (size_t j = 0; j < objList.size(); ++j)
+    /*for (size_t j = 0; j < objList.size(); ++j)
     {
         if (objList[j]->markedForRemoval())
         {
@@ -720,15 +720,17 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
             objList.erase(objList.begin() + j);
             --j;
         }
-    }
+    }*/
     for (size_t i = 0; i < origJsonData.size(); ++i)
     {
         JDObjectID::IDType id = JDObjectInterface::getIDFromJson(origJsonData[i].get<JsonObject>());
         for (size_t j = 0; j < objList.size(); ++j)
         {
+            if (objList[j]->markedForRemoval())
             if (id == objList[j]->getShallowObjectID())
             {
                 origJsonData.erase(origJsonData.begin() + i);
+                removedObjs.push_back(objList[j]);
                 objList.erase(objList.begin() + j);
                 --i;
                 break;

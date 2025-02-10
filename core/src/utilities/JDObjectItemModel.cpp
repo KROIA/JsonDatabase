@@ -72,7 +72,8 @@ namespace JsonDatabase
 				return QVariant();
 			switch (role)
 			{
-				case Qt::ToolTipRole:	return obj->getToolTip().c_str();
+				//case Qt::ToolTipRole:	return obj->getToolTip().c_str();
+				case Qt::ToolTipRole:	return QVariant();
 			}
 			return QStandardItemModel::data(index, role);
 		}
