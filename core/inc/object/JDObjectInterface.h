@@ -31,12 +31,13 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         friend class AutoObjectAddToRegistry;
 
     public:
-        enum class State
+        enum class Status
         {
             Default,
-            Error,
+            WrongData,
             UnsavedChanges,
-            Locked
+            Locked,
+            MarkedForRemoval
         };
 
         JDObjectInterface();
@@ -101,8 +102,48 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
 
 
         virtual const std::string& className() const = 0;
+
+        /**
+         * @brief
+         * Default tooltip for that object
+         */
 		virtual std::string getToolTip() const { return ""; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object is locked and the cursor is over the lock icon
+         */
+        virtual std::string getLockedToolTip() const { return "Object locked"; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object has unsaved changes and the cursor is over the unsaved changes icon
+         */
+        virtual std::string getUnsavedChangesToolTip() const { return "Unsaved changes"; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object has wrong data and the cursor is over the wrong data icon
+         */
+        virtual std::string getWrongDataToolTip() const { return "Wrong data"; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object is marked for removal and the cursor is over the removal icon
+         */
+        virtual std::string getMarkedForRemovalToolTip() const { return "Marked for removal"; }
+
+        /**
+         * @brief
+         * Text that gets displayed in the JDObjectListWidget
+         */
 		virtual std::string getDisplayName() const { return className(); }
+
+        /**
+         * @brief
+		 * Used as default sizeHint for the JDObjectListWidget
+         */
+		virtual QSize getSizeHint() const { return QSize(80, 20); }
 
         /**
          * @brief 
@@ -210,7 +251,14 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
          * Define a custom icon which is visible in the object list view
 		 * @return 
 		 */
-		virtual QIcon getIcon() const { return QIcon(); }
+        virtual const QIcon& getIcon() const;
+
+        /**
+         * @brief
+         * Icons that display the different status values a object can have. 
+         * This is visible in the JDObjectListWidget
+         */
+		virtual const QIcon& getStatusIcon(Status status) const;
 
         /**
          * @brief 

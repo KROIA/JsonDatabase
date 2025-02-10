@@ -29,9 +29,10 @@ public:
     Person();
     ~Person();
 
-    QIcon getIcon() const override
+    const QIcon &getIcon() const override
     {
-		return QIcon(":/JDIcons/user.png");
+        static QIcon icon(":/JDIcons/user.png");
+        return icon;
     }
 
     bool operator==(const Person& other);

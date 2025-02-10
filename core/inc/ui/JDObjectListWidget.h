@@ -88,13 +88,13 @@ namespace JsonDatabase
 
 				void setSearchFilter(const std::string& search)
 				{
-					m_search = search;
+					m_search = QString::fromStdString(search).toLower().toStdString();
 				}
 				bool filter(const JDObject& obj) const override
 				{
 					if (m_search.empty())
 						return true;
-					return obj->getDisplayName().find(m_search) != std::string::npos;
+					return QString::fromStdString(obj->getDisplayName()).toLower().toStdString().find(m_search) != std::string::npos;
 				}
 
 				private:
