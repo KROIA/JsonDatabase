@@ -29,7 +29,7 @@ namespace JsonDatabase
         , JDManagerFileSystem(*this, m_mutex)
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_useZipFormat(false)
-        , m_signleEntryUpdateLock(false)
+        , m_signalEntryUpdateLock(false)
     {
         qRegisterMetaType<std::vector<JDObject>>();
         qRegisterMetaType<JDObject>();
@@ -51,7 +51,7 @@ namespace JsonDatabase
         , JDManagerAsyncWorker(*this, m_mutex)
         , m_user(other.m_user)
         , m_useZipFormat(other.m_useZipFormat)
-        , m_signleEntryUpdateLock(false)
+        , m_signalEntryUpdateLock(false)
     {
         if (other.m_logger)
         {
@@ -712,7 +712,7 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
     // Remove deleted objects
     std::vector<JDObject> removedObjs;
     removedObjs.reserve(objList.size());
-    /*for (size_t j = 0; j < objList.size(); ++j)
+    for (size_t j = 0; j < objList.size(); ++j)
     {
         if (objList[j]->markedForRemoval())
         {
@@ -720,18 +720,15 @@ bool JDManager::saveObjects_internal(std::vector<JDObject> objList, unsigned int
             objList.erase(objList.begin() + j);
             --j;
         }
-    }*/
+    }
     for (size_t i = 0; i < origJsonData.size(); ++i)
     {
         JDObjectID::IDType id = JDObjectInterface::getIDFromJson(origJsonData[i].get<JsonObject>());
-        for (size_t j = 0; j < objList.size(); ++j)
+        for (size_t j = 0; j < removedObjs.size(); ++j)
         {
-            if (objList[j]->markedForRemoval())
-            if (id == objList[j]->getShallowObjectID())
+            if (id == removedObjs[j]->getShallowObjectID())
             {
                 origJsonData.erase(origJsonData.begin() + i);
-                removedObjs.push_back(objList[j]);
-                objList.erase(objList.begin() + j);
                 --i;
                 break;
             }
@@ -957,11 +954,11 @@ const std::string& JDManager::getLoadModeStr(int mode) const
 
 void JDManager::update()
 {
-    if(m_signleEntryUpdateLock)
+    if(m_signalEntryUpdateLock)
         return; // Update is already running
     if (!m_updateMutex.try_lock())
         return;
-    m_signleEntryUpdateLock = true;
+    m_signalEntryUpdateLock = true;
 
     JDManagerAsyncWorker::process();
     
@@ -971,7 +968,7 @@ void JDManager::update()
     //m_signals.emitIfNotEmpty();
     //m_signals.emitQueue();
 	emitSignals();
-    m_signleEntryUpdateLock = false;
+    m_signalEntryUpdateLock = false;
     m_updateMutex.unlock();
 
     /*SignalData data;
