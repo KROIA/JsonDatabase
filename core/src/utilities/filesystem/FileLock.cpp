@@ -70,6 +70,7 @@ namespace JsonDatabase
                 CloseHandle(fileHandle);
                
                 err = Error::unableToLockFile;
+                return false;
             }
             m_fileHandle = fileHandle;
             m_locked = true;
