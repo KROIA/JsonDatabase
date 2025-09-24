@@ -26,7 +26,7 @@
 namespace JsonDatabase
 {
 
-class JSON_DATABASE_EXPORT JDManager: 
+class JSON_DATABASE_API JDManager: 
     public QObject,
     public Internal::JDManagerObjectManager, 
     public Internal::JDManagerFileSystem,

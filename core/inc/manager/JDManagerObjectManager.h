@@ -18,7 +18,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT JDManagerObjectManager
+        class JSON_DATABASE_API JDManagerObjectManager
         {
             friend class JDManager;
         protected:

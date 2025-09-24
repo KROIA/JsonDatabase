@@ -11,7 +11,7 @@
 namespace JsonDatabase
 {
 	
-	class JSON_DATABASE_EXPORT JDObjectID
+	class JSON_DATABASE_API JDObjectID
 	{
 		friend JDObjectIDDomain;
 	public:

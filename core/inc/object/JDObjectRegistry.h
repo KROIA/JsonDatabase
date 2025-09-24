@@ -9,7 +9,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT JDObjectRegistry
+        class JSON_DATABASE_API JDObjectRegistry
         {
             JDObjectRegistry();
         public:

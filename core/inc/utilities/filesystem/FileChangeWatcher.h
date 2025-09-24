@@ -21,7 +21,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT FileChangeWatcher
+        class JSON_DATABASE_API FileChangeWatcher
         {
         public:
             enum Mode
@@ -81,7 +81,7 @@ namespace JsonDatabase
         };
 
 
-        class JSON_DATABASE_EXPORT ManagedFileChangeWatcher
+        class JSON_DATABASE_API ManagedFileChangeWatcher
         {
             friend JDManagerFileSystem;
             friend JDObjectLocker;

@@ -17,7 +17,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSON_DATABASE_EXPORT JDUserRegistration : public AbstractRegistry
+		class JSON_DATABASE_API JDUserRegistration : public AbstractRegistry
 		{
 		public:
 
@@ -37,7 +37,7 @@ namespace JsonDatabase
 			bool checkForUserChange(std::vector<JDUser>& loggedOnUsers, std::vector<JDUser>& loggedOffUsers) const;
 
 		private:
-			class JSON_DATABASE_EXPORT LockEntryObjectImpl : public LockEntryObject
+			class JSON_DATABASE_API LockEntryObjectImpl : public LockEntryObject
 			{
 			public:
 				LockEntryObjectImpl(const std::string& key);

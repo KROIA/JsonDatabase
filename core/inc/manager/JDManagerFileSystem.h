@@ -16,7 +16,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT JDManagerFileSystem
+        class JSON_DATABASE_API JDManagerFileSystem
         {
         protected:
             JDManagerFileSystem(

@@ -14,7 +14,7 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSON_DATABASE_EXPORT LockedFileAccessor
+		class JSON_DATABASE_API LockedFileAccessor
 		{
 		public:
 			enum class Error

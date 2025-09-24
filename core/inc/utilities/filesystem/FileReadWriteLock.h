@@ -17,7 +17,7 @@ namespace JsonDatabase
 {
 	namespace Internal
 	{
-		class JSON_DATABASE_EXPORT FileReadWriteLock
+		class JSON_DATABASE_API FileReadWriteLock
 		{
 		public:
 			enum Access

@@ -6,7 +6,7 @@
 
 namespace JsonDatabase
 {
-	class JSON_DATABASE_EXPORT JsonSerializer
+	class JSON_DATABASE_API JsonSerializer
 	{
 	public:
 

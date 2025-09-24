@@ -8,7 +8,7 @@
 
 namespace JsonDatabase
 {
-	class JSON_DATABASE_EXPORT JsonDeserializer
+	class JSON_DATABASE_API JsonDeserializer
 	{
 	public:
 

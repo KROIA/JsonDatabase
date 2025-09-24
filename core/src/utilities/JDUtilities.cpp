@@ -25,7 +25,7 @@ namespace JsonDatabase
 			return errorString;
 		}
 
-		std::string JSON_DATABASE_EXPORT calculateMD5Hash(const std::string& filePath, Log::LogObject* logger, bool& success)
+		std::string JSON_DATABASE_API calculateMD5Hash(const std::string& filePath, Log::LogObject* logger, bool& success)
 		{
 			QFile file(filePath.c_str());
 			if (!file.open(QIODevice::ReadOnly)) {

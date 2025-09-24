@@ -18,7 +18,7 @@ namespace JsonDatabase
     
     
     
-class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializable
+class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
 {
         friend JDManager;
         friend Internal::JDManagerObjectManager;
@@ -107,7 +107,7 @@ class JSON_DATABASE_EXPORT JDObjectInterface: protected Utilities::JDSerializabl
         bool getSaveData(JsonObject& obj) const;
 
 
-    class JSON_DATABASE_EXPORT AutoObjectAddToRegistry
+    class JSON_DATABASE_API AutoObjectAddToRegistry
     {
     public:
         AutoObjectAddToRegistry(JDObject obj);

@@ -16,7 +16,7 @@ namespace JsonDatabase
 {
     namespace Internal
     {
-        class JSON_DATABASE_EXPORT JDManagerAsyncWorker
+        class JSON_DATABASE_API JDManagerAsyncWorker
         {
             friend JDManager;
             JDManagerAsyncWorker(
