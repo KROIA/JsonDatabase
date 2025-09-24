@@ -29,7 +29,7 @@ namespace JsonDatabase
 
 /// USER_SECTION_END
 
-	class JSON_DATABASE_EXPORT LibraryInfo
+	class JSON_DATABASE_API LibraryInfo
 	{
 		LibraryInfo() = delete;
 		LibraryInfo(const LibraryInfo&) = delete;

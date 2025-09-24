@@ -11,13 +11,13 @@
 #ifndef BUILD_STATIC
 	//#pragma message("JSONDATABASE_LIB is a shared library")
 	#if defined(JSONDATABASE_LIB)
-		#define JSON_DATABASE_EXPORT __declspec(dllexport)
+		#define JSON_DATABASE_API __declspec(dllexport)
 	#else
-		#define JSON_DATABASE_EXPORT __declspec(dllimport)
+		#define JSON_DATABASE_API __declspec(dllimport)
 	#endif
 #else 
 	//#pragma message("JSONDATABASE_LIB is a static library")
-	#define JSON_DATABASE_EXPORT
+	#define JSON_DATABASE_API
 #endif
 
 /// USER_SECTION_START 2

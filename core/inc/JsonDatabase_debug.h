@@ -89,7 +89,7 @@ namespace JsonDatabase
 /// USER_SECTION_START 4
 
 /// USER_SECTION_END
-	class JSON_DATABASE_EXPORT Profiler
+	class JSON_DATABASE_API Profiler
 	{
 	public:
 		/// USER_SECTION_START 5
@@ -112,7 +112,7 @@ namespace JsonDatabase
 
 
 #if LOGGER_LIBRARY_AVAILABLE == 1
-	class JSON_DATABASE_EXPORT Logger 
+	class JSON_DATABASE_API Logger 
 	{
 		/// USER_SECTION_START 8
 
