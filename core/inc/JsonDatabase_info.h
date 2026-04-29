@@ -6,6 +6,7 @@
 
 #include "JsonDatabase_global.h"
 #include "JsonDatabase_debug.h"
+#include "JsonDatabase_meta.h"
 
 #include <sstream>
 
@@ -53,15 +54,15 @@ namespace JsonDatabase
 		};
 
 
-		// Current version of the library
-		static constexpr int versionMajor				= 1;
-		static constexpr int versionMinor				= 0;
-		static constexpr int versionPatch				= 0;
+		// Current version of the library — driven by LIBRARY_VERSION in CMakeLists.txt
+		static constexpr int versionMajor				= JsonDatabase_VERSION_MAJOR;
+		static constexpr int versionMinor				= JsonDatabase_VERSION_MINOR;
+		static constexpr int versionPatch				= JsonDatabase_VERSION_PATCH;
 
 		static constexpr Version version{ versionMajor, versionMinor, versionPatch };
 
-		// Library name
-		static constexpr const char* name				= "JsonDatabase";
+		// Library name — driven by LIBRARY_NAME in CMakeLists.txt
+		static constexpr const char* name				= JsonDatabase_LIBRARY_NAME;
 		static constexpr const char* author				= "Alex Krieg";
 		static constexpr const char* email				= "";
 		static constexpr const char* website			= "";
@@ -107,7 +108,7 @@ namespace JsonDatabase
 		// QT_MODULES contains the value "Widgets"
 		// It creates a widget with the library information
 		// No button is created to close the widget
-		static QWidget *createInfoWidget(QWidget* parent = nullptr);
+		static QWidget *createInfoWidget(QWidget* parent = nullptr, bool disableHyperlink = false);
 
 /// USER_SECTION_START 5
 

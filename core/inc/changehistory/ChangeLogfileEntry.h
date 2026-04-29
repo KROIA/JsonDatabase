@@ -7,13 +7,13 @@
 
 namespace JsonDatabase
 {
-	class JSON_DATABASE_EXPORT ChangeLogfileEntry : public Utilities::JDSerializable
+	class JSON_DATABASE_API ChangeLogfileEntry : public Utilities::JDSerializable
 	{
 	public:
 		ChangeLogfileEntry();
 		~ChangeLogfileEntry();
 
-		virtual const std::string& className() const { return "ChangeLogfileEntry"; }
+		virtual const std::string className() const { return "ChangeLogfileEntry"; }
 
 
 		bool load(const JsonObject& obj) override;
@@ -25,13 +25,13 @@ namespace JsonDatabase
 		void clearChangeTransactions() { m_changeTransactions.clear(); }
 
 	protected:
-		/*class JSON_DATABASE_EXPORT AutoObjectAddToRegistry
+		/*class JSON_DATABASE_API AutoObjectAddToRegistry
 		{
 		public:
 			AutoObjectAddToRegistry(ChangeLogfileEntry obj);
 			int addToRegistry(ChangeLogfileEntry obj);
 		};
-        class JSON_DATABASE_EXPORT ChangeLogFileEntryRegistry
+        class JSON_DATABASE_API ChangeLogFileEntryRegistry
         {
             ChangeLogFileEntryRegistry();
         public:

@@ -11,7 +11,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSON_DATABASE_EXPORT JDObjectItemModel : public QStandardItemModel
+		class JSON_DATABASE_API JDObjectItemModel : public QStandardItemModel
 		{
 			Q_OBJECT
 			public:

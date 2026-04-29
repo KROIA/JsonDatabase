@@ -9,7 +9,7 @@ namespace JsonDatabase
     namespace Utilities
     {
         class JDObjectItemModel;
-        class JSON_DATABASE_EXPORT JDObjectModelDelegate: public QStyledItemDelegate 
+        class JSON_DATABASE_API JDObjectModelDelegate: public QStyledItemDelegate 
         {
             Q_OBJECT
 

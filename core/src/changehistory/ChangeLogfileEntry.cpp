@@ -14,11 +14,13 @@ namespace JsonDatabase
 
 	bool ChangeLogfileEntry::load(const JsonObject& obj)
 	{
-
+        JD_UNUSED(obj);
+        return false;
 	}
 	bool ChangeLogfileEntry::save(JsonObject& obj) const
 	{
-
+        JD_UNUSED(obj);
+        return false;
 	}
 
 

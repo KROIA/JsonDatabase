@@ -13,7 +13,7 @@ namespace JsonDatabase
 	namespace UI
 	{
 		class JDUserWidget;
-		class JSON_DATABASE_EXPORT JDUserListWidget : public QWidget
+		class JSON_DATABASE_API JDUserListWidget : public QWidget
 		{
 			Q_OBJECT
 			public:

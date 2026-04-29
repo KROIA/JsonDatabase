@@ -9,7 +9,7 @@ namespace JsonDatabase
 {
 	namespace UI
 	{
-		class JSON_DATABASE_EXPORT JDObjectLockDataWidget : public QWidget
+		class JSON_DATABASE_API JDObjectLockDataWidget : public QWidget
 		{
 			Q_OBJECT
 			public:

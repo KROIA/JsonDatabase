@@ -29,7 +29,7 @@ namespace JsonDatabase
 				void repaint();
 			};
 		}
-		class JSON_DATABASE_EXPORT JDObjectListWidget : public QWidget
+		class JSON_DATABASE_API JDObjectListWidget : public QWidget
 		{
 			Q_OBJECT
 			public:

@@ -8,7 +8,7 @@ namespace JsonDatabase
 {
 	namespace Utilities
 	{
-		class JSON_DATABASE_EXPORT ResourceManager
+		class JSON_DATABASE_API ResourceManager
 		{
 			ResourceManager();
 			static ResourceManager& getInstance();
