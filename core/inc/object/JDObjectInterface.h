@@ -347,23 +347,22 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
         bool saveInternal(JsonObject& obj) const;
         bool getSaveData(JsonObject& obj) const;
 
-
-    class JSON_DATABASE_API AutoObjectAddToRegistry
         /**
-        virtual void onValueChanged(IJDObjectValue* value) const;
-         */
-         * Called from the IJDObjectValue when its value changes
          * @brief
-        /**
-
-		void addValue(IJDObjectValue& value);
-         */
-		 * Values need to be added in the constructor of the object.
-         * from the database.
 		 * Registers a value to the object, values added by this function are automaticly saved and loaded
+         * from the database.
+		 * Values need to be added in the constructor of the object.
+         */
+		void addValue(IJDObjectValue& value);
+
+        /**
          * @brief
+         * Called from the IJDObjectValue when its value changes
+         */
+        virtual void onValueChanged(IJDObjectValue* value) const;
 
 		
+    class JSON_DATABASE_API AutoObjectAddToRegistry
     {
     public:
         AutoObjectAddToRegistry(JDObject obj);
