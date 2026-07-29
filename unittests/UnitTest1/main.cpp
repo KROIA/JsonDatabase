@@ -43,19 +43,5 @@ int main(int argc, char* argv[])
 	t.start();
 	
 
-#ifdef QT_WIDGETS_ENABLED
-	QWidget* widget = JsonDatabase::LibraryInfo::createInfoWidget();
-	if (widget)
-		widget->show();
-#endif
-#ifdef QT_ENABLED
-	bool ret = app.exec();
-	t.quit();
-	t.wait();
-	return ret;
-#else
-	t.quit();
-	t.wait();
-	return 0;
-#endif
+	return results.getSuccess();
 }
