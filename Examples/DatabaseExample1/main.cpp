@@ -23,8 +23,8 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
 
-    JDManager manager("database", "MyData", "USER");
-    manager.setup();
+    JDManager manager;
+    manager.setup("database", "MyData", "USER");
     //JDManager manager("C:\\Users\\alexk\\Documents\\Privat\\Softwareentwicklung\\QT\\Projekte\\JsonDatabase\\example\\bin\\database","sessionID","USER");
     //manager.addObjectDefinition<A>();
     //manager.addObjectDefinition<B>();
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     JDObject c1(new C());
     JDObject c2(new C());
 
-    QObject::connect(&manager, &JDManager::onSaveObjectsDone, [](bool s) {onSaveCallback(s); });
+    QObject::connect(&manager, &JDManager::saveObjectsDone, [](bool s) {onSaveCallback(s); });
 
 
     manager.addObject(a1);
@@ -61,7 +61,8 @@ int main(int argc, char *argv[])
 
     
 
-    JDManager manager2("database", "MyData", "USER");
+    JDManager manager2;
+    manager2.setup("database", "MyData", "USER");
     //manager2.addObjectDefinition<A>();
     //manager2.addObjectDefinition<B>();
     //manager2.addObjectDefinition<C>();

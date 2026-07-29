@@ -4,6 +4,7 @@
 #include "JsonDatabase_Declaration.h"
 #include "JDObjectID.h"
 #include "utilities/JDUser.h"
+#include "manager/JDObjectLocker.h"
 
 
 #include "Json/JsonValue.h"
@@ -31,16 +32,20 @@ namespace JsonDatabase
 			ChangeState getChangeState() const;
 
 
-			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
-			static bool getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
+			static std::vector<bool> getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut);
+			static std::vector<bool> getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut,
 				WorkProgress* progress);
 
 
 			// Interface for the Database Object
 			bool isLocked() const;
+			bool isLockedByMe() const;
+			bool isLockedByOther() const;
 			bool lock();
 			bool unlock();
-			Utilities::JDUser getLockOwner(bool& isLocked) const;
+			bool getLockOwner(Utilities::JDUser &user) const;
+			bool getLockData(JDObjectLocker::LockData& data) const;
+
 
 			bool saveToDatabase();
 			void saveToDatabaseAsync();
@@ -98,7 +103,7 @@ namespace JsonDatabase
 				bool newObjects;
 				bool removedObjects;
 				bool changedObjects;
-				bool overridingObjects;
+				//bool overridingObjects;
 			};
 			struct ManagedLoadMisc
 			{

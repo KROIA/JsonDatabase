@@ -244,6 +244,7 @@ namespace JsonDatabase
 		}
 		bool AbstractRegistry::LockEntryObject::load(const JsonObject& obj)
 		{
+			JD_REGISTRY_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
 			m_key = getKey(obj);
 			if(m_key.size() > 0)
 				return true;
@@ -289,11 +290,11 @@ namespace JsonDatabase
 				return true;
 			
 			Internal::LockedFileAccessor *file = new Internal::LockedFileAccessor(getPath(), getRegistrationFileName(), getFileEnding(), m_logger);
-			Internal::LockedFileAccessor::Error err = file->lock(Internal::LockedFileAccessor::AccessMode::readWrite);
-			if (err != Internal::LockedFileAccessor::Error::none)
+			Error err = file->lock(Internal::LockedFileAccessor::AccessMode::readWrite);
+			if (err != Error::none)
 			{
 				if (m_logger)
-					m_logger->logError("Failed to open registry file: " + file->getFullFilePath() + " Error: "+file->getErrorStr(err));
+					m_logger->logError("Failed to open registry file: " + file->getFullFilePath() + " Error: "+ errorToString(err));
 				delete file;
 				return false;
 			}
@@ -308,8 +309,8 @@ namespace JsonDatabase
 				return true;
 
 			Internal::LockedFileAccessor* file = new Internal::LockedFileAccessor(getPath(), getRegistrationFileName(), getFileEnding(), m_logger);
-			Internal::LockedFileAccessor::Error err = file->lock(Internal::LockedFileAccessor::AccessMode::readWrite, timeoutMillis);
-			if (err != Internal::LockedFileAccessor::Error::none)
+			Error err = file->lock(Internal::LockedFileAccessor::AccessMode::readWrite, timeoutMillis);
+			if (err != Error::none)
 			{
 				delete file;
 				return false;
@@ -329,10 +330,10 @@ namespace JsonDatabase
 			if (!isRegistryFileOpen())
 				return true;
 
-			Internal::LockedFileAccessor::Error err = m_registryFile->unlock();
+			Error err = m_registryFile->unlock();
 			delete m_registryFile;
 			m_registryFile = nullptr;
-			if(err != Internal::LockedFileAccessor::Error::none)
+			if(err != Error::none)
 				return false;
 			return true;
 		}
@@ -434,7 +435,7 @@ namespace JsonDatabase
 				return 0;
 			
 			auto err = m_registryFile->writeJsonFile(jsons);
-			if(err == Internal::LockedFileAccessor::Error::none)
+			if(err == Error::none)
 				return jsons.size();
 			return 0;
 		}
@@ -446,7 +447,7 @@ namespace JsonDatabase
 				return 0;
 
 			auto err = m_registryFile->readJsonFile(jsons);
-			if (err != Internal::LockedFileAccessor::Error::none)
+			if (err != Error::none)
 				return false;
 			return true;
 		}
@@ -479,7 +480,7 @@ namespace JsonDatabase
 				return false;
 
 			Internal::FileLock* lock = new Internal::FileLock(getLocksPath(), name, m_logger);
-			Internal::FileLock::Error err;
+			Error err;
 			if (!lock->lock(err))
 			{
 				delete lock;
@@ -497,10 +498,10 @@ namespace JsonDatabase
 
 			Internal::FileLock* lock = it->second;
 			m_fileLocks.erase(it);
-			Internal::FileLock::Error err;
+			Error err;
 			lock->unlock(err);
 			delete lock;
-			return err == Internal::FileLock::Error::none;
+			return err == Error::none;
 		}
 		bool AbstractRegistry::removeAllSelfOwnedObjects()
 		{

@@ -6,6 +6,7 @@
 #include "utilities/filesystem/FileChangeWatcher.h"
 #include "utilities/filesystem/LockedFileAccessor.h"
 #include "utilities/JDUserRegistration.h"
+#include "utilities/JDUser.h"
 
 #include "Logger.h"
 
@@ -20,13 +21,12 @@ namespace JsonDatabase
         {
         protected:
             JDManagerFileSystem(
-                const std::string& databasePath,
-                const std::string& databaseName,
                 JDManager& manager,
                 std::mutex &mtx);
             ~JDManagerFileSystem();
             void setParentLogger(Log::LogObject* parentLogger);
-            bool setup();
+            bool setup(const std::string& databasePath,
+                       const std::string& databaseName);
             bool stop();
         public:
 
@@ -36,10 +36,17 @@ namespace JsonDatabase
             const std::string& getDatabaseName() const;
             const std::string& getDatabaseFileName() const;
             std::string getDatabasePath() const;
-
             std::string getDatabaseFilePath() const;
 
+			const std::string& getDatabaseChangeHistoryFileName() const;
+            std::string getDatabaseChangeHistoryFilePath() const;
+
             bool isLoggedOnDatabase() const;
+
+            std::vector<Utilities::JDUser> getUsers() const
+			{
+				return m_userRegistration.getRegisteredUsers();
+			}
 
 
             static const std::string& getJsonFileEnding();
@@ -77,6 +84,7 @@ namespace JsonDatabase
             std::string m_databasePath;
             std::string m_databaseName;
             std::string m_databaseFileName;
+            std::string m_databaseChangeHistoryFileName;
 
             size_t m_slowUpdateCounter;
             size_t m_middleUpdateCounter;

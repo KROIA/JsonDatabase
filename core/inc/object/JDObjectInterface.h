@@ -4,11 +4,15 @@
 #include "JsonDatabase_Declaration.h"
 #include "utilities/JDSerializable.h"
 #include "utilities/JDUser.h"
+#include "manager/JDObjectLocker.h"
+#include "value/IJDObjectValue.h"
 #include "JDObjectID.h"
 #include <memory>
 
 #include "Json/JsonValue.h"
 #include <string>
+#include <QIcon>
+#include <QColor>
 
 
 
@@ -24,89 +28,340 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
         friend Internal::JDManagerObjectManager;
         friend Utilities::JsonUtilities;
         friend Internal::JDObjectManager;
+        friend IJDObjectValue;
 
         friend class AutoObjectAddToRegistry;
 
     public:
+        enum class Status
+        {
+            Default,
+            WrongData,
+            UnsavedChanges,
+            Locked,
+            MarkedForRemoval
+        };
+
         JDObjectInterface();
-        //JDObjectInterface(const JDObjectIDptr& id);
 
         
         JDObjectInterface(const JDObjectInterface &other);
         virtual ~JDObjectInterface();
 
+        /**
+         * @brief 
+         * Creates a deep clone with all its data using the copy constructor.
+		 * The shallow ID will be copied but the clone will not be managed by the database.
+		 * When the cloned object is added to the database, a new ID will be generated and assigned to the clone
+         * 
+		 * Usecases:
+		 *  - Create a new instance of the object with the same data to add it to the database
+		 *  - create a temporary work copy whose data can be saved back to the original after the work is done
+         * 
+		 * @return instance of a unmanaged clone of the object
+         */
         JDObject deepClone() const;
         template<typename T>
         std::shared_ptr<T> deepClone() const;
 
+        /**
+         * @brief 
+         * Creates a instance of the derived class with no data. 
+		 * The default constructor is called.
+         * The objects id will be set to a invalid id.
+         * 
+         * Usecases:
+		 *   - Loading from the database needs to instantiate not the base class but the derived class
+		 *     Using a list of instances of every type, the database can clone from that object table to get the right type
+         * 
+		 * @return instance of a unmanaged clone of the object with no data and no valid id.
+         */
         JDObject shallowClone() const;
         template<typename T>
         std::shared_ptr<T> shallowClone() const;
         
 
-        
+        /**
+         * @brief 
+		 * Searches the JsonArray for a Json object that contains a value for the object id that matches the <objID>
+         * @param jsons array to search from
+		 * @param objID which has to match to the object id in the json object
+		 * @return the first index of the json object that contains the object id, if no object was found the return value is std::npos
+         */
         static size_t getJsonIndexByID(const JsonArray& jsons, const JDObjectID::IDType& objID);
         static JDObjectID::IDType getIDFromJson(const JsonObject& obj);
+        static JDObjectID::IDType getIDFromJson(const JsonValue& value);
 
         bool loadFrom(const JDObject& source);
         bool loadFrom(const JDObjectInterface* source);
 
+        /**
+         * @brief 
+         * A Object is managed if it is added to a Database
+		 * @return true if the objects in a database, otherwise false
+         */
         bool isManaged() const;
 
 
         virtual const std::string& className() const = 0;
 
+        /**
+         * @brief
+         * Default tooltip for that object
+         */
+		virtual std::string getToolTip() const { return ""; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object is locked and the cursor is over the lock icon
+         */
+        virtual std::string getLockedToolTip() const { return "Object locked"; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object has unsaved changes and the cursor is over the unsaved changes icon
+         */
+        virtual std::string getUnsavedChangesToolTip() const { return "Unsaved changes"; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object has wrong data and the cursor is over the wrong data icon
+         */
+        virtual std::string getWrongDataToolTip() const { return "Wrong data"; }
+
+        /**
+         * @brief
+         * Toltip that gets displayed when the object is marked for removal and the cursor is over the removal icon
+         */
+        virtual std::string getMarkedForRemovalToolTip() const { return "Marked for removal"; }
+
+        /**
+         * @brief
+         * Text that gets displayed in the JDObjectListWidget
+         */
+		virtual std::string getDisplayName() const { return className(); }
+
+        /**
+         * @brief
+		 * Used as default sizeHint for the JDObjectListWidget
+         */
+		virtual QSize getSizeHint() const { return QSize(80, 20); }
+
+        /**
+         * @brief 
+		 * Gets the object id of the object. If the object is unmanaged the id is empty.
+		 * @return the object id
+         */
         JDObjectIDptr getObjectID() const;
 
-        /*
-            The shallow ID is a backup id for the case the object is unmanaged but was copied from an managed object.
-            This id has a weak bound to the object if it is managed.
-            Always try to use
-            JDObjectIDptr getObjectID() const;
-            to get the id of the object. Only if it returns an empty pointer use
-            const JDObjectID::IDType& getShallowObjectID() const;
-        */
+        /**
+         * @brief 
+         * The shallow ID is a backup id for the case the object is unmanaged but was copied from an managed object.
+         *   This id has a weak bound to the object if it is managed.
+         *  Always try to use
+         *  JDObjectIDptr getObjectID() const;
+         *  to get the id of the object. Only if it returns an empty pointer use
+         *  const JDObjectID::IDType& getShallowObjectID() const;
+		 * @return the shallow object id
+         */
         const JDObjectID::IDType& getShallowObjectID() const;
 
 
         // Interface to the database
-        /// @brief Returns the lock state of the object.
-        /// @return true if the object is locked, false otherwise.
+
+        /**
+         * @brief 
+		 * Gets the lock state of the object
+         * @return true if the object is locked, otherwise false
+         */
         bool isLocked() const;
 
-        /// @brief Locks the object.
-        /// @return true if the object was successfully locked, false otherwise.
+        /**
+		 * @brief
+		 * Gets the lock state of the object
+		 * @return true if the object is locked by the current session, otherwise false
+         */
+        bool isLockedByMe() const;
+
+		/**
+		 * @brief
+		 * Gets the lock state of the object
+		 * @return true if the object is locked by any user that is not this session, otherwise false
+         */
+        bool isLockedByOther() const;
+
+        /**
+         * @brief 
+		 * Tries to lock the object
+		 * @return true if the object was successfully locked, false otherwise
+         */
         bool lock();
 
-        /// @brief Unlocks the object.
-        /// @return true if the object was successfully unlocked, false otherwise.
+        /**
+         * @brief 
+		 * Tries to unlock the object
+		 * @return true if the object was successfully unlocked, false otherwise
+         */
         bool unlock();
 
-        /// @brief Returns the owner of the lock.
-        /// @return The owner of the lock.
-        Utilities::JDUser getLockOwner(bool &isLocked) const;
+        /**
+         * @brief 
+		 * Gets the user who locked the object if it is locked
+		 * @param user parameter to store the user
+		 * @return true if the object is locked by any user, otherwise false
+         */
+        bool getLockOwner(Utilities::JDUser &user) const;
 
-        /// @brief Saves the object to the database.
-        /// @return true if the object was successfully saved, false otherwise.
+        /**
+         * @brief 
+		 * Gets the lock data of the object if it is locked
+         * @param data 
+         * @return true if the object is locked, otherwise false
+         */
+        bool getLockData(Internal::JDObjectLocker::LockData& data) const;
+
+        /**
+         * @brief 
+		 * Tries to save the object to the database,
+         * this only works if the object is locked by this session
+		 * @return true if the object was successfully saved, false otherwise
+         */
         bool saveToDatabase();
 
-        /// @brief Saves the object to the database asynchronously.
+        /**
+         * @brief 
+		 * Tries to save the object to the database asynchronously,
+		 * this only works if the object is locked by this session
+         */
         void saveToDatabaseAsync();
 
-        /// @brief Loads the object from the database.
-        /// @return true if the object was successfully loaded, false otherwise.
+        /**
+         * @brief 
+		 * Tries to load the object from the database
+		 * @return true if the object was successfully loaded, false otherwise
+         */
         bool loadFromDatabase();
 
-        /// @brief Loads the object from the database asynchronously.
+        /**
+         * @brief 
+		 * Tries to load the object from the database asynchronously
+         */
         void loadFromDatabaseAsync();
 
+		/**
+		 * @brief 
+         * Define a custom icon which is visible in the object list view
+		 * @return 
+		 */
+        virtual const QIcon& getIcon() const;
+
+        /**
+         * @brief
+         * Icons that display the different status values a object can have. 
+         * This is visible in the JDObjectListWidget
+         */
+		virtual const QIcon& getStatusIcon(Status status) const;
+
+        /**
+         * @brief 
+		 * Define a custom color which can be used if a object specific color is used
+         * @return 
+         */
+        virtual QColor getColor() const { return QColor(0,0,0,0); }
+
+        /**
+         * @brief
+		 * Gets the change transactions of the object
+         * @return true if parameters are changed since the last save/load
+         */
+        bool hasChanges() const;
+		
+
+        /**
+         * @brief
+         * Marks the object to indicate that the object contains wrong data that can't be saved
+         */
+        void markAsWrongData() const;
+
+        /**
+         * @brief
+         * Marks the object to indicate that the object contains correct data that can be saved
+         */
+        void markAsCorrectData() const;
+
+        /**
+         * @brief
+         * Gets the state of the object
+         * @return true if the object contains wrong data, otherwise false
+         */
+        bool hasWrongData() const { return m_hasWrongData; }
+
+
+        void markForRemoval();
+        void markForNotRemoval();
+		bool markedForRemoval() const { return m_marketdForRemoval; }
+
+		/**
+		 * @brief 
+		 * Gets the change transactions of the object
+		 * @return List of changes that were made to the objects values
+		 */
+		std::vector<std::shared_ptr<IChangeTransaction>> getChangeTransactions() const;
+
+		/**
+		 * @brief 
+		 * Gets the change transactions of the object as a json array
+		 * @return Json array with the changes that were made to the objects values
+		 */
+		JsonValue getChangeTransactionsJson() const;
+
+		/**
+		 * @brief 
+		 * Clears all change transactions of the object
+		 */
+		void clearChangeTransactions();
+
     protected:
+        /**
+         * @brief 
+		 * Compares the data of this object with the json data of another object
+		 * @param obj with the data from another object
+		 * @return true if the data is equal, otherwise false
+         */
         bool equalData(const JsonObject& obj) const;
+
+        /**
+         * @brief 
+		 * Loads the data from a json object to this object
+		 * @param obj with the data to load
+		 * @return true if the data was successfully loaded, false otherwise
+         */
         bool loadInternal(const JsonObject& obj);
-        bool saveInternal(JsonObject& obj);
+
+        /**
+         * @brief 
+		 * Saves the data of this object to a json object
+		 * @param obj in which the data is saved
+		 * @return true if the data was successfully saved, false otherwise
+         */
+        bool saveInternal(JsonObject& obj) const;
         bool getSaveData(JsonObject& obj) const;
 
+        /**
+         * @brief
+		 * Registers a value to the object, values added by this function are automaticly saved and loaded
+         * from the database.
+		 * Values need to be added in the constructor of the object.
+         */
+		void addValue(IJDObjectValue& value);
 
+        /**
+         * @brief
+         * Called from the IJDObjectValue when its value changes
+         */
+        virtual void onValueChanged(IJDObjectValue* value) const;
+
+		
     class JSON_DATABASE_API AutoObjectAddToRegistry
     {
     public:
@@ -121,6 +376,9 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
 
         virtual JDObjectInterface* deepClone_internal() const = 0;
         virtual JDObjectInterface* shallowClone_internal() const = 0;
+
+        bool load(const JsonObject& obj) override;
+        bool save(JsonObject& obj) const override;
 
 
 
@@ -137,6 +395,15 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
         */
         JDObjectID::IDType m_shallowID;
 
+        mutable bool m_hasBeenSaved;
+		mutable bool m_hasWrongData;
+        mutable bool m_marketdForRemoval;
+
+		std::vector<IJDObjectValue*> m_values;
+
+        // Changes about the object itself, not including the value changes
+		std::vector<std::shared_ptr<IChangeTransaction>> m_changeHistory;
+
     public:
 
         static const std::string s_tag_objID;
@@ -145,6 +412,9 @@ class JSON_DATABASE_API JDObjectInterface: protected Utilities::JDSerializable
     private:
         
 };
+
+Q_DECLARE_METATYPE(std::vector<JDObject>);
+Q_DECLARE_METATYPE(JDObject);
 
 template<typename T>
 std::shared_ptr<T> JDObjectInterface::deepClone() const
@@ -173,7 +443,6 @@ std::shared_ptr<T> JDObjectInterface::shallowClone() const
 #define JD_OBJECT(classNameVal) \
     public: \
     JD_OBJECT_DECL_CONSTRUCTOR_COPY(classNameVal) \
-    JD_OBJECT_DECL_CONSTRUCTOR_ID(classNameVal) \
     JD_OBJECT_DECL_CLONE(classNameVal) \
     JD_OBJECT_DECL_CLASSNAME(classNameVal) \
     JD_OBJECT_DECL_AUTOREGISTRY(classNameVal) 
@@ -182,9 +451,6 @@ std::shared_ptr<T> JDObjectInterface::shallowClone() const
 
 #define JD_OBJECT_DECL_CONSTRUCTOR_COPY(classNameVal) \
     classNameVal(const classNameVal &other); 
-
-#define JD_OBJECT_DECL_CONSTRUCTOR_ID(classNameVal) \
-    //classNameVal(const JsonDatabase::JDObjectIDptr &id); 
 
 
 #define JD_OBJECT_DECL_CLONE(classNameVal) \
@@ -207,35 +473,20 @@ std::shared_ptr<T> JDObjectInterface::shallowClone() const
     {} 
 
 
-#define JD_OBJECT_IMPL_CONSTRUCTOR_ID(classNameVal) \
-    //classNameVal::classNameVal(const JsonDatabase::JDObjectIDptr &id) \
-    //    : JDObjectInterface(id) \
-    //{} 
-
 
 #define JD_OBJECT_IMPL_CLONE(classNameVal) \
     classNameVal* classNameVal::deepClone_internal() const \
     { \
         JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_5); \
         classNameVal* c = new classNameVal(*this); \
-        /* //c->setObjectID(this->getObjectID()); */ \
         return c; \
     } \
     classNameVal* classNameVal::shallowClone_internal() const \
     { \
         JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_5); \
         classNameVal* c = new classNameVal(); \
-        /* //c->setObjectID(this->getObjectID()); */ \
         return c; \
     } \
-    //classNameVal* classNameVal::clone_internal(const JsonDatabase::JsonValue &reader, const JsonDatabase::JDObjectIDptr &uniqueID) const\
-    //{ \
-    //    classNameVal* obj = new classNameVal(); \
-    //    obj->setObjectID(uniqueID); \
-    //    obj->loadInternal(reader); \
-    //    return obj; \
-    //} 
-
 
 #define JD_OBJECT_IMPL_CLASSNAME(classNameVal) \
     const std::string &classNameVal::className() const \
@@ -250,7 +501,6 @@ std::shared_ptr<T> JDObjectInterface::shallowClone() const
 
 
 #define JD_OBJECT_IMPL(classNameVal) \
-    JD_OBJECT_IMPL_CONSTRUCTOR_ID(classNameVal) \
     JD_OBJECT_IMPL_CLONE(classNameVal) \
     JD_OBJECT_IMPL_CLASSNAME(classNameVal) \
     JD_OBJECT_IMPL_AUTOREGISTRY(classNameVal) 

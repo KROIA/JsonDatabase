@@ -10,7 +10,7 @@ namespace JsonDatabase
         removedObjects = 4,
         allObjects = 7,
 
-        overrideChanges = 8,
+        //overrideChanges = 8,
     };
     
     class JDManager;

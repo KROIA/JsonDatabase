@@ -36,7 +36,7 @@ void UIPerson::setPerson(JDderivedObject<Person> person, bool editMode)
 	m_person = person;
 	if (m_person)
 	{
-		qDebug() << m_person->firstName.c_str();
+		qDebug() << m_person->firstName.getValue().c_str();
 		ui.objectID_label->setText(m_person->getObjectID()->toQString());
 		ui.firstName_lineEdit->setText(QString::fromStdString(m_person->firstName));
 		ui.lastName_lineEdit->setText(QString::fromStdString(m_person->lastName));
@@ -56,4 +56,21 @@ void UIPerson::on_save_pushButton_clicked()
 
 	m_person->firstName = ui.firstName_lineEdit->text().toStdString();
 	m_person->lastName = ui.lastName_lineEdit->text().toStdString();
+	//m_person->markAsChanged();
+}
+void UIPerson::on_wrongData_pushButton_clicked()
+{
+	if (!m_person || !m_editMode)
+		return;
+
+	if (m_person->hasWrongData())
+	{
+		m_person->markAsCorrectData();
+		ui.wrongData_pushButton->setText("Set WrongData");
+	}
+	else
+	{
+		m_person->markAsWrongData();
+		ui.wrongData_pushButton->setText("Set CorrectData");
+	}
 }

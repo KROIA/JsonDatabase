@@ -19,6 +19,7 @@ signals:
 private slots:
 
 	void on_save_pushButton_clicked();
+	void on_wrongData_pushButton_clicked();
 	
 private:
 	Ui::UIPerson ui;

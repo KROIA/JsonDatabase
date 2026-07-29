@@ -169,7 +169,7 @@ namespace JsonDatabase
             return success;
         }
 
-        JDObjectManager* JDObjectContainer::getObjectByID(const JDObjectIDptr& id)
+        JDObjectManager* JDObjectContainer::getObjectByID(const JDObjectIDptr& id) const
         {
             auto it = m_objectMap.find(id->get());
             if (it != m_objectMap.end())
@@ -178,7 +178,7 @@ namespace JsonDatabase
             }
             return nullptr;
         }
-        JDObjectManager* JDObjectContainer::getObjectByID(const JDObjectID::IDType& id)
+        JDObjectManager* JDObjectContainer::getObjectByID(const JDObjectID::IDType& id) const
         {
             auto it = m_objectMap.find(id);
             if (it != m_objectMap.end())
@@ -187,7 +187,7 @@ namespace JsonDatabase
             }
             return nullptr;
         }
-        JDObjectManager* JDObjectContainer::getObjectByPtr(JDObjectInterface* obj)
+        JDObjectManager* JDObjectContainer::getObjectByPtr(JDObjectInterface* obj) const
         {
             auto it = m_objectPtrMap.find(obj);
             if (it != m_objectPtrMap.end())

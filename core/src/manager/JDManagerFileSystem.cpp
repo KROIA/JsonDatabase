@@ -25,13 +25,11 @@ namespace JsonDatabase
         const std::string JDManagerFileSystem::s_jsonFileEnding = ".json";
 
         JDManagerFileSystem::JDManagerFileSystem(
-            const std::string& databasePath,
-            const std::string& databaseName,
             JDManager& manager,
             std::mutex& mtx)
-			: m_databasePath(databasePath)
-            , m_databaseName(databaseName)
+			: m_logger(nullptr)
             , m_databaseFileName("data")
+            , m_databaseChangeHistoryFileName("changeHistory")
             , m_manager(manager)
             , m_mutex(mtx)
             , m_fileLock(nullptr)
@@ -59,9 +57,13 @@ namespace JsonDatabase
             }
         }
 
-        bool JDManagerFileSystem::setup()
+        bool JDManagerFileSystem::setup(const std::string& databasePath,
+                                        const std::string& databaseName)
         {
             bool success = true;
+            m_databasePath = databasePath;
+            m_databaseName = databaseName;
+
             success &= makeDatabaseDirs();
             success &= makeDatabaseFiles();
             
@@ -101,7 +103,6 @@ namespace JsonDatabase
             makeDatabaseDirs();
             makeDatabaseFiles();
             m_userRegistration.setDatabasePath(m_manager.getDatabasePath());
-           // m_userRegistration.createFiles();
             logOnDatabase();
             restartDatabaseFileWatcher();
         }
@@ -120,6 +121,14 @@ namespace JsonDatabase
         std::string JDManagerFileSystem::getDatabaseFilePath() const
         {
             return  getDatabasePath() + "\\" + m_databaseFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
+        }
+        const std::string& JDManagerFileSystem::getDatabaseChangeHistoryFileName() const
+        {
+			return m_databaseChangeHistoryFileName;
+        }
+        std::string JDManagerFileSystem::getDatabaseChangeHistoryFilePath() const
+        {
+            return  getDatabasePath() + "\\" + m_databaseChangeHistoryFileName + Internal::JDManagerFileSystem::getJsonFileEnding();
         }
         bool JDManagerFileSystem::isLoggedOnDatabase() const
         {
@@ -181,20 +190,20 @@ namespace JsonDatabase
                 // Create empty data
                 LockedFileAccessor fileAccessor(getDatabasePath(), getDatabaseFileName(), getJsonFileEnding(), m_logger);
                 fileAccessor.setProgress(nullptr);
-                LockedFileAccessor::Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::write);
+                Error fileError = fileAccessor.lock(LockedFileAccessor::AccessMode::write);
 
-                if (fileError != LockedFileAccessor::Error::none)
+                if (fileError != Error::none)
                 {
-                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
+                    if(m_logger) m_logger->logError(std::string("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(fileError));
                     return false;
                 }
 
 
                 JsonArray jsonData{};
                 fileError = fileAccessor.writeJsonFile(jsonData);
-                if (fileError != LockedFileAccessor::Error::none)
+                if (fileError != Error::none)
                 {
-                    if(m_logger) m_logger->logError("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: " + LockedFileAccessor::getErrorStr(fileError));
+                    if(m_logger) m_logger->logError(std::string("bool JDManager::saveObjects_internal(const std::vector<JDObject>& objList, unsigned int timeoutMillis): Error: ") + errorToString(fileError));
                     return false;
                 }
                 else
@@ -258,8 +267,7 @@ namespace JsonDatabase
 
             if (m_fileWatcher.hasFileChanged())
             {
-                //m_manager.getSignals().databaseFileChanged.emitSignal();
-                emit m_manager.onDatabaseFileChanged();
+                m_manager.m_signalsToEmit.setDatabaseFileChanged();
                 m_fileWatcher.clearHasFileChanged();
             }
         }

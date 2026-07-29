@@ -1,6 +1,10 @@
 #include "object/JDObjectInterface.h"
 #include "object/JDObjectRegistry.h"
 #include "object/JDObjectManager.h"
+#include "ui/JDObjectListWidget.h"
+#include "changehistory/ChangeTransaction.h"
+#include "utilities/ResourceManager.h"
+
 
 
 
@@ -9,7 +13,7 @@ namespace JsonDatabase
 
     const std::string JDObjectInterface::s_tag_objID = "objID";
     const std::string JDObjectInterface::s_tag_className = "class";
-    const std::string JDObjectInterface::s_tag_data = "Data";
+    const std::string JDObjectInterface::s_tag_data = "data";
 
 JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObject obj)
 {
@@ -17,6 +21,10 @@ JDObjectInterface::AutoObjectAddToRegistry::AutoObjectAddToRegistry(JDObject obj
 }
 int JDObjectInterface::AutoObjectAddToRegistry::addToRegistry(JDObject obj)
 {
+    //obj->markAsUnchanged();
+    obj->m_hasBeenSaved = true;
+    obj->m_marketdForRemoval = false;
+    obj->markAsCorrectData();
     return Internal::JDObjectRegistry::registerType(obj);
 }
 
@@ -25,14 +33,24 @@ JDObjectInterface::JDObjectInterface()
     : m_manager(nullptr)
     , m_shallowID(JDObjectID::invalidID)
 {
-
+	//markAsChanged();
+	m_hasBeenSaved = false;
+    m_marketdForRemoval = false;
+    markAsCorrectData();
+    std::shared_ptr<IChangeTransaction> change = std::make_shared<ChangeTransaction>("ObjectInstantiation", "Object instantiated");
+    m_changeHistory.push_back(change);
 }
 
 JDObjectInterface::JDObjectInterface(const JDObjectInterface &other)
     : m_manager(nullptr)
     , m_shallowID(other.m_shallowID)
 {
-
+	//markAsChanged();
+	m_hasBeenSaved = false;
+    m_marketdForRemoval = false;
+    markAsCorrectData();
+    std::shared_ptr<IChangeTransaction> change = std::make_shared<ChangeTransaction>("ObjectInstantiation", "Object instantiated");
+    m_changeHistory.push_back(change);
 }
 JDObjectInterface::~JDObjectInterface()
 {
@@ -43,12 +61,18 @@ JDObject JDObjectInterface::deepClone() const
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     JDObjectInterface *instance = deepClone_internal();
+    instance->m_hasBeenSaved = m_hasBeenSaved;
+    instance->m_hasWrongData = m_hasWrongData;
+    instance->m_marketdForRemoval = m_marketdForRemoval;
 	return JDObject(instance);
 }
 JDObject JDObjectInterface::shallowClone() const
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
     JDObjectInterface *instance = shallowClone_internal();
+    instance->m_hasBeenSaved = m_hasBeenSaved;
+    instance->m_hasWrongData = m_hasWrongData;
+    instance->m_marketdForRemoval = m_marketdForRemoval;
 	return JDObject(instance);
 }
 
@@ -58,7 +82,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
 {
     for (size_t i = 0; i < jsons.size(); ++i)
     {
-        JDObjectID::IDType id;
+        
         const JsonObject* obj = jsons[i].get_if<JsonObject>();
         if (!obj)
             continue;
@@ -66,26 +90,7 @@ size_t JDObjectInterface::getJsonIndexByID(const JsonArray& jsons, const JDObjec
         if(it == obj->end())
 			continue;
         const JsonDatabase::JsonValue& value = it->second;
-        
-#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
-        const std::string* idPtr = value.get_if<std::string>();
-        if (!idPtr)
-            continue;
-        id = *idPtr;
-#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
-        const long* idPtr = value.get_if<long>();
-        if (!idPtr)
-        {
-            const double* idPtrD = value.get_if<double>();
-            if (!idPtrD)
-                continue;
-            id = static_cast<long>(*idPtrD);
-        }
-        else
-            id = *idPtr;
-#else 
-    #error "Invalid JD_ID_TYPE_SWITCH value"
-#endif 
+		JDObjectID::IDType id = getIDFromJson(value);
         if (id == objID)
             return i;
     }
@@ -97,24 +102,28 @@ JDObjectID::IDType JDObjectInterface::getIDFromJson(const JsonObject& obj)
 	if(it == obj.end())
 		return JDObjectID::invalidID;
 	const JsonDatabase::JsonValue& value = it->second;
-    #if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
+	return getIDFromJson(value);
+}
+JDObjectID::IDType JDObjectInterface::getIDFromJson(const JsonValue& value)
+{
+#if JD_ID_TYPE_SWITCH == JD_ID_TYPE_STRING
     const std::string* idPtr = value.get_if<std::string>();
-		if (!idPtr)
-			return JDObjectID::invalidID;
-		return *idPtr;
-        #elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
+    if (!idPtr)
+        return JDObjectID::invalidID;
+    return *idPtr;
+#elif JD_ID_TYPE_SWITCH == JD_ID_TYPE_LONG
     const long* idPtr = value.get_if<long>();
     if (!idPtr)
     {
-		const double* idPtrD = value.get_if<double>();
-		if (!idPtrD)
-			return JDObjectID::invalidID;
-		return static_cast<long>(*idPtrD);
-	}
+        const double* idPtrD = value.get_if<double>();
+        if (!idPtrD)
+            return JDObjectID::invalidID;
+        return static_cast<long>(*idPtrD);
+    }
     return *idPtr;
-		#else 
-	#error "Invalid JD_ID_TYPE_SWITCH value"
-	#endif
+#else 
+#error "Invalid JD_ID_TYPE_SWITCH value"
+#endif
 }
 
 
@@ -150,6 +159,12 @@ JDObjectIDptr JDObjectInterface::getObjectID() const
 }
 const JDObjectID::IDType& JDObjectInterface::getShallowObjectID() const
 {
+    if (m_manager)
+    {
+        auto id = m_manager->getID();
+        if (id)
+            return id->get();
+    }
     return m_shallowID;
 }
 
@@ -157,6 +172,18 @@ bool JDObjectInterface::isLocked() const
 {
     if(m_manager)
         return m_manager->isLocked();
+    return false;
+}
+bool JDObjectInterface::isLockedByMe() const
+{
+    if (m_manager)
+        return m_manager->isLockedByMe();
+    return false;
+}
+bool JDObjectInterface::isLockedByOther() const
+{
+    if (m_manager)
+        return m_manager->isLockedByOther();
     return false;
 }
 bool JDObjectInterface::lock()
@@ -172,12 +199,17 @@ bool JDObjectInterface::unlock()
     return false;
 }
 
-Utilities::JDUser JDObjectInterface::getLockOwner(bool& isLocked) const
+bool JDObjectInterface::getLockOwner(Utilities::JDUser &user) const
 {
     if(m_manager)
-		return m_manager->getLockOwner(isLocked);
-    isLocked = false;
-    return Utilities::JDUser();
+		return m_manager->getLockOwner(user);
+	return false;
+}
+bool JDObjectInterface::getLockData(Internal::JDObjectLocker::LockData& data) const
+{
+	if (m_manager)
+		return m_manager->getLockData(data);
+	return false;
 }
 
 bool JDObjectInterface::saveToDatabase()
@@ -203,6 +235,115 @@ void JDObjectInterface::loadFromDatabaseAsync()
     if (m_manager)
 		m_manager->loadFromDatabaseAsync();
 }
+
+const QIcon& JDObjectInterface::getIcon() const
+{
+    static QIcon icon;
+    return icon;
+}
+const QIcon& JDObjectInterface::getStatusIcon(Status status) const
+{
+    switch (status)
+    {
+    case Status::Default: return getIcon();
+    case Status::Locked: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::lock);
+    case Status::UnsavedChanges: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::asterisk);
+    case Status::WrongData: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::warning);
+    case Status::MarkedForRemoval: return Utilities::ResourceManager::getIcon(Utilities::ResourceManager::Icon::deleted);
+    }
+	static QIcon defaultIcon;
+	return defaultIcon;
+}
+/*void JDObjectInterface::markAsChanged() const
+{ 
+    m_hasChanges = true; 
+    UI::JDObjectListWidget::updateUI();
+}
+void JDObjectInterface::markAsUnchanged() const 
+{ 
+    m_hasChanges = false; 
+    UI::JDObjectListWidget::updateUI();
+}*/
+bool JDObjectInterface::hasChanges() const
+{
+    if (!m_hasBeenSaved || m_marketdForRemoval)
+        return true;
+	bool hasChanges = false;
+	for (auto value : m_values)
+	{
+		if (value->hasChanged())
+		{
+			hasChanges = true;
+			break;
+		}
+	}
+	return hasChanges;
+}
+void JDObjectInterface::onValueChanged(IJDObjectValue* value) const
+{
+    JD_UNUSED(value);
+    UI::JDObjectListWidget::updateUI();
+}
+void JDObjectInterface::markAsWrongData() const 
+{ 
+    m_hasWrongData = true; 
+    UI::JDObjectListWidget::updateUI();
+}
+void JDObjectInterface::markAsCorrectData() const
+{
+    m_hasWrongData = false;
+    UI::JDObjectListWidget::updateUI();
+}
+void JDObjectInterface::markForRemoval() 
+{
+    if (m_marketdForRemoval)
+        return;
+    m_marketdForRemoval = true; 
+	std::shared_ptr<IChangeTransaction> change = std::make_shared<ChangeTransaction>("ObjectRemove","Object market for removal");
+	m_changeHistory.push_back(change);
+    UI::JDObjectListWidget::updateUI();
+}
+void JDObjectInterface::markForNotRemoval() 
+{ 
+    if (!m_marketdForRemoval)
+        return;
+    for (size_t i = 0; i < m_changeHistory.size(); ++i)
+    {
+        if (m_changeHistory[i]->getIdentifyer() == "ObjectRemove")
+        {
+            m_changeHistory.erase(m_changeHistory.begin() + i);
+            break;
+        }
+    }
+    m_marketdForRemoval = false; 
+    UI::JDObjectListWidget::updateUI();
+}
+
+std::vector<std::shared_ptr<IChangeTransaction>> JDObjectInterface::getChangeTransactions() const
+{
+	std::vector<std::shared_ptr<IChangeTransaction>> transactions;
+	for (auto value : m_values)
+	{
+        transactions = IChangeTransaction::combine(transactions, value->getValueChangeTransactions());
+	}
+	transactions.insert(transactions.end(), m_changeHistory.begin(), m_changeHistory.end());
+	transactions = IChangeTransaction::sortByDate(transactions);
+	return transactions;
+}
+JsonValue JDObjectInterface::getChangeTransactionsJson() const
+{
+	return IChangeTransaction::toJson(getChangeTransactions());
+}
+void JDObjectInterface::clearChangeTransactions()
+{
+    for (auto value : m_values)
+    {
+		value->clearValueChangeTransactions();
+    }
+	m_changeHistory.clear();
+	m_hasBeenSaved = true;
+}
+
 
 bool JDObjectInterface::equalData(const JsonObject& obj) const
 {
@@ -232,6 +373,10 @@ bool JDObjectInterface::equalData(const JsonObject& obj) const
 bool JDObjectInterface::loadInternal(const JsonObject& obj)
 {
     JD_OBJECT_PROFILING_FUNCTION(JD_COLOR_STAGE_4);
+    /*if (hasChanges())
+    {
+        return true;
+    }*/
     const JsonObject *data = obj.at(s_tag_data).get_if<JsonObject>();
     bool success = true;
 
@@ -245,7 +390,7 @@ bool JDObjectInterface::loadInternal(const JsonObject& obj)
     return success;
 }
 
-bool JDObjectInterface::saveInternal(JsonObject& obj)
+bool JDObjectInterface::saveInternal(JsonObject& obj) const
 {
     return getSaveData(obj);
 }
@@ -270,6 +415,11 @@ bool JDObjectInterface::getSaveData(JsonObject& obj) const
     return ret;
 }
 
+void JDObjectInterface::addValue(IJDObjectValue& value)
+{
+	value.setParent(this);
+	m_values.push_back(&value);
+}
 
 void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
 {
@@ -296,5 +446,32 @@ void JDObjectInterface::setManager(Internal::JDObjectManager* manager)
 Internal::JDObjectManager* JDObjectInterface::getManager() const
 {
     return m_manager;
+}
+
+bool JDObjectInterface::load(const JsonObject& obj)
+{
+    bool success = true;
+	clearChangeTransactions();
+	for (auto value : m_values)
+	{
+		auto match = obj.find(value->getParamName());
+        if (match == obj.end())
+        {
+			success = false;
+			break;
+        }
+		if (!value->fromJson(match->second))
+			success = false;
+	}
+	return success;
+}
+bool JDObjectInterface::save(JsonObject& obj) const
+{
+	bool success = true;
+	for (auto value : m_values)
+	{
+		obj[value->getParamName()] = value->toJson();
+	}
+	return success;
 }
 }

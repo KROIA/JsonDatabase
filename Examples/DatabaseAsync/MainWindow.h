@@ -12,7 +12,7 @@ class MainWindow : public QWidget
 	Q_OBJECT
 
 public:
-	MainWindow(const std::string &user, QWidget *parent = nullptr);
+	MainWindow(QWidget *parent = nullptr);
 	~MainWindow();
 
 signals:
@@ -29,6 +29,7 @@ private slots:
 	void on_loadDatabase_pushButton_clicked();
 	void on_saveDatabase_pushButton_clicked();
 	void on_addObject_pushButton_clicked();
+	void on_cloneObject_pushButton_clicked();
 	void on_deleteObject_pushButton_clicked();
 	void on_editObject_pushButton_clicked();
 
@@ -37,6 +38,8 @@ private slots:
 	void on_unlockObject_pushButton_clicked();
 	void on_unlockAllObjects_pushButton_clicked();
 	void on_test_pushButton_clicked();
+
+	void onObjectClicked(JDObject obj);
 
 
 
@@ -51,10 +54,10 @@ private:
 	// Signals from the manager
 	void onDatabaseFileChanged();
 	void onLockedObjectsChanged();
-	void onObjectRemovedFromDatabase(const std::vector<JDObject>& removed);
-	void onObjectAddedToDatabase(const std::vector<JDObject>& added);
-	void onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>&changedPairs);
-	void onObjectOverrideChangeFromDatabase(const std::vector<JDObject>& overwritten);
+	void onObjectRemovedFromDatabase(std::vector<JDObject>  removed);
+	void onObjectAddedToDatabase(std::vector<JDObject> added);
+	//void onObjectChangedFromDatabase(const std::vector<JsonDatabase::JDObjectPair>&changedPairs);
+	void onObjectChanged(std::vector<JDObject> overwritten);
 	void onDatabaseOutdated();
 
 	void onAsyncWorkStarted();
@@ -71,5 +74,9 @@ private:
 	QTimer m_asyncUpdateTimer;
 
 	JDManager *m_manager;
+	UI::JDUserListWidget* m_userListWidget;
+	UI::JDObjectListWidget* m_objectListWidget;
+	UI::JDObjectLockDataWidget* m_lockDataWidget;
+
 	UIPerson* m_uiPersonEditor;
 };

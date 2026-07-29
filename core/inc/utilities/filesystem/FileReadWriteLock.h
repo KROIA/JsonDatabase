@@ -34,9 +34,9 @@ namespace JsonDatabase
 			const std::string& getFilePath() const;
 			const std::string& getFileName() const;
 
-			bool lock(Access direction, bool& wasLockedByOtherUserOut, FileLock::Error& err);
-			bool lock(Access direction, unsigned int timeoutMs, bool& wasLockedByOtherUserOut, FileLock::Error& err);
-			void unlock(FileLock::Error& err);
+			bool lock(Access direction, bool& wasLockedByOtherUserOut, Error& err);
+			bool lock(Access direction, unsigned int timeoutMs, bool& wasLockedByOtherUserOut, Error& err);
+			void unlock(Error& err);
 
 			bool isLocked() const;
 
@@ -51,8 +51,8 @@ namespace JsonDatabase
 
 
 		private:
-			FileLock::Error lock_internal(Access direction, bool& wasLockedByOtherUserOut);
-			FileLock::Error lockFile(Access direction, bool& wasLockedByOtherUserOut);
+			Error lock_internal(Access direction, bool& wasLockedByOtherUserOut);
+			Error lockFile(Access direction, bool& wasLockedByOtherUserOut);
 
 
 			Log::LogObject *m_logger = nullptr;

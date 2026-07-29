@@ -51,23 +51,23 @@ namespace JsonDatabase
 		}
 
 
-		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
+		std::vector<bool> JDObjectManager::getJsonArray(const std::vector<JDObject>& objs, JsonArray& jsonOut)
 		{
 			return getJsonArray(objs, jsonOut, nullptr);
 		}
-		bool JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
+		std::vector<bool> JDObjectManager::getJsonArray(const std::vector<JDObject>& objs,
 			JsonArray& jsonOut,
 			WorkProgress* progress)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_2);
+			std::vector<bool> successList(objs.size(), true);
 			if (objs.size() == 0)
 			{
 				if(progress)
 					progress->setProgress(1.0);
-				return true;
+				return successList;
 			}
 
-			bool success = true;
 			double deltaProgress = 1.0 / (double)objs.size();
 #ifdef JD_ENABLE_MULTITHREADING
 			unsigned int threadCount = std::thread::hardware_concurrency();
@@ -100,7 +100,7 @@ namespace JsonDatabase
 					start += chunkSize;
 					if (i == threadCount - 1)
 						threadData[i].end += remainder;
-					threads[i] = new std::thread([&threadData, &objs, i, &jsonOut]()
+					threads[i] = new std::thread([&threadData, &objs, i, &jsonOut, &successList]()
 						{
 							ThreadData& data = threadData[i];
 							std::atomic<int> & finishCount = threadData[i].finishCount;
@@ -108,7 +108,7 @@ namespace JsonDatabase
 							{
 
 								std::shared_ptr<JsonObject> jsonData = std::make_shared<JsonObject>();
-								objs[j]->saveInternal(*jsonData);
+								successList[j] = objs[j]->saveInternal(*jsonData);
 								*jsonOut[j] = std::move(jsonData);
 								
 								finishCount++;
@@ -158,24 +158,42 @@ namespace JsonDatabase
 #endif
 			{
 				jsonOut.reserve(objs.size());
-				for (auto o : objs)
+				for (size_t i=0; i< objs.size(); ++i)
 				{
 					JsonObject data;
-					success &= o->saveInternal(data);
+					successList[i] = objs[i]->saveInternal(data);
 					jsonOut.emplace_back(std::move(data));
 					if (progress)
 						progress->addProgress(deltaProgress);
 				}
 			}
-			return success;
+			return successList;
 		}
 
 		bool JDObjectManager::isLocked() const
 		{
 			if (m_databaseManager)
 			{
-				JDObjectLocker::Error err;
+				Error err;
 				return m_databaseManager->isObjectLocked(getObject(), err);
+			}
+			return false;
+		}
+		bool JDObjectManager::isLockedByMe() const
+		{
+			if (m_databaseManager)
+			{
+				Error err;
+				return m_databaseManager->isObjectLockedByMe(getObject(), err);
+			}
+			return false;
+		}
+		bool JDObjectManager::isLockedByOther() const
+		{
+			if (m_databaseManager)
+			{
+				Error err;
+				return m_databaseManager->isObjectLockedByOther(getObject(), err);
 			}
 			return false;
 		}
@@ -183,7 +201,7 @@ namespace JsonDatabase
 		{
 			if (m_databaseManager)
 			{
-				JDObjectLocker::Error err;
+				Error err;
 				return m_databaseManager->lockObject(getObject(), err);
 			}
 			return false;
@@ -192,22 +210,28 @@ namespace JsonDatabase
 		{
 			if (m_databaseManager)
 			{
-				JDObjectLocker::Error err;
+				Error err;
 				return m_databaseManager->unlockObject(getObject(), err);
 			}
 			return false;
 		}
-		Utilities::JDUser JDObjectManager::getLockOwner(bool& isLocked) const
+		bool JDObjectManager::getLockOwner(Utilities::JDUser &user) const
 		{
 			if (m_databaseManager)
 			{
-				Utilities::JDUser userOut; 
-				JDObjectLocker::Error err;
-				isLocked = m_databaseManager->getLockOwner(getObject(), userOut, err);
-				return userOut;
+				Error err;
+				return m_databaseManager->getLockOwner(getObject(), user, err);
 			}
-			isLocked = false;
-			return Utilities::JDUser();
+			return false;
+		}
+		bool JDObjectManager::getLockData(JDObjectLocker::LockData& data) const
+		{
+			if (m_databaseManager)
+			{
+				Error err;
+				return m_databaseManager->getLockData(getObject(), data, err);
+			}
+			return false;
 		}
 		bool JDObjectManager::saveToDatabase()
 		{
@@ -295,15 +319,15 @@ namespace JsonDatabase
 				return ManagedLoadStatus::noLoadNeeded;
 			if (hasChanged)
 			{
-				if (loadMode.overridingObjects)
-				{
+				//if (loadMode.overridingObjects)
+				//{
 					
 					if (!manager->loadAndOverrideData(json))
 						return ManagedLoadStatus::loadFailed;
 
 					containers.overridingObjs.push_back(obj);
-				}
-				else
+				//}
+				/*else
 				{
 					JDObject instance = obj->deepClone();
 					if (!instance.get())
@@ -314,7 +338,7 @@ namespace JsonDatabase
 					containers.changedPairs.push_back(std::make_pair(obj, instance));
 					containers.replaceObjs.push_back(instance);
 
-				}
+				}*/
 			}
 			containers.loadedObjects[obj] = obj;
 			return ManagedLoadStatus::success;
@@ -396,21 +420,42 @@ namespace JsonDatabase
 				hasChangedOut = true;
 				return true;
 			}
+			if (obj->hasChanges())
+			{
+				if (obj->isLockedByMe())
+				{
+					if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className() + " Object is locked by this user and has unsaved changes");
+					return false;
+				}
+			}
 			if (!obj->loadInternal(json))
 			{
 				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
 				return false;
 			}
+			
+			if(m_databaseManager)
+				m_databaseManager->m_signalsToEmit.addObjectChanged(obj);
 			return true;
 		}
 		bool JDObjectManager::deserializeOverrideFromJson_internal(const JsonObject& json, JDObject obj)
 		{
 			JD_GENERAL_PROFILING_FUNCTION(JD_COLOR_STAGE_3);
+			if (obj->hasChanges())
+			{
+				if (obj->isLockedByMe())
+				{
+					if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className() + " Object is locked by this user and has unsaved changes");
+					return false;
+				}
+			}
 			if (!obj->loadInternal(json))
 			{
 				if (m_logger)m_logger->logError("Can't load data in object: " + obj->getObjectID().get()->toString() + " classType: " + obj->className());
 				return false;
 			}
+			if(m_databaseManager)
+				m_databaseManager->m_signalsToEmit.addObjectChanged(obj);
 			return true;
 		}
 	}

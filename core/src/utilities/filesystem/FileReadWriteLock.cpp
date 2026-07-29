@@ -22,7 +22,7 @@ namespace JsonDatabase
         }
         FileReadWriteLock::~FileReadWriteLock()
         {
-            FileLock::Error err;
+            Error err;
             unlock(err);
         }
 
@@ -34,26 +34,26 @@ namespace JsonDatabase
         {
             return m_fileName;
         }
-        bool FileReadWriteLock::lock(Access direction, bool& wasLockedByOtherUserOut, FileLock::Error& err)
+        bool FileReadWriteLock::lock(Access direction, bool& wasLockedByOtherUserOut, Error& err)
         {
             wasLockedByOtherUserOut = false;
             err = lock_internal(direction, wasLockedByOtherUserOut);
 #ifdef JD_DEBUG
-            if (err != FileLock::Error::none)
+            if (err != Error::none)
             {
-                if(m_logger)m_logger->logError("bool FileReadWriteLock::lock(direction=" + accessTypeToString(direction) + ") " + FileLock::getErrorStr(err));
+                if(m_logger)m_logger->logError("bool FileReadWriteLock::lock(direction=" + accessTypeToString(direction) + ") " + errorToString(err));
             }
 #endif
-            return err == FileLock::Error::none;
+            return err == Error::none;
         }
-        bool FileReadWriteLock::lock(Access direction, unsigned int timeoutMs, bool& wasLockedByOtherUserOut, FileLock::Error& err)
+        bool FileReadWriteLock::lock(Access direction, unsigned int timeoutMs, bool& wasLockedByOtherUserOut, Error& err)
         {
             if (m_locked)
             {
-                err = FileLock::Error::alreadyLocked;
+                err = Error::fileAlreadyLocked;
                 return true;
             }
-            err = FileLock::Error::none;
+            err = Error::none;
 
             // Get the current time
             auto start = std::chrono::high_resolution_clock::now();
@@ -63,28 +63,28 @@ namespace JsonDatabase
             wasLockedByOtherUserOut = false;
             bool timeout = false;
             while ((timeout = (std::chrono::high_resolution_clock::now() < end)) &&
-                (err = lock_internal(direction, wasLockedByOtherUserOut)) != FileLock::Error::none)
+                (err = lock_internal(direction, wasLockedByOtherUserOut)) != Error::none)
             {
                 JDFILE_FILE_LOCK_PROFILING_BLOCK("FileReadWriteLock::WaitForFreeLock", JD_COLOR_STAGE_5);
                 // Sleep for a short while to avoid busy-waiting
                 std::this_thread::yield();
             }
-            if (timeout && err != FileLock::Error::none)
+            if (timeout && err != Error::none)
             {
-                err = FileLock::Error::lockTimeout;
+                err = Error::fileLockTimeout;
             }
 #ifdef JD_DEBUG
-            if (err != FileLock::Error::none)
+            if (err != Error::none)
             {
-                if(m_logger)m_logger->logError("bool FileReadWriteLock::lock(direction=" + accessTypeToString(direction) + ") " + FileLock::getErrorStr(err));
+                if(m_logger)m_logger->logError("bool FileReadWriteLock::lock(direction=" + accessTypeToString(direction) + ") " + errorToString(err));
             }
 #endif
             return m_locked;
         }
-        FileLock::Error FileReadWriteLock::lock_internal(Access direction, bool& wasLockedByOtherUserOut)
+        Error FileReadWriteLock::lock_internal(Access direction, bool& wasLockedByOtherUserOut)
         {
             //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
-            FileLock::Error err = lockFile(direction, wasLockedByOtherUserOut);
+            Error err = lockFile(direction, wasLockedByOtherUserOut);
 
 
 #ifdef JD_PROFILING
@@ -124,11 +124,11 @@ namespace JsonDatabase
 #endif
             return err;
         }
-        FileLock::Error FileReadWriteLock::lockFile(Access direction, bool& wasLockedByOtherUserOut)
+        Error FileReadWriteLock::lockFile(Access direction, bool& wasLockedByOtherUserOut)
         {
             if (m_lock)
-                return FileLock::Error::alreadyLocked;
-            FileLock::Error lockErr1;
+                return Error::fileAlreadyLocked;
+            Error lockErr1;
             FileLock tmpLock(m_directory, m_fileName, m_logger);
             if (!tmpLock.lock(s_tryLockTimeoutMs, lockErr1))
                 return lockErr1;
@@ -147,14 +147,14 @@ namespace JsonDatabase
                    // if(isFileLocked )
                     wasLockedByOtherUserOut = true;
                     // Some are writing, can't read or write
-                    return FileLock::Error::alreadyLockedForWritingByOther;
+                    return Error::fileAlreadyLockedForWritingByOther;
                 }
             }
 
             if (direction == Access::write && readerCount != 0)
             {
                 // Some are reading, can't write
-                return FileLock::Error::alreadyLockedForReading;
+                return Error::fileAlreadyLockedForReading;
             }
 
 
@@ -165,7 +165,7 @@ namespace JsonDatabase
 
             std::string lockFileName = m_fileName + "_" + accessType + "-" + randStr;
 
-            FileLock::Error lockErr2;
+            Error lockErr2;
             m_lock = new FileLock(m_directory, lockFileName, m_logger);
             if (!m_lock->lock(lockErr2))
             {
@@ -177,9 +177,9 @@ namespace JsonDatabase
             m_locked = true;
             m_access = direction;
             m_lockFilePathName = lockFileName;
-            return FileLock::Error::none;
+            return Error::none;
         }
-        void FileReadWriteLock::unlock(FileLock::Error& err)
+        void FileReadWriteLock::unlock(Error& err)
         {
 #ifdef JD_PROFILING
             //JDFILE_FILE_LOCK_PROFILING_FUNCTION(JD_COLOR_STAGE_7);
@@ -194,7 +194,7 @@ namespace JsonDatabase
             }
             else
             {
-                err = FileLock::alreadyUnlocked;
+                err = Error::fileAlreadyUnlocked;
             }
 #ifdef JD_PROFILING
             if (wasLocked)

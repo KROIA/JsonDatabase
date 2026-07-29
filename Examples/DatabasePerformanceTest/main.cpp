@@ -68,27 +68,23 @@ int main(int argc, char* argv[])
 #ifdef CONCURENT_TEST
     JsonDatabase::Profiler::start();
 
-    manager1 = new JDManager("database", "Persons", "USER 1");
-    manager2 = new JDManager("database", "Persons", "USER 2");
-    manager3 = new JDManager("database", "Persons", "USER 3");
-    manager4 = new JDManager("database", "Persons", "USER 4");
-    manager5 = new JDManager("database", "Persons", "USER 5");
+    manager1 = new JDManager;
+    manager2 = new JDManager;
+    manager3 = new JDManager;
+    manager4 = new JDManager;
+    manager5 = new JDManager;
 
     Log::UI::QConsoleView* console = new Log::UI::QConsoleView();
 //    console->attachLogger(logger);
     console->show();
 
-    manager1->setup();
-    manager2->setup();
-    manager3->setup();
-    manager4->setup();
-    manager5->setup();
+    manager1->setup("database", "Persons", "USER 1");
+    manager2->setup("database", "Persons", "USER 2");
+    manager3->setup("database", "Persons", "USER 3");
+    manager4->setup("database", "Persons", "USER 4");
+    manager5->setup("database", "Persons", "USER 5");
 
-#ifdef NDEBUG
     watcher = new Internal::FileChangeWatcher("database\\Persons.json");
-#elif JD_ACTIVE_JSON == JD_JSON_INTERNAL
-    watcher = new Internal::FileChangeWatcher("D:\\Users\\Alex\\Dokumente\\SoftwareProjects\\JsonDatabase\\build\\Debug\\database\\Persons.json");
-#endif
     watcher->setup(&logger);
     //manager1->addObjectDefinition<Person>();
     //manager2->addObjectDefinition<Person>();
@@ -214,7 +210,7 @@ bool lockRandomPerson(JDManager* manager, JDObject& obj)
         //int randomIndex = rand() % globalTable.size();
         int randomIndex = 100;
         JDObject target = globalTable[randomIndex];
-        JsonDatabase::Internal::JDObjectLocker::Error lastError;
+        JsonDatabase::Error lastError;
         if (manager->lockObject(target, lastError))
         {
             obj = target;
@@ -230,7 +226,7 @@ bool unlockPerson(JDManager* manager, JDObject& obj)
     mutex.lock();
     if (obj != nullptr)
     {
-        JsonDatabase::Internal::JDObjectLocker::Error lastError;
+        JsonDatabase::Error lastError;
         if (manager->unlockObject(obj, lastError))
         {
             obj = nullptr;
@@ -258,8 +254,8 @@ void threadFunction1() {
     //bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    QObject::connect(manager1, &JDManager::onDatabaseFileChanged, [] {manager1->loadObjectsAsync(); });
-    QObject::connect(manager1, &JDManager::onSaveObjectsDone, [](bool success)
+    QObject::connect(manager1, &JDManager::databaseFileChanged, [] {manager1->loadObjectsAsync(); });
+    QObject::connect(manager1, &JDManager::saveObjectsDone, [](bool success)
         {
             std::cout << "Save Objects success: " << success << "\n";
             finishSave = true; 
@@ -335,18 +331,18 @@ void threadFunction1() {
 
 void callback()
 {
+    //manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects);
     manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects);
-    manager2->loadObjectsAsync(JsonDatabase::LoadMode::allObjects + JsonDatabase::LoadMode::overrideChanges);
    // manager2->disconnectDatabaseFileChangedSlot(callback);
 }
-void onObjectRemoved(const std::vector<JDObject>& list)
+void onObjectRemoved(std::vector<JDObject> objs)
 {
-    for(JDObject obj : list)
+    for (JDObject obj : objs)
         std::cout << "Object removed: " << obj->getObjectID() << "\n";
 }
-void onObjectAdded(const std::vector<JDObject>& list)
+void onObjectAdded(std::vector<JDObject> objs)
 {
-    for (JDObject obj : list)
+    for (JDObject obj : objs)
 	    std::cout << "Object added: " << obj->getObjectID() << "\n";
 }
 void onObjectOverrideChange(const std::vector<JDObject>& list)
@@ -354,10 +350,10 @@ void onObjectOverrideChange(const std::vector<JDObject>& list)
     for (JDObject obj : list)
         std::cout << "Object override change: " << obj->getObjectID() << "\n";
 }
-void onObjectChange(const std::vector<JDObjectPair>& list)
+void onObjectChange(std::vector<JDObject> objs)
 {
-    for (const JDObjectPair& obj : list)
-        std::cout << "Object changed: " << obj.first->getObjectID() << "\n";
+	for (JDObject obj : objs)
+        std::cout << "Object changed: " << obj->getObjectID() << "\n";
 }
 
 // Function for the second thread
@@ -368,10 +364,10 @@ void threadFunction2() {
     //JDObject lockedPerson = nullptr;
     auto start = std::chrono::high_resolution_clock::now();
 
-    QObject::connect(manager2, &JDManager::onDatabaseFileChanged, []() {callback(); });
-    QObject::connect(manager2, &JDManager::onObjectAddedToDatabase, [](const std::vector<JDObject>& list) {onObjectAdded(list); });
-    QObject::connect(manager2, &JDManager::onObjectRemovedFromDatabase, [](const std::vector<JDObject>& list) {onObjectRemoved(list); });
-    QObject::connect(manager2, &JDManager::onObjectChangedFromDatabase, [](const std::vector<JDObjectPair>& list) {onObjectChange(list); });
+    QObject::connect(manager2, &JDManager::databaseFileChanged, []() {callback(); });
+    QObject::connect(manager2, &JDManager::objectAdded, [](std::vector<JDObject> objs) {onObjectAdded(objs); });
+    QObject::connect(manager2, &JDManager::objectRemoved, [](std::vector<JDObject> objs) {onObjectRemoved(objs); });
+    QObject::connect(manager2, &JDManager::objectChanged, [](std::vector<JDObject> objs) {onObjectChange(objs); });
 
     //manager2->getSignals().connect_databaseFileChanged_slot(callback);
     //manager2->getSignals().connect_objectAddedToDatabase_slot(onObjectAdded);
@@ -427,7 +423,7 @@ void threadFunction3() {
    // bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    QObject::connect(manager3, &JDManager::onDatabaseFileChanged, [] {
+    QObject::connect(manager3, &JDManager::databaseFileChanged, [] {
         //manager3->loadObjectsAsync();
         });
 
@@ -509,7 +505,7 @@ void threadFunction5() {
     //bool hasLocked = false;
     //JDObject lockedPerson = nullptr;
 
-    QObject::connect(manager5, &JDManager::onDatabaseFileChanged, [] {
+    QObject::connect(manager5, &JDManager::databaseFileChanged, [] {
 		//manager5->loadObjectsAsync();
 		});
 

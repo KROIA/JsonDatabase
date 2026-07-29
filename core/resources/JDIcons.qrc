@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>JDIcons/accept.png</file>
+        <file>JDIcons/user.png</file>
+        <file>JDIcons/clock.png</file>
+        <file>JDIcons/tag.png</file>
+        <file>JDIcons/lock.png</file>
+        <file>JDIcons/unlock.png</file>
+        <file>JDIcons/search.png</file>
+        <file>JDIcons/filter.png</file>
+        <file>JDIcons/asterisk.png</file>
+        <file>JDIcons/warning.png</file>
+        <file>JDIcons/deleted.png</file>
+    </qresource>
+</RCC>
