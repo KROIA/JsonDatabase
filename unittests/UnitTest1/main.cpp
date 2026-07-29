@@ -32,16 +32,30 @@ int main(int argc, char* argv[])
 	JsonDatabase::LibraryInfo::printInfo();
 
 	QThread t;
+	UnitTest::Test::TestResults results;
 	QObject::connect(&t, &QThread::started, [&]()
 		{
 			std::cout << "Running " << UnitTest::Test::getTests().size() << " tests...\n";
-			UnitTest::Test::TestResults results;
-			UnitTest::Test::runAllTests(results);
-			UnitTest::Test::printResults(results);
+			UnitTest::Test::TestResults results_local;
+			UnitTest::Test::runAllTests(results_local);
+			UnitTest::Test::printResults(results_local);
+			results = results_local;
+			
+			// Send a signal to the main thread to quit the application after this thread finishes running the tests.
+			// Add 100ms delay to allow the console view to update before quitting the application.
+			// Use queued connection to ensure the signal is sent to the main thread.
+			QMetaObject::invokeMethod(&app, [&]()
+				{
+					QTimer::singleShot(100, &app, &QCoreApplication::quit);
+				}, Qt::QueuedConnection);
 		}
 	);
 	t.start();
 	
+	app.exec();
+
+	t.quit();
+	t.wait();
 
 	return results.getSuccess();
 }
