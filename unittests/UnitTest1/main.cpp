@@ -37,14 +37,5 @@ int main(int argc, char* argv[])
 	UnitTest::Test::runAllTests(results);
 	UnitTest::Test::printResults(results);
 
-#ifdef QT_WIDGETS_ENABLED
-	QWidget* widget = JsonDatabase::LibraryInfo::createInfoWidget();
-	if (widget)
-		widget->show();
-#endif
-#ifdef QT_ENABLED
-	return app.exec();
-#else
-	return 0;
-#endif
+	return results.getSuccess();
 }
